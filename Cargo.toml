@@ -8,4 +8,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.4.7", features = ["derive"] }
-noirc_frontend = { path = "/home/furnic/Dev/noir_dev/noir/compiler/noirc_frontend" }
+noirc_frontend = { path = "/Users/furnic/dev/noir_dev/noir/compiler/noirc_frontend" }
