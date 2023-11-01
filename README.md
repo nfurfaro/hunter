@@ -29,3 +29,21 @@ The application will be composed of several distinct components:
     - given n operators to mutate, we get n mutants.
     - given t tests in the suite, we must run n * t tests.
     - If n = 5, t = 10, total_test_runs = 50 ?
+
+## Pseudocode
+
+for t in tokens
+  Iterate through tokens in source.
+  If no mutable tokens are found
+    return.
+  else
+    mutate first token
+    increment mutants counter
+    run tests
+    if a test fails
+      the mutant has been destroyed
+      mutants_destroyed++
+    else
+      the mutant survived
+      surviving_mutant_count++
+      surviving_mutants.push(this mutant?)

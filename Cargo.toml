@@ -3,9 +3,12 @@ name = "hunter"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "hunter"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
 clap = { version = "4.4.7", features = ["derive"] }
-noirc_frontend = { path = "/Users/furnic/dev/noir_dev/noir/compiler/noirc_frontend" }
+noirc_frontend = { path = "../../../../../../home/furnic/Dev/noir_dev/noir/compiler/noirc_frontend" }
+tokio = { version = "1.8.0", features = ["macros", "rt-multi-thread"] }
