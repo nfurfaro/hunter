@@ -1,13 +1,16 @@
 use clap::Parser;
 use anyhow::Result;
 
+
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
 struct Cli {
     /// The path to the Noir source files directory, defaults to ./src
-    source: std::path::PathBuf,
+    #[clap(short, long)]
+    source_dir: Option<std::path::PathBuf>,
     /// The path to the test directory, defaults to ./tests
-    tests: std::path::PathBuf,
+    #[clap(short, long)]
+    test_dir: Option<std::path::PathBuf>,
 
     // Files matching this regex will be excluded from testing
     // exclude: // regex ?,
@@ -21,11 +24,12 @@ struct Cli {
 
 
 pub async fn run_cli() -> Result<()> {
-    let _args = Cli::parse();
+    println!("Releasing the mutants...");
+    let args = Cli::parse();
 
-    // core::load_src_files(args.source); // use args.exclude
+    core::load_src_files(args.source_dir); // use args.exclude
     // core::mutate(args.mutations);
-    // core::run_tests(args.tests);       // use args.sample_ratio
+    // core::run_tests(args.test_dir);       // use args.sample_ratio
     // core::report(args.output);
 
     Ok(())

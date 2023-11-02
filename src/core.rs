@@ -13,7 +13,11 @@ fn mutation_handler() -> Token {
     }
 }
 
-pub fn load_src_files() {}
+pub fn load_src_files(src: Option<std::path::PathBuf>) {
+
+}
+
+
 pub fn mutate() {}
 pub fn run_tests() {}
 pub fn report() {}
