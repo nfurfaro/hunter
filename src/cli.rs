@@ -1,8 +1,17 @@
 use clap::Parser;
 // use anyhow::Result;
-use std::{fs::{File, self}, path::Path, io::{BufReader, Read}, ffi::OsString};
-use noirc_frontend::{token::{Token, SpannedToken}, lexer::Lexer};
-
+use noirc_frontend::{
+    lexer::Lexer,
+    token::{SpannedToken, Token},
+};
+use std::{
+    collections::HashMap,
+    ffi::OsString,
+    fs::{self, File},
+    io::{BufReader, Error, Read},
+    os::fd::BorrowedFd,
+    path::Path, os::fd::AsFd,
+};
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
@@ -13,7 +22,6 @@ struct Cli {
     /// The path to the test directory, defaults to ./tests
     #[clap(short, long)]
     test_dir: Option<std::path::PathBuf>,
-
     // need a "hunt" command and a "preview" command
 
     // Files matching this regex will be excluded from testing
@@ -26,11 +34,10 @@ struct Cli {
     // output: std::path::PathBuf,
 }
 
-// This should probably return on Option
-// make sure to exclude the temp directory !!!
+// This should probably return an Option
 fn find_noir_files(dir_path: &Path) -> std::io::Result<Vec<File>> {
-    let mut results: Vec<File> = vec!();
-    let mut names: Vec<OsString> = vec!();
+    let mut results: Vec<File> = vec![];
+    let mut names: Vec<OsString> = vec![];
     if dir_path.is_dir() {
         for entry in std::fs::read_dir(dir_path)? {
             let entry = entry?;
@@ -38,26 +45,25 @@ fn find_noir_files(dir_path: &Path) -> std::io::Result<Vec<File>> {
             let path_buf = entry.path();
             if path_buf.is_dir() {
                 let _ = find_noir_files(&path_buf)?;
-            } else if path_buf.extension().map_or(false, |extension| extension == "nr") {
-                println!("Found noir file {:?}", &path_buf);
+            } else if path_buf
+                .extension()
+                .map_or(false, |extension| extension == "nr")
+            {
                 let path = path_buf.as_path();
 
-                if ! path.starts_with("./temp") {
-                    println!("Path: {:?}", path);
+                // @todo use cli options to configure excluded directories here
+                if !path.starts_with("./temp") {
                     let file = File::open(&path)?;
-                let _ = fs::create_dir("./temp/");
-                let mut out_path: OsString = OsString::from("./temp/");
-                out_path.push("_temp_");
-                out_path.push(name.clone());
-                let _ = std::fs::copy(path, out_path);
-
-                results.push(file);
-                names.push(name.clone());
-                println!("Search results: {:#?}", &results);
-                println!("File names: {:#?}", &names);
-                return Ok(results);
+                    let _ = fs::create_dir("./temp/");
+                    let mut out_path: OsString = OsString::from("./temp/");
+                    out_path.push("_temp_");
+                    out_path.push(name.clone());
+                    let _ = std::fs::copy(path, out_path);
+                    results.push(file);
+                    names.push(name.clone());
+                    println!("Search results: {:#?}", &results);
+                    println!("File names: {:#?}", &names);
                 }
-
             }
         }
     }
@@ -65,10 +71,15 @@ fn find_noir_files(dir_path: &Path) -> std::io::Result<Vec<File>> {
     Ok(results)
 }
 
-fn find_mutable_operators(noir_files: Vec<File>) -> Option<Token> {
+fn find_mutable_operators(temp_noir_files: Vec<File>) -> Option<Token> {
     println!("Searching for mutable operators...");
 
-    for file in noir_files {
+    for file in temp_noir_files {
+        // create a hash map visited_files: File => bool visited
+        // nope. use a unique id, file descriptor (fd) or the file name/path
+        let mut visited_files: HashMap<BorrowedFd<'_>, bool> = HashMap::new();
+        visited_files.insert(file.as_fd(), true);
+
 
         let mut buf_reader = BufReader::new(file);
         let mut contents = String::new();
@@ -86,13 +97,11 @@ fn find_mutable_operators(noir_files: Vec<File>) -> Option<Token> {
         }
     }
 
-
     None
 }
 
-
 pub async fn run_cli() -> std::io::Result<()> {
-    println!("Releasing the mutants...");
+    // println!("Releasing the mutants...");
 
     let _args = Cli::parse();
 
@@ -111,7 +120,6 @@ pub async fn run_cli() -> std::io::Result<()> {
     // to write to a file, use std::fs::OpenOptions
     // use std::fs::OpenOptions;
     // let file = OpenOptions::new().read(true).open("foo.txt");
-
 
     // core::load_src_files(args.source_dir); // use args.exclude
     // core::mutate(args.mutations);
