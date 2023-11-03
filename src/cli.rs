@@ -41,24 +41,23 @@ fn find_noir_files(dir_path: &Path) -> std::io::Result<Vec<File>> {
             } else if path_buf.extension().map_or(false, |extension| extension == "nr") {
                 println!("Found noir file {:?}", &path_buf);
                 let path = path_buf.as_path();
-                let file = File::open(&path)?;
-                let _ = fs::create_dir("./temp/");
 
-                // @todo need to get the name into the new filename !
+                if ! path.starts_with("./temp") {
+                    println!("Path: {:?}", path);
+                    let file = File::open(&path)?;
+                let _ = fs::create_dir("./temp/");
                 let mut out_path: OsString = OsString::from("./temp/");
                 out_path.push("_temp_");
                 out_path.push(name.clone());
-                // let prefix: &str = "_temp_";
-                // let new_file_string = dir + prefix + name;
-                // let out_path = Path::new("./temp/temp_.nr");
                 let _ = std::fs::copy(path, out_path);
-
 
                 results.push(file);
                 names.push(name.clone());
                 println!("Search results: {:#?}", &results);
                 println!("File names: {:#?}", &names);
                 return Ok(results);
+                }
+
             }
         }
     }
