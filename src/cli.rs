@@ -1,6 +1,6 @@
 use clap::Parser;
 // use anyhow::Result;
-use std::{fs::File, path::Path, io::{BufReader, Read}};
+use std::{fs::{File, self}, path::Path, io::{BufReader, Read}, ffi::OsString};
 use noirc_frontend::{token::{Token, SpannedToken}, lexer::Lexer};
 
 
@@ -14,6 +14,8 @@ struct Cli {
     #[clap(short, long)]
     test_dir: Option<std::path::PathBuf>,
 
+    // need a "hunt" command and a "preview" command
+
     // Files matching this regex will be excluded from testing
     // exclude: // regex ?,
     // Path to file defining custom mutation rules
@@ -24,20 +26,39 @@ struct Cli {
     // output: std::path::PathBuf,
 }
 
-
-fn find_noir_files(p: &Path) -> std::io::Result<Vec<File>> {
+// This should probably return on Option
+// make sure to exclude the temp directory !!!
+fn find_noir_files(dir_path: &Path) -> std::io::Result<Vec<File>> {
     let mut results: Vec<File> = vec!();
-    if p.is_dir() {
-        for entry in std::fs::read_dir(p)? {
-            let dir_entry = entry?;
-            let path_buf = dir_entry.path();
+    let mut names: Vec<OsString> = vec!();
+    if dir_path.is_dir() {
+        for entry in std::fs::read_dir(dir_path)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            let path_buf = entry.path();
             if path_buf.is_dir() {
-                let _res = find_noir_files(&path_buf)?;
+                let _ = find_noir_files(&path_buf)?;
             } else if path_buf.extension().map_or(false, |extension| extension == "nr") {
                 println!("Found noir file {:?}", &path_buf);
-                let file = File::open(&path_buf.as_path())?;
+                let path = path_buf.as_path();
+                let file = File::open(&path)?;
+                let _ = fs::create_dir("./temp/");
+
+                // @todo need to get the name into the new filename !
+                let mut out_path: OsString = OsString::from("./temp/");
+                out_path.push("_temp_");
+                out_path.push(name.clone());
+                // let prefix: &str = "_temp_";
+                // let new_file_string = dir + prefix + name;
+                // let out_path = Path::new("./temp/temp_.nr");
+                let _ = std::fs::copy(path, out_path);
+
+
                 results.push(file);
+                names.push(name.clone());
                 println!("Search results: {:#?}", &results);
+                println!("File names: {:#?}", &names);
+                return Ok(results);
             }
         }
     }
@@ -55,7 +76,7 @@ fn find_mutable_operators(noir_files: Vec<File>) -> Option<Token> {
         let _res = buf_reader.read_to_string(&mut contents);
         println!("File Contents: {}", &contents);
 
-        let (tokens, errors) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
+        let (tokens, _errors) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
         let mut i = 0;
         while i < tokens.0.len() {
             match tokens.0[i].token() {
@@ -77,15 +98,20 @@ pub async fn run_cli() -> std::io::Result<()> {
     let _args = Cli::parse();
 
     println!("Searching for Noir files...");
-    let noir_files = find_noir_files(Path::new("."))?;
-    println!("Noir files found: {:#?}", &noir_files);
+    let copied_noir_files = find_noir_files(Path::new("."))?;
+    println!("Noir files found: {:#?}", &copied_noir_files);
 
-    find_mutable_operators(noir_files);
+    find_mutable_operators(copied_noir_files);
     // need to track:
     // - which files have been visited, pop from vec when complete
     // - which operators have been mutated to be complete, but avoid duplication of mutants
     // - how many mutants were destroyed
     // - how many mutants survived, and which ones (location in source code)
+
+    // remember to copy noir source files first, and mutate those!
+    // to write to a file, use std::fs::OpenOptions
+    // use std::fs::OpenOptions;
+    // let file = OpenOptions::new().read(true).open("foo.txt");
 
 
     // core::load_src_files(args.source_dir); // use args.exclude
