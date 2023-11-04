@@ -47,3 +47,24 @@ for t in tokens
       the mutant survived
       surviving_mutant_count++
       surviving_mutants.push(this mutant?)
+
+
+## CLI struct:
+  // needs a "hunt" command and a "preview" command
+    // Files matching this regex will be excluded from testing
+    // exclude: // regex ?,
+    // Path to file defining custom mutation rules
+    // mutations: std::path::PathBuf,
+    // The percentage of mutations to run
+    // sample_ratio: uint,
+    // The optional path to the file for writing output. By default, output will by written to stdout
+    // output: std::path::PathBuf,
+
+## Noir Compiler
+//! The noir compiler is separated into the following passes which are listed
+//! in order in square brackets. The inputs and outputs of each pass are also given:
+//!
+//! Source file -[Lexing]-> Tokens -[Parsing]-> Ast -[Name Resolution]-> Hir -[Type Checking]-> Hir -[Monomorphization]-> Monomorphized Ast
+//!
+//! After the monomorphized ast is created, it is passed to the noirc_evaluator crate to convert it to SSA form,
+//! perform optimizations, convert to ACIR and eventually prove/verify the program.
