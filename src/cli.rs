@@ -10,8 +10,6 @@ use std::{
     ffi::OsString,
     fs::{self, File},
     io::{BufReader, Error, Read, Result},
-    // os::fd::AsFd,
-    // os::fd::BorrowedFd,
     path::Path,
 };
 
@@ -56,7 +54,7 @@ fn find_noir_files(dir_path: &Path) -> Result<Vec<File>> {
                     let _ = std::fs::copy(path, out_path);
                     results.push(file);
                     names.push(name.clone());
-                    println!("File names: {:#?}", &names);
+                    println!("Noir files found: {:#?}", &names);
                 }
             }
         }
@@ -73,9 +71,9 @@ fn find_noir_files(dir_path: &Path) -> Result<Vec<File>> {
  */
 
 // can this return a Vec of tuples (Token, Span) ?
-fn collect_tokens(temp_noir_files: &Vec<File>) -> Option<Tokens> {
+fn collect_tokens(temp_noir_files: &Vec<File>) -> Option<Vec<SpannedToken>> {
     println!("Searching for mutable tokens...");
-    let tokens: Tokens;
+    let mut tokens = Vec::new();
     if temp_noir_files.is_empty() {
         None
     } else {
@@ -84,10 +82,8 @@ fn collect_tokens(temp_noir_files: &Vec<File>) -> Option<Tokens> {
                 let mut buf_reader = BufReader::new(file);
                 let mut contents = String::new();
                 let _res = buf_reader.read_to_string(&mut contents);
-                let (tokens, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
-
-                let a = tokens.0.iter();
-                let t = a.map(|st| st.to_span());
+                let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
+                tokens.extend(t.0);
             }
         }
         Some(tokens)
@@ -95,35 +91,48 @@ fn collect_tokens(temp_noir_files: &Vec<File>) -> Option<Tokens> {
 }
 
 // Given a SpannedToken, filter for mutable tokens. If found, return a tuple of the opposite Token and the original span
-fn token_mutator(input: SpannedToken) -> Option<(Token, Span)> {
+fn token_mutator(input: SpannedToken) -> Option<SpannedToken> {
     match input.token() {
-        Token::NotEqual => return Some((Token::Equal, input.to_span())),
+        Token::NotEqual => return Some(SpannedToken::new(Token::Equal, input.to_span())),
+        Token::Equal => return Some(SpannedToken::new(Token::NotEqual, input.to_span())),
         _ => None,
     }
 }
 
+// fn extract_tokens_and_spans(tokens: Tokens) -> Vec<(Token, Span)> {
+//     tokens
+//         .0
+//         .into_iter()
+//         .map(|spanned_token| (spanned_token.clone().into_token(), spanned_token.to_span()))
+//         .collect()
+// }
+
+// fn extract_spanned_tokens(tokens: Tokens) -> Vec<SpannedToken> {
+//     tokens.0
+// }
+
 // fn mutate(input: &mut SpannedToken) -> SpannedToken {}
 
 fn run_test_suite() {
-    unimplemented!()
+    // unimplemented!()
 }
 
 pub async fn run_cli() -> std::io::Result<()> {
-    // println!("Releasing the mutants...");
-
     let _args = Cli::parse();
-
     println!("Searching for Noir files...");
     let copied_noir_files = find_noir_files(Path::new("."))?;
-    println!("Noir files found: {:#?}", &copied_noir_files.len());
-
-    // handle this error better
-    let mut tokens = collect_tokens(&copied_noir_files).unwrap();
-
+    // handle this error/unwrap better
+    let tokens = collect_tokens(&copied_noir_files).unwrap();
     let mut mutated_tokens: Vec<SpannedToken> = vec![];
-    for t in tokens.0 {
-        mutated_tokens.push(t);
+    for t in tokens.clone() {
+        let result = token_mutator(t.clone());
+        match result {
+            None => continue,
+            Some(st) => mutated_tokens.push(st),
+        }
     }
+    println!("Original Tokens: {:#?}", tokens);
+    println!("Mutated Tokens: {:#?}", mutated_tokens);
 
     // @note multithreaded processing of token Vec with rayon
     mutated_tokens.par_iter_mut().for_each(|item| {
