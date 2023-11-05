@@ -60,7 +60,7 @@ for t in tokens
     // The optional path to the file for writing output. By default, output will by written to stdout
     // output: std::path::PathBuf,
 
-## Noir Compiler
+## Noir Compiler Notes
 //! The noir compiler is separated into the following passes which are listed
 //! in order in square brackets. The inputs and outputs of each pass are also given:
 //!
@@ -68,3 +68,57 @@ for t in tokens
 //!
 //! After the monomorphized ast is created, it is passed to the noirc_evaluator crate to convert it to SSA form,
 //! perform optimizations, convert to ACIR and eventually prove/verify the program.
+
+## Tracking & reporting
+- how many mutants were destroyed
+- how many mutants survived, and which ones (location in source code)
+
+remember to copy noir source files first, and mutate those!
+
+to write to a file, use std::fs::OpenOptions:
+    use std::fs::OpenOptions;
+    let file = OpenOptions::new().read(true).open("foo.txt");
+
+## Diagrams
+
+sequenceDiagram
+    actor User
+    User->>Cli: Mutate! (Args & Opts)
+    Cli->>Core: Run (with config)
+    Core->>Src: Find .nr files
+    Src-->Core: Here you go
+    Core->>Copies: Make copies
+    Core->>Mutator: Mutate Tokens
+    Mutator->>Copies: Fetch Copies
+    Copies-->Mutator: copies
+
+## Mutation rules
+
+    =   -->   !=
+    !=  -->   =
+    >   -->   <=
+    >=  -->   <
+    <   -->   >=
+    <=  -->   >
+    &   -->   |
+    |   -->   &
+    ^   -->   &
+    <<  -->   >>
+    >>  -->   <<
+    +   -->   -
+    -   -->   +
+    *   -->   /
+    /   -->   *
+    %   -->   *
+
+### Noir shorthand operators:
+    +=   -->  -=
+    -=   -->  +=
+    *=   -->  /=
+    /=   -->  *=
+    %=   -->  *=
+    &=   -->  |=
+    |=   -->  &=
+    ^=   -->  &=
+    <<=  -->  >>=
+    >>=  -->  <<=
