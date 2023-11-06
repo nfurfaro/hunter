@@ -27,7 +27,6 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         replace_bytes(
             &mut original_bytes,
             m.start() as usize,
-            m.end() as usize,
             m.string_as_bytes(),
         );
 
