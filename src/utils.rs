@@ -76,27 +76,101 @@ pub fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
     }
 }
 
+// pub fn replace_bytes(
+//     original_bytes: &mut Vec<u8>,
+//     start_index: usize,
+//     end_index: usize,
+//     replacement: &[u8],
+// ) {
+//     if end_index > start_index {
+//         let target_len = end_index - start_index;
+//         let replacement_len = replacement.len();
+
+//         if target_len == replacement_len {
+//             original_bytes[start_index..end_index].copy_from_slice(replacement);
+//         } else if target_len > replacement_len {
+//             original_bytes.drain(start_index..(start_index + replacement_len));
+//             original_bytes.splice(start_index..start_index, replacement.iter().cloned());
+//         } else {
+//             let difference = replacement_len - target_len;
+//             original_bytes.splice(start_index..end_index, replacement.iter().cloned());
+//             original_bytes.splice(end_index..end_index, (0..difference).map(|_| 0));
+//         }
+//     }
+// }
+
 pub fn replace_bytes(
     original_bytes: &mut Vec<u8>,
     start_index: usize,
     end_index: usize,
     replacement: &[u8],
 ) {
-    if end_index > start_index {
-        let target_len = end_index - start_index;
-        let replacement_len = replacement.len();
+    assert_eq!(end_index - start_index, replacement.len(), "Replacement length must be equal to the length of the slice being replaced");
 
-        if target_len == replacement_len {
-            original_bytes[start_index..end_index].copy_from_slice(replacement);
-        } else if target_len > replacement_len {
-            original_bytes.drain(start_index..(start_index + replacement_len));
-            original_bytes.splice(start_index..start_index, replacement.iter().cloned());
-        } else {
-            let difference = replacement_len - target_len;
-            original_bytes.splice(start_index..end_index, replacement.iter().cloned());
-            // println!("Original Bytes: {:?}", original_bytes);
-            original_bytes.splice(end_index..end_index, (0..difference).map(|_| 0));
-            // println!("Mutated Bytes: {:?}", original_bytes);
-        }
+    for i in 0..replacement.len() {
+        original_bytes[start_index + i] = replacement[i];
     }
+}
+
+
+
+#[test]
+fn test_replace_bytes2() {
+    let mut original_bytes = "assert(a == b);".as_bytes().to_vec();
+    let replacement = "!=".as_bytes().to_vec();
+    println!("Replacement len: {}", replacement.len());
+    let start_index = 9;
+    let end_index = 11;
+
+    replace_bytes(&mut original_bytes, start_index, end_index, &replacement);
+
+    assert_eq!(original_bytes, "assert(a != b);".as_bytes().to_vec());
+}
+
+#[test]
+fn test_replace_bytes_with_different_operator() {
+    let mut original_bytes = "assert(a == b);".as_bytes().to_vec();
+    let replacement = ">=".as_bytes().to_vec();
+    let start_index = 9;
+    let end_index = 11;
+
+    replace_bytes(&mut original_bytes, start_index, end_index, &replacement);
+
+    assert_eq!(original_bytes, "assert(a >= b);".as_bytes().to_vec());
+}
+
+#[test]
+#[should_panic(expected = "Replacement length must be equal to the length of the slice being replaced")]
+fn test_replace_bytes_with_single_character_operator() {
+    let mut original_bytes = "assert(a == b);".as_bytes().to_vec();
+    let replacement = ">".as_bytes().to_vec();
+    let start_index = 9;
+    let end_index = 11;
+
+    replace_bytes(&mut original_bytes, start_index, end_index, &replacement);
+
+    assert_eq!(original_bytes, "assert(a > b);".as_bytes().to_vec());
+}
+
+#[test]
+fn test_replace_bytes_in_different_position() {
+    let mut original_bytes = "assert(a == b);".as_bytes().to_vec();
+    let replacement = "!=".as_bytes().to_vec();
+    let start_index = 7;
+    let end_index = 9;
+
+    replace_bytes(&mut original_bytes, start_index, end_index, &replacement);
+
+    assert_eq!(original_bytes, "assert(!=== b);".as_bytes().to_vec());
+}
+
+#[test]
+#[should_panic(expected = "Replacement length must be equal to the length of the slice being replaced")]
+fn test_replace_bytes_with_longer_replacement() {
+    let mut original_bytes = "assert(a == b);".as_bytes().to_vec();
+    let replacement = "!==".as_bytes().to_vec();
+    let start_index = 9;
+    let end_index = 11;
+
+    replace_bytes(&mut original_bytes, start_index, end_index, &replacement);
 }
