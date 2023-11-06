@@ -1,14 +1,19 @@
 use clap::Parser;
-use noirc_errors::Span;
+// use noirc_errors::Span;
 // use anyhow::Result;
 
-use noirc_frontend::token::{SpannedToken, Token, Tokens};
+// use noirc_frontend::token::{SpannedToken, Token, Tokens};
+use noirc_frontend::token::{SpannedToken, Token};
 use std::io::Write;
+
 use std::{
-    ffi::OsString,
-    fs::{self, write, File, OpenOptions},
-    io::{BufReader, Error, Read, Result},
+    // ffi::OsString,
+    // fs::{self, write, File, OpenOptions},
+    fs::{self, File, OpenOptions},
+    // io::{BufReader, Error, Read, Result},
+    io::{BufReader, Read, Result},
     path::{Path, PathBuf},
+    process::Command,
 };
 
 extern crate rayon;
@@ -25,27 +30,27 @@ struct Cli {
     test_dir: Option<std::path::PathBuf>,
 }
 
-fn token_filter(token: Token) -> Option<Token> {
-    match token {
-        Token::Equal
-        | Token::NotEqual
-        | Token::Greater
-        | Token::GreaterEqual
-        | Token::Less
-        | Token::LessEqual
-        | Token::Ampersand
-        | Token::Pipe
-        | Token::Caret
-        | Token::ShiftLeft
-        | Token::ShiftRight
-        | Token::Plus
-        | Token::Minus
-        | Token::Star
-        | Token::Slash
-        | Token::Percent => Some(token),
-        _ => None,
-    }
-}
+// fn token_filter(token: Token) -> Option<Token> {
+//     match token {
+//         Token::Equal
+//         | Token::NotEqual
+//         | Token::Greater
+//         | Token::GreaterEqual
+//         | Token::Less
+//         | Token::LessEqual
+//         | Token::Ampersand
+//         | Token::Pipe
+//         | Token::Caret
+//         | Token::ShiftLeft
+//         | Token::ShiftRight
+//         | Token::Plus
+//         | Token::Minus
+//         | Token::Star
+//         | Token::Slash
+//         | Token::Percent => Some(token),
+//         _ => None,
+//     }
+// }
 
 pub async fn run_cli() -> std::io::Result<()> {
     let _args = Cli::parse();
@@ -94,10 +99,10 @@ fn parallel_process_mutated_tokens(mutated_tokens_with_paths: &mut Vec<(SpannedT
             file.read_to_string(&mut contents).unwrap();
 
             let mut original_bytes = contents.into_bytes();
-            println!("Original Bytes: {:?}", original_bytes);
+            // println!("Original Bytes: {:?}", original_bytes);
             // @todo fix unwrap here
             let replacement_bytes = get_bytes_from_token(token.clone().into_token());
-            println!("Replacement Bytes: {:?}", replacement_bytes.unwrap());
+            // println!("Replacement Bytes: {:?}", replacement_bytes.unwrap());
 
             // mutate original_bytes
             replace_bytes(
@@ -115,7 +120,24 @@ fn parallel_process_mutated_tokens(mutated_tokens_with_paths: &mut Vec<(SpannedT
             // modify string of contents, then write back to temp file
             file.write_all(contents.as_bytes()).unwrap();
 
-            // run_test_suite()
+            println!("Current dir: {:?}", Command::new("pwd").output().unwrap());
+
+            // run_test_suite
+            let output = Command::new("nargo test")
+                // .arg("--workspace")
+                .output()
+                .expect("Failed to execute command");
+
+            // Check the output
+            if output.status.success() {
+                // Command was successful
+                let stdout = String::from_utf8_lossy(&output.stdout);
+                println!("Command output: {}", stdout);
+            } else {
+                // Command failed
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                eprintln!("Command failed with error: {}", stderr);
+            }
         });
 }
 
@@ -125,10 +147,6 @@ fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
         Token::NotEqual => Some("!=".as_bytes()),
         _ => None,
     }
-}
-
-fn bytes_to_string(bytes: &[u8]) -> String {
-    String::from_utf8_lossy(bytes).into_owned()
 }
 
 fn replace_bytes(
@@ -149,9 +167,9 @@ fn replace_bytes(
         } else {
             let difference = replacement_len - target_len;
             original_bytes.splice(start_index..end_index, replacement.iter().cloned());
-            println!("Original Bytes: {:?}", original_bytes);
+            // println!("Original Bytes: {:?}", original_bytes);
             original_bytes.splice(end_index..end_index, (0..difference).map(|_| 0));
-            println!("Mutated Bytes: {:?}", original_bytes);
+            // println!("Mutated Bytes: {:?}", original_bytes);
         }
     }
 }
