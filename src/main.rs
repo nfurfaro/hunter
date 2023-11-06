@@ -1,6 +1,7 @@
 // #![allow(unused)]
 use anyhow::Result;
 pub mod filter;
+pub mod parallel;
 pub mod utils;
 
 mod cli;
