@@ -1,5 +1,6 @@
 use noirc_frontend::token::{SpannedToken, Token};
 use std::{
+    borrow::Cow,
     fs::{self, File, OpenOptions},
     io::{BufReader, Error, Read, Result},
     path::{Path, PathBuf},
@@ -45,9 +46,10 @@ pub fn find_and_copy_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>>
 
 pub fn collect_tokens(
     temp_noir_files: &Vec<(File, PathBuf)>,
-) -> Option<Vec<(SpannedToken, PathBuf)>> {
+) -> Option<Vec<(SpannedToken, Cow<str>, PathBuf)>> {
     println!("Searching for mutable tokens...");
-    let mut tokens: Vec<(SpannedToken, PathBuf)> = Vec::new();
+    let mut tokens: Vec<(SpannedToken, Cow<str>, PathBuf)> = Vec::new();
+
     if temp_noir_files.is_empty() {
         return None;
     } else {
@@ -55,10 +57,13 @@ pub fn collect_tokens(
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
+
+            let path_cow = Cow::Borrowed(path.to_str().unwrap());
+
             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
             tokens.extend(
                 t.0.iter()
-                    .map(|spanned_token| (spanned_token.clone(), path.clone())),
+                    .map(|spanned_token| (spanned_token.clone(), path_cow.clone(), path.clone())),
             );
         }
 

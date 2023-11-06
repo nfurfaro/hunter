@@ -1,23 +1,11 @@
-use crate::filter::token_mutator;
+use crate::mutant::{mutant_builder, Mutant};
 use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
+use clap::builder::{IntoResettable, PathBufValueParser};
 use clap::Parser;
-// use noirc_errors::Span;
-// use anyhow::Result;
-
-// use noirc_frontend::token::{SpannedToken, Token, Tokens};
 use noirc_frontend::token::SpannedToken;
-use std::io::Write;
 
-use std::{
-    // ffi::OsString,
-    // fs::{self, write, File, OpenOptions},
-    fs::{self, File, OpenOptions},
-    // io::{BufReader, Error, Read, Result},
-    io::{BufReader, Read, Result},
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::path::{Path, PathBuf};
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
@@ -32,28 +20,25 @@ struct Cli {
 
 pub async fn run_cli() -> std::io::Result<()> {
     let _args = Cli::parse();
+
+    // collect all noir files in the current directory recursively
     println!("Searching for Noir files...");
     let copied_noir_files = find_and_copy_noir_files(Path::new("."))?;
-    // println!("Files found: {:#?}", copied_noir_files);
 
-    // handle this error/unwrap better
+    // @todo handle unwrap
+    // get all the tokens from the collected noir files, along with the path to their origin file
     let tokens_with_paths = collect_tokens(&copied_noir_files).unwrap();
-
-    let mut mutated_tokens_with_paths: Vec<(SpannedToken, PathBuf)> = vec![];
-
-    for entry in tokens_with_paths.clone() {
-        let result = token_mutator(entry.0.clone());
-        match result {
+    let mut mutants: Vec<Mutant> = vec![];
+    for entry in tokens_with_paths {
+        let path = entry.1.as_ref();
+        let maybe_mutant = mutant_builder(entry.0.clone(), Path::new(path));
+        match maybe_mutant {
             None => continue,
-            Some(st) => mutated_tokens_with_paths.push((st, entry.1)),
+            Some(m) => mutants.push(m),
         }
     }
-    // println!(
-    //     "Mutated Tokens with paths: {:#?}",
-    //     mutated_tokens_with_paths
-    // );
 
-    parallel_process_mutated_tokens(&mut mutated_tokens_with_paths);
+    parallel_process_mutated_tokens(&mut mutants);
 
     Ok(())
 }
