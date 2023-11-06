@@ -56,7 +56,7 @@ pub async fn run_cli() -> std::io::Result<()> {
     let _args = Cli::parse();
     println!("Searching for Noir files...");
     let copied_noir_files = find_and_copy_noir_files(Path::new("."))?;
-    println!("Files found: {:#?}", copied_noir_files);
+    // println!("Files found: {:#?}", copied_noir_files);
 
     // handle this error/unwrap better
     let tokens_with_paths = collect_tokens(&copied_noir_files).unwrap();
@@ -70,10 +70,10 @@ pub async fn run_cli() -> std::io::Result<()> {
             Some(st) => mutated_tokens_with_paths.push((st, entry.1)),
         }
     }
-    println!(
-        "Mutated Tokens with paths: {:#?}",
-        mutated_tokens_with_paths
-    );
+    // println!(
+    //     "Mutated Tokens with paths: {:#?}",
+    //     mutated_tokens_with_paths
+    // );
 
     parallel_process_mutated_tokens(&mut mutated_tokens_with_paths);
 
@@ -84,20 +84,15 @@ fn parallel_process_mutated_tokens(mutated_tokens_with_paths: &mut Vec<(SpannedT
     mutated_tokens_with_paths
         .par_iter_mut()
         .for_each(|(token, path)| {
-            println!("Hello from a thread");
-
             let mut contents = String::new();
-
             // Open the file at the given path in write mode
             let mut file = OpenOptions::new()
                 .write(true)
                 .read(true)
                 .open(&path.as_path())
                 .expect("File path doesn't seem to work...");
-
             // Read the file's contents into a String
             file.read_to_string(&mut contents).unwrap();
-
             let mut original_bytes = contents.into_bytes();
             // println!("Original Bytes: {:?}", original_bytes);
             // @todo fix unwrap here
@@ -119,8 +114,6 @@ fn parallel_process_mutated_tokens(mutated_tokens_with_paths: &mut Vec<(SpannedT
 
             // modify string of contents, then write back to temp file
             file.write_all(contents.as_bytes()).unwrap();
-
-            println!("Current dir: {:?}", Command::new("pwd").output().unwrap());
 
             // run_test_suite
             let output = Command::new("nargo test")
