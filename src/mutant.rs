@@ -150,6 +150,110 @@ mod tests {
     use std::path::PathBuf;
 
     #[test]
+    fn test_mutant_methods() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Equal;
+        let span = (0, 1);
+        let mutant = Mutant {
+            token: token.clone(),
+            string: "==".to_string(),
+            span,
+            path: &path,
+        };
+
+        // Test token method
+        assert_eq!(mutant.token(), token);
+
+        // Test string method
+        assert_eq!(mutant.string(), "==");
+
+        // Test span method
+        assert_eq!(mutant.span(), span);
+
+        // Test path method
+        assert_eq!(mutant.path(), &path);
+
+        // Test start method
+        assert_eq!(mutant.start(), 0);
+
+        // Test end method
+        assert_eq!(mutant.end(), 1);
+
+        // Test string_as_bytes method
+        assert_eq!(mutant.string_as_bytes(), b"==");
+    }
+
+    #[test]
+    fn test_mutant_methods_complex() {
+        let path = PathBuf::from("complex/path/to/test.noir");
+        let token = Token::Plus;
+        let span = (10, 20);
+        let mutant = Mutant {
+            token: token.clone(),
+            string: "+".to_string(),
+            span,
+            path: &path,
+        };
+
+        // Test token method
+        assert_eq!(mutant.token(), token);
+
+        // Test string method
+        assert_eq!(mutant.string(), "+");
+
+        // Test span method
+        assert_eq!(mutant.span(), span);
+
+        // Test path method
+        assert_eq!(mutant.path(), &path);
+
+        // Test start method
+        assert_eq!(mutant.start(), 10);
+
+        // Test end method
+        assert_eq!(mutant.end(), 20);
+
+        // Test string_as_bytes method
+        assert_eq!(mutant.string_as_bytes(), b"+");
+    }
+
+    #[test]
+    fn test_mutant_methods_extreme() {
+        let path = PathBuf::from(
+            "extremely/long/and/complex/path/to/the/test/file/for/testing/purposes.noir",
+        );
+        let token = Token::Star;
+        let span = (1000, 2000);
+        let mutant = Mutant {
+            token: token.clone(),
+            string: "*".to_string(),
+            span,
+            path: &path,
+        };
+
+        // Test token method
+        assert_eq!(mutant.token(), token);
+
+        // Test string method
+        assert_eq!(mutant.string(), "*");
+
+        // Test span method
+        assert_eq!(mutant.span(), span);
+
+        // Test path method
+        assert_eq!(mutant.path(), &path);
+
+        // Test start method
+        assert_eq!(mutant.start(), 1000);
+
+        // Test end method
+        assert_eq!(mutant.end(), 2000);
+
+        // Test string_as_bytes method
+        assert_eq!(mutant.string_as_bytes(), b"*");
+    }
+
+    #[test]
     fn test_mutant_builder_equal() {
         let path = PathBuf::from("test.noir");
         let token = Token::Equal;
