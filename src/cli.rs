@@ -1,3 +1,4 @@
+use crate::filter::token_mutator;
 use clap::Parser;
 // use noirc_errors::Span;
 // use anyhow::Result;
@@ -29,28 +30,6 @@ struct Cli {
     #[clap(short, long)]
     test_dir: Option<std::path::PathBuf>,
 }
-
-// fn token_filter(token: Token) -> Option<Token> {
-//     match token {
-//         Token::Equal
-//         | Token::NotEqual
-//         | Token::Greater
-//         | Token::GreaterEqual
-//         | Token::Less
-//         | Token::LessEqual
-//         | Token::Ampersand
-//         | Token::Pipe
-//         | Token::Caret
-//         | Token::ShiftLeft
-//         | Token::ShiftRight
-//         | Token::Plus
-//         | Token::Minus
-//         | Token::Star
-//         | Token::Slash
-//         | Token::Percent => Some(token),
-//         _ => None,
-//     }
-// }
 
 pub async fn run_cli() -> std::io::Result<()> {
     let _args = Cli::parse();
@@ -167,13 +146,6 @@ fn replace_bytes(
     }
 }
 
-// @todo refactor this into  function to:
-// - find and return files
-// - copy files into a new directory
-
-// fn get_noir_files(dir_path: &Path) -> Result<Vec<File>> {}
-// fn copy_temp_noir_files(Result<Vec<File>>) -> Result<Vec<File>> {}
-
 fn find_and_copy_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
     let mut results: Vec<(File, PathBuf)> = vec![];
     let mut names: Vec<String> = vec![];
@@ -232,51 +204,3 @@ fn collect_tokens(temp_noir_files: &Vec<(File, PathBuf)>) -> Option<Vec<(Spanned
         Some(tokens)
     }
 }
-
-// fn collect_tokens(temp_noir_files: &Vec<(File, PathBuf)>) -> Option<Vec<(SpannedToken, PathBuf)>> {
-//     println!("Searching for mutable tokens...");
-//     let mut tokens: Vec<(SpannedToken, PathBuf)> = Vec::new();
-//     if temp_noir_files.is_empty() {
-//         return None;
-//     } else {
-//         for (file, path) in temp_noir_files {
-//             let mut buf_reader = BufReader::new(file);
-//             let mut contents = String::new();
-//             let _res = buf_reader.read_to_string(&mut contents);
-//             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
-//             tokens.extend(
-//                 t.0.iter()
-//                     .map(|spanned_token| (spanned_token.clone(), path)),
-//             );
-//         }
-
-//         Some(tokens)
-//     }
-// }
-
-// Given a SpannedToken, filter for mutable tokens. If found, return a tuple of the opposite Token and the original span
-fn token_mutator(input: SpannedToken) -> Option<SpannedToken> {
-    match input.token() {
-        Token::NotEqual => return Some(SpannedToken::new(Token::Equal, input.to_span())),
-        Token::Equal => return Some(SpannedToken::new(Token::NotEqual, input.to_span())),
-        _ => None,
-    }
-}
-
-// fn extract_tokens_and_spans(tokens: Tokens) -> Vec<(Token, Span)> {
-//     tokens
-//         .0
-//         .into_iter()
-//         .map(|spanned_token| (spanned_token.clone().into_token(), spanned_token.to_span()))
-//         .collect()
-// }
-
-// fn extract_spanned_tokens(tokens: Tokens) -> Vec<SpannedToken> {
-//     tokens.0
-// }
-
-// fn mutate(input: &mut SpannedToken) -> SpannedToken {}
-
-// fn run_test_suite() {
-//     // unimplemented!()
-// }
