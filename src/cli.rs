@@ -1,11 +1,9 @@
 use crate::mutant::{mutant_builder, Mutant};
 use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
-use clap::builder::{IntoResettable, PathBufValueParser};
 use clap::Parser;
-use noirc_frontend::token::SpannedToken;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
@@ -30,7 +28,7 @@ pub async fn run_cli() -> std::io::Result<()> {
     let tokens_with_paths = collect_tokens(&copied_noir_files).unwrap();
     let mut mutants: Vec<Mutant> = vec![];
     for entry in tokens_with_paths {
-        let path = entry.1.as_ref();
+        let path = entry.1.as_path();
         let maybe_mutant = mutant_builder(entry.0.clone(), Path::new(path));
         match maybe_mutant {
             None => continue,

@@ -1,7 +1,6 @@
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{BufReader, Read, Result, Write},
-    path::{Path, PathBuf},
+    fs::OpenOptions,
+    io::{Read, Write},
     process::Command,
 };
 
@@ -23,10 +22,6 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         // Read the file's contents into a String
         file.read_to_string(&mut contents).unwrap();
         let mut original_bytes = contents.into_bytes();
-        // println!("Original Bytes: {:?}", original_bytes);
-        // @todo fix unwrap here
-        // let replacement_bytes = get_bytes_from_token(m.token());
-        // println!("Replacement Bytes: {:?}", replacement_bytes.unwrap());
 
         // mutate original_bytes
         replace_bytes(
@@ -45,8 +40,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         file.write_all(contents.as_bytes()).unwrap();
 
         // run_test_suite
-        let output = Command::new("nargo test")
-            // .arg("--workspace")
+        let output = Command::new("nargo")
+            .arg("--version")
             .output()
             .expect("Failed to execute command");
 

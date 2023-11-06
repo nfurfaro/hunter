@@ -1,15 +1,6 @@
 use noirc_frontend::token::{SpannedToken, Token};
 use std::path::Path;
 
-// Given a SpannedToken, filter for mutable tokens. If found, return a tuple of the opposite Token and the original span
-pub fn token_mutator(input: SpannedToken) -> Option<SpannedToken> {
-    match input.token() {
-        Token::NotEqual => return Some(SpannedToken::new(Token::Equal, input.to_span())),
-        Token::Equal => return Some(SpannedToken::new(Token::NotEqual, input.to_span())),
-        _ => None,
-    }
-}
-
 pub struct Mutant<'a> {
     token: Token,
     string: String,
@@ -19,11 +10,11 @@ pub struct Mutant<'a> {
 
 impl<'a> Mutant<'a> {
     pub fn token(&self) -> Token {
-        self.token
+        self.token.clone()
     }
 
     pub fn string(&self) -> String {
-        self.string
+        self.string.clone()
     }
 
     pub fn span(&self) -> (u32, u32) {
