@@ -1,4 +1,4 @@
-use noirc_frontend::token::{SpannedToken, Token};
+use noirc_frontend::token::Token;
 use std::path::Path;
 
 pub struct Mutant<'a> {
@@ -39,11 +39,9 @@ impl<'a> Mutant<'a> {
 }
 
 // consider processing a token stream with this function.
-pub fn mutant_builder(spanned_token: SpannedToken, path: &Path) -> Option<Mutant> {
-    let token = spanned_token.token();
-    let span = spanned_token.to_span();
-    let start = span.start();
-    let end = span.end();
+pub fn mutant_builder(token: Token, span: (u32, u32), path: &Path) -> Option<Mutant> {
+    let start = span.0;
+    let end = span.1;
     match token {
         Token::Equal => Some(Mutant {
             token: Token::NotEqual,
@@ -142,5 +140,194 @@ pub fn mutant_builder(spanned_token: SpannedToken, path: &Path) -> Option<Mutant
             path,
         }),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use noirc_frontend::token::Token;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_mutant_builder_equal() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Equal;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::NotEqual);
+        assert_eq!(mutant.string(), "!=");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_not_equal() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::NotEqual;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Equal);
+        assert_eq!(mutant.string(), "==");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_greater() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Greater;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::LessEqual);
+        assert_eq!(mutant.string(), "<=");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_greater_equal() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::GreaterEqual;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Less);
+        assert_eq!(mutant.string(), "<");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_less() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Less;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::GreaterEqual);
+        assert_eq!(mutant.string(), ">=");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_less_equal() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::LessEqual;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Greater);
+        assert_eq!(mutant.string(), ">");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_ampersand() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Ampersand;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Pipe);
+        assert_eq!(mutant.string(), "|");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_pipe() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Pipe;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Ampersand);
+        assert_eq!(mutant.string(), "&");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_caret() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Caret;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Ampersand);
+        assert_eq!(mutant.string(), "&");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_plus() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Plus;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Minus);
+        assert_eq!(mutant.string(), "-");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_minus() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Minus;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Plus);
+        assert_eq!(mutant.string(), "+");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_star() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Star;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Slash);
+        assert_eq!(mutant.string(), "/");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_slash() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Slash;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Star);
+        assert_eq!(mutant.string(), "*");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
+    }
+
+    #[test]
+    fn test_mutant_builder_percent() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Percent;
+        let span = (0, 1);
+        let mutant = mutant_builder(token, span, &path).unwrap();
+        assert_eq!(mutant.token(), Token::Star);
+        assert_eq!(mutant.string(), "*");
+        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.path(), &path);
     }
 }

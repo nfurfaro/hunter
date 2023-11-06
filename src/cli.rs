@@ -29,7 +29,13 @@ pub async fn run_cli() -> std::io::Result<()> {
     let mut mutants: Vec<Mutant> = vec![];
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
-        let maybe_mutant = mutant_builder(entry.0.clone(), Path::new(path));
+        let spanned_token = entry.0.clone();
+        let span = spanned_token.to_span();
+        let maybe_mutant = mutant_builder(
+            spanned_token.token().clone(),
+            (span.start(), span.end()),
+            Path::new(path),
+        );
         match maybe_mutant {
             None => continue,
             Some(m) => mutants.push(m),

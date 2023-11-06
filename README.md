@@ -95,7 +95,7 @@ sequenceDiagram
 ## Mutation rules
 
     ==  -->   !=
-    !=  -->   =
+    !=  -->   ==
     >   -->   <=
     >=  -->   <
     <   -->   >=
