@@ -3,7 +3,10 @@ use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
 use clap::Parser;
 
-use std::path::Path;
+use std::{
+    path::Path,
+    io::Result,
+};
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
@@ -16,7 +19,7 @@ struct Cli {
     test_dir: Option<std::path::PathBuf>,
 }
 
-pub async fn run_cli() -> std::io::Result<()> {
+pub async fn run_cli() -> Result<()> {
     let _args = Cli::parse();
 
     // collect all noir files in the current directory recursively
@@ -45,4 +48,16 @@ pub async fn run_cli() -> std::io::Result<()> {
     parallel_process_mutated_tokens(&mut mutants);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_run_cli() -> Result<()> {
+        let result = run_cli().await;
+        assert!(result.is_ok());
+        Ok(())
+    }
 }

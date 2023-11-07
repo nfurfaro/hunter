@@ -24,7 +24,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         let mut original_bytes = contents.into_bytes();
 
         // mutate original_bytes
-        replace_bytes(&mut original_bytes, m.start() as usize, m.string_as_bytes());
+        replace_bytes(&mut original_bytes, m.start() as usize, &m.bytes());
 
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
