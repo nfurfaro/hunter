@@ -23,7 +23,6 @@ pub async fn run_cli() -> Result<()> {
     println!("Searching for Noir files...");
     let noir_files = find_noir_files(Path::new("."))?;
 
-    println!(" Noir files Found {:#?}", noir_files);
 
     // @todo handle unwrap
     // get all the tokens from the collected noir files, along with the path to their origin file
@@ -47,7 +46,10 @@ pub async fn run_cli() -> Result<()> {
         }
     }
 
-    parallel_process_mutated_tokens(&mut mutants);
+    let outputs = parallel_process_mutated_tokens(&mut mutants);
+    for output in outputs {
+        println!("{}", output);
+    }
 
     Ok(())
 }

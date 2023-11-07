@@ -185,10 +185,11 @@ mod tests {
         let token = Token::Equal;
         let span = (0, 1);
         let mutant = Mutant {
+            id: 0,
             token: token.clone(),
             bytes: "==".as_bytes().to_vec(),
             span,
-            path: &path,
+            src_path: &path,
         };
 
         // Test token method
@@ -218,10 +219,11 @@ mod tests {
         let token = Token::Plus;
         let span = (10, 20);
         let mutant = Mutant {
+            id: 42,
             token: token.clone(),
             bytes: "+".as_bytes().to_vec(),
             span,
-            path: &path,
+            src_path: &path,
         };
 
         // Test token method
@@ -253,10 +255,11 @@ mod tests {
         let token = Token::Star;
         let span = (1000, 2000);
         let mutant = Mutant {
+            id: 42,
             token: token.clone(),
             bytes: "*".as_bytes().to_vec(),
             span,
-            path: &path,
+            src_path: &path,
         };
 
         // Test token method
@@ -285,7 +288,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Equal;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::NotEqual);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -300,7 +304,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::NotEqual;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Equal);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -315,7 +320,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Greater;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::LessEqual);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -330,7 +336,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::GreaterEqual;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Less);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -345,7 +352,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Less;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::GreaterEqual);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -360,7 +368,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::LessEqual;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Greater);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -375,7 +384,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Ampersand;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Pipe);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -390,7 +400,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Pipe;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Ampersand);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -405,7 +416,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Caret;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Ampersand);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -420,7 +432,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Plus;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Minus);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -435,7 +448,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Minus;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Plus);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -450,7 +464,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Star;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Slash);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -465,7 +480,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Slash;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Star);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
@@ -480,7 +496,8 @@ mod tests {
         let path = PathBuf::from("test.noir");
         let token = Token::Percent;
         let span = (0, 1);
-        let mutant = mutant_builder(token, span, &path).unwrap();
+        let id = 42;
+        let mutant = mutant_builder(id, token, span, &path).unwrap();
         assert_eq!(mutant.token(), Token::Star);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");

@@ -11,9 +11,8 @@ use crate::utils::*;
 extern crate rayon;
 use rayon::prelude::*;
 
-pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
-    mutants.par_iter_mut().for_each(|m| {
-        println!("Mutant: {:?}", m);
+pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) -> Vec<String> {
+    mutants.par_iter_mut().map(|m| {
         let mut contents = String::new();
         // Open the file at the given path in write mode
         let mut file = File::open(m.path()).expect("File path doesn't seem to work...");
@@ -29,7 +28,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             m.id(),
             file_name
         ));
-        println!("Temp file path: {:?}", temp_file_path);
+
         // Copy the file to the new location
         copy(m.path(), &temp_file_path).expect("Failed to copy file");
 
@@ -56,11 +55,11 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         if output.status.success() {
             // Command was successful
             let stdout = String::from_utf8_lossy(&output.stdout);
-            println!("Command output: {}", stdout);
+            stdout.into_owned()
         } else {
             // Command failed
             let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!("Command failed with error: {}", stderr);
+            format!("Command failed with error: {}", stderr)
         }
-    });
+    }).collect()
 }
