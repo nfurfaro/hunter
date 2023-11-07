@@ -3,10 +3,7 @@ use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
 use clap::Parser;
 
-use std::{
-    path::Path,
-    io::Result,
-};
+use std::{io::Result, path::Path};
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
@@ -28,7 +25,8 @@ pub async fn run_cli() -> Result<()> {
 
     // @todo handle unwrap
     // get all the tokens from the collected noir files, along with the path to their origin file
-    let tokens_with_paths = collect_tokens(&copied_noir_files).unwrap();
+    let tokens_with_paths = collect_tokens(&copied_noir_files)
+        .expect("No Noir files found... Are you in the right directory?");
     let mut mutants: Vec<Mutant> = vec![];
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
@@ -55,9 +53,8 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn test_run_cli() -> Result<()> {
-        let result = run_cli().await;
-        assert!(result.is_ok());
-        Ok(())
+    #[should_panic(expected = "No Noir files found... Are you in the right directory?")]
+    async fn test_run_cli() {
+        run_cli().await.unwrap();
     }
 }
