@@ -12,6 +12,7 @@ use rayon::prelude::*;
 
 pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     mutants.par_iter_mut().for_each(|m| {
+        println!("Mutant: {:?}", m);
         let mut contents = String::new();
         // Open the file at the given path in write mode
         let mut file = OpenOptions::new()
