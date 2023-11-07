@@ -23,8 +23,7 @@ pub async fn run_cli() -> Result<()> {
     println!("Searching for Noir files...");
     let noir_files = find_noir_files(Path::new("."))?;
 
-
-    println!("Found {:?} Noir files", noir_files);
+    println!(" Noir files Found {:#?}", noir_files);
 
     // @todo handle unwrap
     // get all the tokens from the collected noir files, along with the path to their origin file
@@ -36,7 +35,7 @@ pub async fn run_cli() -> Result<()> {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();
         let span = spanned_token.to_span();
-        let maybe_mutant = mutant_builder(
+        let maybe_mutant = mutant_builder(entry.2,
             spanned_token.token().clone(),
             (span.start(), span.end()),
             Path::new(path),

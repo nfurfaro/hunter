@@ -1,16 +1,34 @@
 use noirc_frontend::token::Token;
-use std::path::Path;
+use std::{fmt, path::Path};
 
 #[derive(Debug, Clone)]
 pub struct Mutant<'a> {
+    id: u32,
     token: Token,
     bytes: Vec<u8>,
     span: (u32, u32),
     src_path: &'a Path,
+}
 
+impl<'a> fmt::Display for Mutant<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Id: {:?}, Token: {:?}, Bytes: {:?}, Span: {:?}, Source Path: {:?}",
+            self.id,
+            self.token,
+            self.bytes,
+            self.span,
+            self.src_path.display()
+        )
+    }
 }
 
 impl<'a> Mutant<'a> {
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
     pub fn token(&self) -> Token {
         self.token.clone()
     }
@@ -37,104 +55,118 @@ impl<'a> Mutant<'a> {
 }
 
 // consider processing a token stream with this function.
-pub fn mutant_builder(token: Token, span: (u32, u32), src_path: &Path) -> Option<Mutant> {
-    let start = span.0;
-    let end = span.1;
+pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) -> Option<Mutant> {
     match token {
         Token::Equal => Some(Mutant {
+            id,
             token: Token::NotEqual,
             bytes: "!=".as_bytes().to_vec(),
             span,
             src_path,
         }),
         Token::NotEqual => Some(Mutant {
+            id,
             token: Token::Equal,
             bytes: "==".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Greater => Some(Mutant {
+            id,
             token: Token::LessEqual,
             bytes: "<=".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::GreaterEqual => Some(Mutant {
+            id,
             token: Token::Less,
             bytes: "<".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Less => Some(Mutant {
+            id,
             token: Token::GreaterEqual,
             bytes: ">=".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::LessEqual => Some(Mutant {
+            id,
             token: Token::Greater,
             bytes: ">".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Ampersand => Some(Mutant {
+            id,
             token: Token::Pipe,
             bytes: "|".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Pipe => Some(Mutant {
+            id,
             token: Token::Ampersand,
             bytes: "&".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Caret => Some(Mutant {
+            id,
             token: Token::Ampersand,
             bytes: "&".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::ShiftLeft => Some(Mutant {
+            id,
             token: Token::ShiftRight,
             bytes: ">>".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::ShiftRight => Some(Mutant {
+            id,
             token: Token::ShiftLeft,
             bytes: "<<".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Plus => Some(Mutant {
+            id,
             token: Token::Minus,
             bytes: "-".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Minus => Some(Mutant {
+            id,
             token: Token::Plus,
             bytes: "+".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Star => Some(Mutant {
+            id,
             token: Token::Slash,
             bytes: "/".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Slash => Some(Mutant {
+            id,
             token: Token::Star,
             bytes: "*".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         Token::Percent => Some(Mutant {
+            id,
             token: Token::Star,
             bytes: "*".as_bytes().to_vec(),
-            span: (start, end),
+            span,
             src_path,
         }),
         _ => None,

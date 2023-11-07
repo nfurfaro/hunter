@@ -28,7 +28,8 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
                 // @todo use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
                 if !path.starts_with("./temp") {
                     let file_name = entry.file_name().to_str().unwrap().to_owned();
-                    let temp_dir = Path::new("./temp").join(file_name.clone().trim_end_matches(".nr"));
+                    let temp_dir =
+                        Path::new("./temp").join(file_name.clone().trim_end_matches(".nr"));
                     fs::create_dir_all(&temp_dir)?;
 
                     // let out_path = Path::new("./temp").join(format!("_TEMPLATE_{}.nr", file_name.trim_end_matches(".nr")));
@@ -42,15 +43,45 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
     Ok(results)
 }
 
+// pub fn collect_tokens(
+//     temp_noir_files: &Vec<(File, PathBuf)>,
+// ) -> Option<Vec<(SpannedToken, &PathBuf, u32)>> {
+//     println!("Searching for mutable tokens...");
+//     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
+
+//     if temp_noir_files.is_empty() {
+//         return None;
+//     } else {
+//         let mut i = 1;
+//         for (file, path) in temp_noir_files {
+//             let mut buf_reader = BufReader::new(file);
+//             let mut contents = String::new();
+//             let _res = buf_reader.read_to_string(&mut contents);
+
+//             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
+//             tokens.extend(
+//                 t.0.iter()
+//                     .map(|spanned_token| (spanned_token.clone(), path, i)),
+//             );
+//             i += 1;
+//         }
+
+//         Some(tokens)
+//     }
+// }
+
+use std::cell::Cell;
+
 pub fn collect_tokens(
     temp_noir_files: &Vec<(File, PathBuf)>,
-) -> Option<Vec<(SpannedToken, &PathBuf)>> {
+) -> Option<Vec<(SpannedToken, &PathBuf, u32)>> {
     println!("Searching for mutable tokens...");
-    let mut tokens: Vec<(SpannedToken, &PathBuf)> = Vec::new();
+    let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
 
     if temp_noir_files.is_empty() {
         return None;
     } else {
+        let i = Cell::new(0);
         for (file, path) in temp_noir_files {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
@@ -59,7 +90,11 @@ pub fn collect_tokens(
             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
             tokens.extend(
                 t.0.iter()
-                    .map(|spanned_token| (spanned_token.clone(), path)),
+                    .map(|spanned_token| {
+                        let token = (spanned_token.clone(), path, i.get());
+                        i.set(i.get() + 1);
+                        token
+                    }),
             );
         }
 
@@ -127,7 +162,7 @@ mod tests {
         let file_path = dir.path().join("test.nr");
         let mut file = File::create(&file_path).unwrap();
         writeln!(file, "let x = 42;").unwrap();
-        let result = find_and_copy_noir_files(dir.path()).unwrap();
+        let result = find_noir_files(dir.path()).unwrap();
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].1.file_name().unwrap(), "_TEMP_test.nr");
         let copied_file_path = PathBuf::from("./temp/_TEMP_test.nr");
