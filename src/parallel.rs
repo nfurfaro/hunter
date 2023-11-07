@@ -23,7 +23,12 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         // Create a new path for the temporary file
         let file_stem = m.path().file_stem().unwrap().to_str().unwrap();
         let file_name = m.path().file_name().unwrap().to_str().unwrap();
-        let temp_file_path = PathBuf::from(format!("./temp/{}/_temp_{}_{}", file_stem, m.id(), file_name));
+        let temp_file_path = PathBuf::from(format!(
+            "./temp/{}/_temp_{}_{}",
+            file_stem,
+            m.id(),
+            file_name
+        ));
         println!("Temp file path: {:?}", temp_file_path);
         // Copy the file to the new location
         copy(m.path(), &temp_file_path).expect("Failed to copy file");
@@ -43,7 +48,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
 
         // run_test_suite
         let output = Command::new("nargo")
-            .arg("--version")
+            .arg("test")
             .output()
             .expect("Failed to execute command");
 

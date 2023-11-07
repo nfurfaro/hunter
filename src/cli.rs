@@ -35,7 +35,8 @@ pub async fn run_cli() -> Result<()> {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();
         let span = spanned_token.to_span();
-        let maybe_mutant = mutant_builder(entry.2,
+        let maybe_mutant = mutant_builder(
+            entry.2,
             spanned_token.token().clone(),
             (span.start(), span.end()),
             Path::new(path),
