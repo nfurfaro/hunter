@@ -5,45 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-// pub fn find_and_copy_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
-//     let mut results: Vec<(File, PathBuf)> = vec![];
-//     let mut names: Vec<String> = vec![];
-
-//     if dir_path.is_dir() {
-//         for entry in std::fs::read_dir(dir_path)? {
-//             let entry = entry?;
-//             let name = entry.file_name();
-//             let path_buf = entry.path();
-//             if path_buf.is_dir() {
-//                 if path_buf.ends_with("/temp") {
-//                     continue;
-//                 }
-//                 let sub_results = find_and_copy_noir_files(&path_buf)?;
-//                 results.extend(sub_results);
-//             } else if path_buf.extension().and_then(|s| s.to_str()) == Some("nr")
-//             {
-//                 let path = path_buf.as_path();
-
-//                 // @todo use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
-
-//                 let _ = fs::create_dir("./temp/");
-
-//                 let out_path = String::from("./temp/_TEMP_");
-//                 let name = name.to_str().unwrap();
-//                 let out_path_buf = PathBuf::from(out_path.clone() + name);
-//                 let file = File::open(&path)?;
-
-//                 let _ = std::fs::copy(path, &out_path_buf);
-//                 results.push((file, out_path_buf.clone()));
-//                 names.push(name.to_string());
-//             }
-//         }
-//     }
-
-//     Ok(results)
-// }
-
-pub fn find_and_copy_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
+pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
     let mut results: Vec<(File, PathBuf)> = vec![];
 
     if dir_path.is_dir() {
@@ -55,7 +17,7 @@ pub fn find_and_copy_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>>
                 if path_buf.ends_with("/temp") {
                     continue;
                 }
-                let sub_results = find_and_copy_noir_files(&path_buf)?;
+                let sub_results = find_noir_files(&path_buf)?;
                 results.extend(sub_results);
             } else if path_buf
                 .extension()
@@ -69,11 +31,10 @@ pub fn find_and_copy_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>>
                     let temp_dir = Path::new("./temp").join(file_name.clone().trim_end_matches(".nr"));
                     fs::create_dir_all(&temp_dir)?;
 
-                    let out_path = Path::new("./temp").join(format!("_TEMPLATE_{}.nr", file_name.trim_end_matches(".nr")));
+                    // let out_path = Path::new("./temp").join(format!("_TEMPLATE_{}.nr", file_name.trim_end_matches(".nr")));
                     let file = File::open(&path)?;
 
-                    let _ = std::fs::copy(path, &out_path);
-                    results.push((file, out_path.clone()));
+                    results.push((file, path_buf));
                 }
             }
         }

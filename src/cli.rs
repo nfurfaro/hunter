@@ -21,12 +21,16 @@ pub async fn run_cli() -> Result<()> {
 
     // collect all noir files in the current directory recursively
     println!("Searching for Noir files...");
-    let copied_noir_files = find_and_copy_noir_files(Path::new("."))?;
+    let noir_files = find_noir_files(Path::new("."))?;
+
+
+    println!("Found {:?} Noir files", noir_files);
 
     // @todo handle unwrap
     // get all the tokens from the collected noir files, along with the path to their origin file
-    let tokens_with_paths = collect_tokens(&copied_noir_files)
+    let tokens_with_paths = collect_tokens(&noir_files)
         .expect("No Noir files found... Are you in the right directory?");
+
     let mut mutants: Vec<Mutant> = vec![];
     for entry in tokens_with_paths {
         let path = entry.1.as_path();

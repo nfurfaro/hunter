@@ -6,7 +6,8 @@ pub struct Mutant<'a> {
     token: Token,
     bytes: Vec<u8>,
     span: (u32, u32),
-    path: &'a Path,
+    src_path: &'a Path,
+
 }
 
 impl<'a> Mutant<'a> {
@@ -23,7 +24,7 @@ impl<'a> Mutant<'a> {
     }
 
     pub fn path(&self) -> &Path {
-        self.path
+        self.src_path
     }
 
     pub fn start(&self) -> u32 {
@@ -36,105 +37,105 @@ impl<'a> Mutant<'a> {
 }
 
 // consider processing a token stream with this function.
-pub fn mutant_builder(token: Token, span: (u32, u32), path: &Path) -> Option<Mutant> {
+pub fn mutant_builder(token: Token, span: (u32, u32), src_path: &Path) -> Option<Mutant> {
     let start = span.0;
     let end = span.1;
     match token {
         Token::Equal => Some(Mutant {
             token: Token::NotEqual,
             bytes: "!=".as_bytes().to_vec(),
-            span: (start, end),
-            path,
+            span,
+            src_path,
         }),
         Token::NotEqual => Some(Mutant {
             token: Token::Equal,
             bytes: "==".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Greater => Some(Mutant {
             token: Token::LessEqual,
             bytes: "<=".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::GreaterEqual => Some(Mutant {
             token: Token::Less,
             bytes: "<".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Less => Some(Mutant {
             token: Token::GreaterEqual,
             bytes: ">=".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::LessEqual => Some(Mutant {
             token: Token::Greater,
             bytes: ">".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Ampersand => Some(Mutant {
             token: Token::Pipe,
             bytes: "|".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Pipe => Some(Mutant {
             token: Token::Ampersand,
             bytes: "&".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Caret => Some(Mutant {
             token: Token::Ampersand,
             bytes: "&".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::ShiftLeft => Some(Mutant {
             token: Token::ShiftRight,
             bytes: ">>".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::ShiftRight => Some(Mutant {
             token: Token::ShiftLeft,
             bytes: "<<".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Plus => Some(Mutant {
             token: Token::Minus,
             bytes: "-".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Minus => Some(Mutant {
             token: Token::Plus,
             bytes: "+".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Star => Some(Mutant {
             token: Token::Slash,
             bytes: "/".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Slash => Some(Mutant {
             token: Token::Star,
             bytes: "*".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         Token::Percent => Some(Mutant {
             token: Token::Star,
             bytes: "*".as_bytes().to_vec(),
             span: (start, end),
-            path,
+            src_path,
         }),
         _ => None,
     }
