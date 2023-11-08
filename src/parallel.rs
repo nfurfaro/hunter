@@ -56,7 +56,9 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
 
         // let temp_file_path = PathBuf::from("./src/main.nr");
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        // let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        let temp_file_path = "./src/main.nr";
+
         copy(new_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
@@ -91,15 +93,13 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         } else {
             // Command failed, mutant was killed
             let stderr = String::from_utf8_lossy(&output.stderr);
-            if stderr.contains("test failed") {
+            if stderr.contains("test failed") || !output.status.success() {
                 destroyed.fetch_add(1, Ordering::SeqCst);
             }
             // eprintln!("Command failed with error: {}", stderr);
         }
         // Clean up the temporary file
-        println!("Removing temporary file: {:?}", temp_file_path);
-        // println!("{}", "Cleaning up temp files".green());
-        // std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
+        std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
 
         bar.inc(1);
     });
