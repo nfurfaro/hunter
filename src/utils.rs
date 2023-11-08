@@ -131,16 +131,25 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_find_and_copy_noir_files() {
+    fn test_find_noir_files() {
+        // Create a temporary directory.
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.nr");
+
+        // Create a file named "test.nr" in the temporary directory.
         let mut file = File::create(&file_path).unwrap();
-        writeln!(file, "let x = 42;").unwrap();
+        writeln!(file, "Hello, world!").unwrap();
+
+        // Call `find_noir_files` with the path of the temporary directory.
         let result = find_noir_files(dir.path()).unwrap();
+
+        // Assert that exactly one file was found.
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].1.file_name().unwrap(), "_TEMP_test.nr");
-        let copied_file_path = PathBuf::from("./temp/_TEMP_test.nr");
-        assert!(copied_file_path.exists());
+
+        // Assert that the file has the correct name.
+        assert_eq!(result[0].1.file_name().unwrap(), "test.nr");
+
+        // Close the temporary directory.
         dir.close().unwrap();
     }
 

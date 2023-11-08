@@ -54,10 +54,7 @@ pub async fn run_cli() -> Result<()> {
         }
     }
 
-    let outputs = parallel_process_mutated_tokens(&mut mutants);
-    for output in outputs {
-        println!("{}", output);
-    }
+    parallel_process_mutated_tokens(&mut mutants);
 
     Ok(())
 }
