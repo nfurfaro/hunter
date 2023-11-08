@@ -3,7 +3,6 @@ use anyhow::Result;
 pub mod mutant;
 pub mod parallel;
 pub mod utils;
-pub mod score;
 
 mod cli;
 

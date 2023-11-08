@@ -25,14 +25,10 @@ pub async fn run_cli() -> Result<()> {
     // collect all noir files in the current directory recursively
     println!("{}", "Searching for Noir files".green());
     let noir_files = find_noir_files(Path::new("."))?;
-<<<<<<< HEAD
-
-=======
     println!("{}", "Found:".green());
     for file in &noir_files {
         println!("{}", format!("{}", file.1.as_path().display()).green());
     }
->>>>>>> f4436badcf224d133addda84bf4230d7f3a5daad
 
     // @todo handle unwrap
     // get all the tokens from the collected noir files, along with the path to their origin file
