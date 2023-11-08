@@ -1,8 +1,9 @@
 // use colored::*;
+// use colored::*;
 use std::{
-    fs::{copy, File, OpenOptions},
+    fs::{copy, create_dir_all, File, OpenOptions},
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
 };
 
@@ -33,24 +34,30 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             .progress_chars("#>-"),
     );
 
+    let temp_dir = PathBuf::from("./temp");
+    if !temp_dir.exists() {
+        create_dir_all(&temp_dir).expect("Failed to create directory");
+    }
+    std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
+
     mutants.par_iter_mut().for_each(|m| {
+        let thread_index = rayon::current_thread_index().unwrap_or(0);
         let mut contents = String::new();
+
+        let original_path = Path::new(m.path());
+        let parent_dir = Path::new("../src");
+        let file_name = original_path.file_name().expect("Failed to get file name");
+        let new_path = parent_dir.join(file_name);
+
         // Open the file at the given path in write mode
-        let mut file = File::open(m.path()).expect("File path doesn't seem to work...");
+        let mut file = File::open(new_path.clone()).expect("File path doesn't seem to work...");
         // Read the file's contents into a String
         file.read_to_string(&mut contents).unwrap();
 
-        // Create a new path for the temporary file
-        let file_stem = m.path().file_stem().unwrap().to_str().unwrap();
-        let file_name = m.path().file_name().unwrap().to_str().unwrap();
-        let temp_file_path = PathBuf::from(format!(
-            "./temp/{}/_temp_{}_{}",
-            file_stem,
-            m.id(),
-            file_name
-        ));
-        // Copy the file to the new location
-        copy(m.path(), &temp_file_path).expect("Failed to copy file");
+        // let temp_file_path = PathBuf::from("./src/main.nr");
+        // Include the thread's index in the file name
+        let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        copy(new_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
 
@@ -60,7 +67,11 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
         // After modifying the contents, write it back to the file
-        let mut file = OpenOptions::new().write(true).open(temp_file_path).unwrap();
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true) // Create the file if it doesn't exist
+            .open(temp_file_path.clone())
+            .unwrap();
 
         // modify string of contents, then write back to temp file
         file.write_all(contents.as_bytes()).unwrap();
@@ -85,6 +96,11 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             }
             // eprintln!("Command failed with error: {}", stderr);
         }
+        // Clean up the temporary file
+        println!("Removing temporary file: {:?}", temp_file_path);
+        // println!("{}", "Cleaning up temp files".green());
+        // std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
+
         bar.inc(1);
     });
 

@@ -30,14 +30,18 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
 
                 // @todo use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
                 if !path.starts_with("./temp") {
-                    let file_name = entry.file_name().to_str().unwrap().to_owned();
-                    let temp_dir =
-                        Path::new("./temp").join(file_name.clone().trim_end_matches(".nr"));
+                    // let file_name = entry.file_name().to_str().unwrap().to_owned();
+                    // let temp_dir =
+                    // Path::new("./temp").join(file_name.clone().trim_end_matches(".nr"));
+                    let temp_dir = Path::new("./temp");
+
                     fs::create_dir_all(&temp_dir)?;
-
-                    // let out_path = Path::new("./temp").join(format!("_TEMPLATE_{}.nr", file_name.trim_end_matches(".nr")));
+                    // Create "Nargo.toml" file and "src" directory inside "./temp" directory
+                    let nargo_path = temp_dir.join("Nargo.toml");
+                    File::create(&nargo_path)?;
+                    fs::write(nargo_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"")?;
+                    fs::create_dir_all(temp_dir.join("src"))?;
                     let file = File::open(&path)?;
-
                     results.push((file, path_buf));
                 }
             }

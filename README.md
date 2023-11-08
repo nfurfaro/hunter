@@ -123,3 +123,48 @@ sequenceDiagram
     <<=  -->  >>=
     >>=  -->  <<=
 
+## nargo notes
+
+### Crates
+- crate is smallest unit of compileable code
+- crates can contain modules
+- crate types: binary, library, contract
+  - binary must have func main
+  - libs do not have a func main
+- crate root(root module): for Nargo, root must be called lib.nr or main.nr for library or binary crates respectively.
+
+### Packages
+- a package is a collection of crates, must have a Nargo.toml file
+- a package must contain either a lib or bin crate (but not both)
+- Nargo currently only allows a package to contain a single crate.
+
+### Workspaces
+- let you manage multiple packages in a singe repo
+- a group of related projects that share common build output directories and configurations.
+- Each Noir project (with it's own Nargo.toml file) can be thought of as a package.
+- Each package is expected to contain exactly one "named circuit", being the "name" defined in Nargo.toml with the program logic defined in ./src/main.nr.
+
+
+## todo
+
+- [ ] use tempdir create to manage temp dirs and files?
+- [ ] might have to:
+  - create a /temp/Nargo.toml once per run
+  - create a /temp/src/ dir once per run
+  - create a /temp/src/main.nr for each mutant
+  - main.nr file creation needs to happen in parallel threads, not before
+
+
+let output = Command::new("pwd").output();
+=> Output { status: ExitStatus(unix_wait_status(0)), stdout: "/home/furnic/Dev/noir_dev/hello_world/temp\n", stderr: "" }
+
+
+        // Create a new path for the temporary file
+        // let file_stem = m.path().file_stem().unwrap().to_str().unwrap();
+        // let file_name = m.path().file_name().unwrap().to_str().unwrap();
+        // let temp_file_path = PathBuf::from(format!(
+        //     "./temp/{}/_temp_{}_{}",
+        //     file_stem,
+        //     m.id(),
+        //     file_name
+        // ));
