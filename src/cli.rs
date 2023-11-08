@@ -2,6 +2,9 @@ use crate::mutant::{mutant_builder, Mutant};
 use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
 use clap::Parser;
+use colored::*;
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use std::{io::Result, path::Path};
 
@@ -20,16 +23,25 @@ pub async fn run_cli() -> Result<()> {
     let _args = Cli::parse();
 
     // collect all noir files in the current directory recursively
-    println!("Searching for Noir files...");
+    println!("{}", "Searching for Noir files".green());
     let noir_files = find_noir_files(Path::new("."))?;
+<<<<<<< HEAD
 
+=======
+    println!("{}", "Found:".green());
+    for file in &noir_files {
+        println!("{}", format!("{}", file.1.as_path().display()).green());
+    }
+>>>>>>> f4436badcf224d133addda84bf4230d7f3a5daad
 
     // @todo handle unwrap
     // get all the tokens from the collected noir files, along with the path to their origin file
+    println!("{}", "Collecting tokens from files".green());
     let tokens_with_paths = collect_tokens(&noir_files)
         .expect("No Noir files found... Are you in the right directory?");
 
     let mut mutants: Vec<Mutant> = vec![];
+    println!("{}", "Building mutants".green());
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();

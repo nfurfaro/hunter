@@ -122,3 +122,42 @@ sequenceDiagram
     ^=   -->  &=
     <<=  -->  >>=
     >>=  -->  <<=
+
+
+
+colored = "2.0.4"
+indicatif = {version = "*", features = ["rayon"]}
+prettytable-rs = "^0.10"
+
+
+use colored::*;
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+
+cli:
+
+println!("{}", "Searching for Noir files".green());
+for file in &noir_files {
+        println!("{}", format!("{}", file.1.as_path().display()).green());
+    }
+println!("{}", "Collecting tokens from files".green());
+println!("{}", "Building mutants".green());
+
+
+    let bar = ProgressBar::new(100);
+         bar.set_style(
+             ProgressStyle::default_bar()
+                 .template(
+                     "{spinner:.green} [{elapsed_precise}] [{bar:25.cyan/blue}] {pos}/{len} ({eta})",
+                 )
+                 .unwrap()
+                 .progress_chars("#}>-"),
+         );
+
+for _ in 0..10 {
+             bar.inc(1);
+             // simulate some work
+             std::thread::sleep(std::time::Duration::from_millis(100));
+         }
+
+         bar.finish_with_message("done");

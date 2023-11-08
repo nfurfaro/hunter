@@ -49,7 +49,6 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
 pub fn collect_tokens(
     src_noir_files: &Vec<(File, PathBuf)>,
 ) -> Option<Vec<(SpannedToken, &PathBuf, u32)>> {
-    println!("Searching for mutable tokens...");
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
 
     if src_noir_files.is_empty() {
