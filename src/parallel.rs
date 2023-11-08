@@ -1,4 +1,4 @@
-use colored::*;
+// use colored::*;
 use std::{
     fs::{copy, File, OpenOptions},
     io::{Read, Write},
@@ -6,8 +6,9 @@ use std::{
     process::Command,
 };
 
-use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use indicatif::{ProgressBar, ProgressStyle};
+use prettytable::{row, Cell, Row, Table};
+use rayon::iter::ParallelIterator;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -18,28 +19,21 @@ extern crate rayon;
 use rayon::prelude::*;
 
 pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
-    let mutant_population = mutants.len();
+    let total_mutants = mutants.len();
     let destroyed = Arc::new(AtomicUsize::new(0));
-    let survived = Arc::new(AtomicUsize::new(0));
+    let surviving = Arc::new(AtomicUsize::new(0));
+
+    let bar = ProgressBar::new(total_mutants as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .unwrap()
+            .progress_chars("#>-"),
+    );
 
     mutants.par_iter_mut().for_each(|m| {
-        let bar = ProgressBar::new(100);
-        bar.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "{spinner:.green} [{elapsed_precise}] [{bar:25.cyan/blue}] {pos}/{len} ({eta})",
-                )
-                .unwrap()
-                .progress_chars("#}>-"),
-        );
-
-        for _ in 0..15 {
-            bar.inc(1);
-            // simulate some work
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-        bar.finish_with_message("done");
-
         let mut contents = String::new();
         // Open the file at the given path in write mode
         let mut file = File::open(m.path()).expect("File path doesn't seem to work...");
@@ -82,7 +76,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             // Command was successful, but mutant survived
             // let stdout = String::from_utf8_lossy(&output.stdout);
             // println!("Command output: {}", stdout);
-            survived.fetch_add(1, Ordering::SeqCst);
+            surviving.fetch_add(1, Ordering::SeqCst);
         } else {
             // Command failed, mutant was killed
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -91,30 +85,33 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             }
             // eprintln!("Command failed with error: {}", stderr);
         }
+        bar.inc(1);
     });
 
-    let mutation_score =
-        (destroyed.load(Ordering::SeqCst) as f64 / mutant_population as f64) * 100.0;
+    bar.finish_with_message("All mutants processed!");
 
-    println!("Total mutants: {}", mutant_population);
-    println!(
-        "{}",
-        format!(
-            "Total mutants destroyed: {}",
-            destroyed.load(Ordering::SeqCst)
-        )
-        .green()
-    );
-    println!(
-        "{}",
-        format!(
-            "Total mutants survived: {}",
-            survived.load(Ordering::SeqCst)
-        )
-        .red()
-    );
-    println!(
-        "{}",
-        format!("Mutation score: {:.4}%", mutation_score).blue()
-    );
+    let mutation_score = (destroyed.load(Ordering::SeqCst) as f64 / total_mutants as f64) * 100.0;
+    let mutation_score_string = format!("{:.2}%", mutation_score);
+
+    let mut table = Table::new();
+    table.add_row(row!["Metric", "Value"]);
+    table.add_row(Row::new(vec![
+        Cell::new("Total mutants").style_spec("Fg"),
+        Cell::new(&total_mutants.to_string()),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Total mutants destroyed").style_spec("Fg"),
+        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fg"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Total mutants survived").style_spec("Fr"),
+        Cell::new(&surviving.load(Ordering::SeqCst).to_string()).style_spec("Fr"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutation score").style_spec("Fb"),
+        Cell::new(&mutation_score_string).style_spec("Fb"),
+    ]));
+
+    // Print the table to stdout
+    table.printstd();
 }

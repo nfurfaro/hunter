@@ -3,8 +3,6 @@ use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
 use clap::Parser;
 use colored::*;
-use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use std::{io::Result, path::Path};
 
