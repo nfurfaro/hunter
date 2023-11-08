@@ -1,9 +1,15 @@
+use colored::*;
 use std::{
     fs::{copy, File, OpenOptions},
     io::{Read, Write},
     path::PathBuf,
     process::Command,
 };
+
+use indicatif::{ParallelProgressIterator, ProgressBar, ProgressStyle};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use crate::mutant::Mutant;
 use crate::utils::*;
@@ -12,8 +18,28 @@ extern crate rayon;
 use rayon::prelude::*;
 
 pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
+    let mutant_population = mutants.len();
+    let destroyed = Arc::new(AtomicUsize::new(0));
+    let survived = Arc::new(AtomicUsize::new(0));
+
     mutants.par_iter_mut().for_each(|m| {
-        println!("Mutant: {:?}", m);
+        let bar = ProgressBar::new(100);
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:25.cyan/blue}] {pos}/{len} ({eta})",
+                )
+                .unwrap()
+                .progress_chars("#}>-"),
+        );
+
+        for _ in 0..15 {
+            bar.inc(1);
+            // simulate some work
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+        bar.finish_with_message("done");
+
         let mut contents = String::new();
         // Open the file at the given path in write mode
         let mut file = File::open(m.path()).expect("File path doesn't seem to work...");
@@ -29,7 +55,6 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             m.id(),
             file_name
         ));
-        println!("Temp file path: {:?}", temp_file_path);
         // Copy the file to the new location
         copy(m.path(), &temp_file_path).expect("Failed to copy file");
 
@@ -54,13 +79,42 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
 
         // Check the output
         if output.status.success() {
-            // Command was successful
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            println!("Command output: {}", stdout);
+            // Command was successful, but mutant survived
+            // let stdout = String::from_utf8_lossy(&output.stdout);
+            // println!("Command output: {}", stdout);
+            survived.fetch_add(1, Ordering::SeqCst);
         } else {
-            // Command failed
+            // Command failed, mutant was killed
             let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!("Command failed with error: {}", stderr);
+            if stderr.contains("test failed") {
+                destroyed.fetch_add(1, Ordering::SeqCst);
+            }
+            // eprintln!("Command failed with error: {}", stderr);
         }
     });
+
+    let mutation_score =
+        (destroyed.load(Ordering::SeqCst) as f64 / mutant_population as f64) * 100.0;
+
+    println!("Total mutants: {}", mutant_population);
+    println!(
+        "{}",
+        format!(
+            "Total mutants destroyed: {}",
+            destroyed.load(Ordering::SeqCst)
+        )
+        .green()
+    );
+    println!(
+        "{}",
+        format!(
+            "Total mutants survived: {}",
+            survived.load(Ordering::SeqCst)
+        )
+        .red()
+    );
+    println!(
+        "{}",
+        format!("Mutation score: {:.4}%", mutation_score).blue()
+    );
 }
