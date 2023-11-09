@@ -49,18 +49,18 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
 
     mutants.par_iter_mut().for_each(|m| {
-        let _thread_index = rayon::current_thread_index().unwrap_or(0);
+        let thread_index = rayon::current_thread_index().unwrap_or(0);
         let mut contents = String::new();
 
         let original_path = Path::new(m.path());
         let parent_dir = Path::new("../src");
         let file_name = original_path.file_name().expect("Failed to get file name");
         let source_path = parent_dir.join(file_name);
-        println!("New path: {:?}", source_path);
-        println!(
-            "Current directory now: {:?}",
-            std::env::current_dir().unwrap()
-        );
+        // println!("New path: {:?}", source_path);
+        // println!(
+        //     "Current directory now: {:?}",
+        //     std::env::current_dir().unwrap()
+        // );
 
         // Open the file at the given path in write mode
         let mut file = File::open(source_path.clone()).expect("File path doesn't seem to work...");
@@ -69,8 +69,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
 
         // let temp_file_path = PathBuf::from("./src/main.nr");
         // Include the thread's index in the file name
-        // let temp_file_path = format!("./src/main_{}.nr", thread_index);
-        let temp_file_path = "./src/main.nr";
+        let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        // let temp_file_path = "./src/main.nr";
 
         copy(source_path, &temp_file_path).expect("Failed to copy file");
 
