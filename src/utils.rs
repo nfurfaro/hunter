@@ -31,9 +31,10 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
                 // @todo use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
                 if !path.starts_with("./temp") {
                     // let file_name = entry.file_name().to_str().unwrap().to_owned();
-                    // let temp_dir =
-                    // Path::new("./temp").join(file_name.clone().trim_end_matches(".nr"));
-                    let temp_dir = Path::new("./temp");
+                    // let temp_dir = Path::new("./temp");
+                    let current_dir =
+                        std::env::current_dir().expect("Failed to get current directory");
+                    let temp_dir = current_dir.join("temp");
 
                     fs::create_dir_all(&temp_dir)?;
                     // Create "Nargo.toml" file and "src" directory inside "./temp" directory

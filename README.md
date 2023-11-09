@@ -168,3 +168,24 @@ let output = Command::new("pwd").output();
         //     m.id(),
         //     file_name
         // ));
+
+
+
+let mut table = Table::new();
+    table.add_row(row!["Metric", "Value"]);
+    table.add_row(Row::new(vec![
+        Cell::new("Total mutants").style_spec("Fr"),
+        Cell::new(&total_mutants.to_string()).style_spec("Fr"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants destroyed").style_spec("Fc"),
+        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fc"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Surviving mutants").style_spec("Fm"),
+        Cell::new(&surviving.load(Ordering::SeqCst).to_string()).style_spec("Fm"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutation score").style_spec("Fb"),
+        Cell::new(&mutation_score_string).style_spec("Fb"),
+    ]));

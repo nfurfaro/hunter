@@ -60,9 +60,9 @@ pub async fn run_cli() -> Result<()> {
     println!("{}", "Cleaning up temp files".green());
     // Remove the ./temp directory
     let temp_dir = Path::new("./temp");
-    if temp_dir.exists() {
-        std::fs::remove_dir_all(&temp_dir).expect("Failed to remove ./temp directory");
-    }
+    // if temp_dir.exists() {
+    //     std::fs::remove_dir_all(&temp_dir).expect("Failed to remove ./temp directory");
+    // }
 
     Ok(())
 }
