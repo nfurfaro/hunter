@@ -8,18 +8,27 @@ pub struct Mutant<'a> {
     bytes: Vec<u8>,
     span: (u32, u32),
     src_path: &'a Path,
+    status: MutationStatus,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MutationStatus {
+    Pending,
+    Survived,
+    Killed,
 }
 
 impl<'a> fmt::Display for Mutant<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Id: {:?}, Token: {:?}, Bytes: {:?}, Span: {:?}, Source Path: {:?}",
+            "Id: {:?}, Token: {:?}, Bytes: {:?}, Span: {:?}, Source Path: {:?}, Status: {:?}",
             self.id,
             self.token,
             self.bytes,
             self.span,
-            self.src_path.display()
+            self.src_path.display(),
+            self.status,
         )
     }
 }
@@ -52,6 +61,15 @@ impl<'a> Mutant<'a> {
     pub fn end(&self) -> u32 {
         self.span.1
     }
+
+    pub fn status(&self) -> MutationStatus {
+        self.status.clone()
+    }
+
+    // Method to update the status
+    pub fn set_status(&mut self, new_status: MutationStatus) {
+        self.status = new_status;
+    }
 }
 
 // consider processing a token stream with this function.
@@ -63,6 +81,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "!=".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::NotEqual => Some(Mutant {
             id,
@@ -70,6 +89,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "==".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Greater => Some(Mutant {
             id,
@@ -77,6 +97,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "<=".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::GreaterEqual => Some(Mutant {
             id,
@@ -84,6 +105,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "<".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Less => Some(Mutant {
             id,
@@ -91,6 +113,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: ">=".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::LessEqual => Some(Mutant {
             id,
@@ -98,6 +121,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: ">".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Ampersand => Some(Mutant {
             id,
@@ -105,6 +129,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "|".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Pipe => Some(Mutant {
             id,
@@ -112,6 +137,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "&".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Caret => Some(Mutant {
             id,
@@ -119,6 +145,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "&".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::ShiftLeft => Some(Mutant {
             id,
@@ -126,6 +153,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: ">>".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::ShiftRight => Some(Mutant {
             id,
@@ -133,6 +161,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "<<".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Plus => Some(Mutant {
             id,
@@ -140,6 +169,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "-".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Minus => Some(Mutant {
             id,
@@ -147,6 +177,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "+".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Star => Some(Mutant {
             id,
@@ -154,6 +185,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "/".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Slash => Some(Mutant {
             id,
@@ -161,6 +193,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "*".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         Token::Percent => Some(Mutant {
             id,
@@ -168,6 +201,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             bytes: "*".as_bytes().to_vec(),
             span,
             src_path,
+            status: MutationStatus::Pending,
         }),
         _ => None,
     }
@@ -190,6 +224,7 @@ mod tests {
             bytes: "==".as_bytes().to_vec(),
             span,
             src_path: &path,
+            status: MutationStatus::Pending,
         };
 
         // Test token method
@@ -211,6 +246,9 @@ mod tests {
 
         // Test end method
         assert_eq!(mutant.end(), 1);
+
+        // Test status method
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -224,6 +262,7 @@ mod tests {
             bytes: "+".as_bytes().to_vec(),
             span,
             src_path: &path,
+            status: MutationStatus::Pending,
         };
 
         // Test token method
@@ -245,6 +284,9 @@ mod tests {
 
         // Test end method
         assert_eq!(mutant.end(), 20);
+
+        // Test status method
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -260,6 +302,7 @@ mod tests {
             bytes: "*".as_bytes().to_vec(),
             span,
             src_path: &path,
+            status: MutationStatus::Pending,
         };
 
         // Test token method
@@ -281,6 +324,9 @@ mod tests {
 
         // Test end method
         assert_eq!(mutant.end(), 2000);
+
+        // Test status method
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -297,6 +343,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -313,6 +360,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -329,6 +377,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -345,6 +394,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -361,6 +411,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -377,6 +428,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -393,6 +445,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -409,6 +462,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -425,6 +479,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -441,6 +496,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -457,6 +513,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -473,6 +530,7 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
     #[test]
@@ -505,5 +563,6 @@ mod tests {
         assert_eq!(mutant.start(), 0);
         assert_eq!(mutant.end(), 1);
         assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 }

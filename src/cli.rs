@@ -1,10 +1,15 @@
-use crate::mutant::{mutant_builder, Mutant};
+use crate::mutant::{mutant_builder, Mutant, MutationStatus};
 use crate::parallel::parallel_process_mutated_tokens;
 use crate::utils::*;
 use clap::Parser;
 use colored::*;
+use prettytable::{row, Cell, Row, Table};
 
-use std::{io::Result, path::Path};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Result},
+    path::Path,
+};
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser)]
@@ -15,6 +20,48 @@ struct Cli {
     /// The path to the test directory, defaults to ./tests
     #[clap(short, long)]
     test_dir: Option<std::path::PathBuf>,
+}
+
+fn print_line_in_span(file_path: &Path, span: (usize, usize)) -> Result<()> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+
+    let mut byte_index = 0;
+
+    // for (index, line) in reader.lines().enumerate() {
+    //     let line = line?;
+    //     let line_length = line.len();
+
+    //     if byte_index <= span.0 && byte_index + line_length >= span.1 {
+    //         println!("File: {:?}, Line {}: {}", file_path, index + 1, line);
+    //         break;
+    //     }
+
+    //     byte_index += line_length + 1; // +1 for the newline character
+    // }
+
+    let mut table = Table::new();
+    table.add_row(row!["Surviving Mutants"]);
+    table.add_row(row!["Source File", "Line #", "Operator"]);
+    for (index, line) in reader.lines().enumerate() {
+        let line = line?;
+        let line_length = line.len();
+
+        if byte_index <= span.0 && byte_index + line_length >= span.1 {
+            table.add_row(Row::new(vec![
+                Cell::new(file_path.to_str().unwrap()).style_spec("Fr"),
+                Cell::new(&(index + 1).to_string()).style_spec("Fr"),
+                Cell::new(&line).style_spec("Fr"),
+            ]));
+            break;
+        }
+
+        byte_index += line_length + 1; // +1 for the newline character
+    }
+
+    table.printstd();
+
+    Ok(())
 }
 
 pub async fn run_cli() -> Result<()> {
@@ -53,6 +100,23 @@ pub async fn run_cli() -> Result<()> {
     }
 
     parallel_process_mutated_tokens(&mut mutants);
+
+    let parent_dir = std::env::current_dir()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    std::env::set_current_dir(&parent_dir).expect("Failed to change directory");
+
+    for mutant in &mutants {
+        if mutant.status() == MutationStatus::Survived {
+            // println!("{}", mutant);
+            // println!("Current directory: {:?}", std::env::current_dir().unwrap());
+            let span = mutant.span();
+            let span_usize = (span.0 as usize, span.1 as usize);
+            print_line_in_span(Path::new(mutant.path()), span_usize).unwrap();
+        }
+    }
 
     // Change to the parent directory
     let parent_dir = Path::new("..");

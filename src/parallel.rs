@@ -13,7 +13,7 @@ use rayon::iter::ParallelIterator;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-use crate::mutant::Mutant;
+use crate::mutant::{Mutant, MutationStatus};
 use crate::utils::*;
 
 extern crate rayon;
@@ -76,23 +76,29 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         // run_test_suite
         let output = Command::new("nargo")
             .arg("test")
-            .arg("--package hunter")
+            // .arg("--package")
+            // .arg("hunter")
             .output()
             .expect("Failed to execute command");
 
         // Check the output
         if output.status.success() {
-            // test was successful indicating mutant survived
+            // tests passed indicating mutant survived !
+            m.set_status(MutationStatus::Survived);
         } else {
             // test failed indicating mutant was killed !
             let stderr = String::from_utf8_lossy(&output.stderr);
-            if stderr.contains("test failed") || !output.status.success() {
+            // if stderr.contains("test failed") || !output.status.success() {
+            if stderr.contains("test failed") {
+                eprint!("{}", stderr);
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 surviving.fetch_sub(1, Ordering::SeqCst);
+                m.set_status(MutationStatus::Survived);
             }
         }
+
         // Clean up the temporary file
-        std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
+        // std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
 
         bar.inc(1);
     });
