@@ -33,18 +33,11 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             .unwrap()
             .progress_chars("#>-"),
     );
-    // println!("Current directory: {:?}", std::env::current_dir().unwrap());
 
     let temp_dir = PathBuf::from("./temp");
     if !temp_dir.exists() {
         create_dir_all(&temp_dir).expect("Failed to create directory");
     }
-
-    // let output1 = Command::new("tree")
-    //     .output()
-    //     .expect("Failed to execute command");
-    // let stdout = String::from_utf8_lossy(&output1.stdout);
-    // println!("Command output: {}", stdout);
 
     std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
 
@@ -56,36 +49,25 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         let parent_dir = Path::new("../src");
         let file_name = original_path.file_name().expect("Failed to get file name");
         let source_path = parent_dir.join(file_name);
-        // println!("New path: {:?}", source_path);
-        // println!(
-        //     "Current directory now: {:?}",
-        //     std::env::current_dir().unwrap()
-        // );
 
         // Open the file at the given path in write mode
         let mut file = File::open(source_path.clone()).expect("File path doesn't seem to work...");
         // Read the file's contents into a String
         file.read_to_string(&mut contents).unwrap();
 
-        // let temp_file_path = PathBuf::from("./src/main.nr");
         // Include the thread's index in the file name
         let temp_file_path = format!("./src/main_{}.nr", thread_index);
-        // let temp_file_path = "./src/main.nr";
-
         copy(source_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
-
-        // mutate original_bytes
         replace_bytes(&mut original_bytes, m.start() as usize, &m.bytes());
-
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
         // After modifying the contents, write it back to the file
         let mut file = OpenOptions::new()
             .write(true)
             .create(true) // Create the file if it doesn't exist
-            .open(temp_file_path)
+            .open(temp_file_path.clone())
             .unwrap();
 
         // modify string of contents, then write back to temp file
@@ -101,8 +83,6 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         // Check the output
         if output.status.success() {
             // test was successful indicating mutant survived
-            // let stdout = String::from_utf8_lossy(&output.stdout);
-            // println!("Command output: {}", stdout);
         } else {
             // test failed indicating mutant was killed !
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -110,10 +90,9 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 surviving.fetch_sub(1, Ordering::SeqCst);
             }
-            // eprintln!("Command failed with error: {}", stderr);
         }
         // Clean up the temporary file
-        // std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
+        std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
 
         bar.inc(1);
     });
