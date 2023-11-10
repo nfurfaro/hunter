@@ -103,6 +103,13 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         bar.inc(1);
     });
 
+    let parent_dir = std::env::current_dir()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf();
+    std::env::set_current_dir(&parent_dir).expect("Failed to change directory");
+
     bar.finish_with_message("All mutants processed!");
 
     let mutation_score = (destroyed.load(Ordering::SeqCst) as f64 / total_mutants as f64) * 100.0;
@@ -112,21 +119,20 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     table.add_row(row!["Metric", "Value"]);
     table.add_row(Row::new(vec![
         Cell::new("Total mutants").style_spec("Fr"),
-        Cell::new(&total_mutants.to_string()).style_spec("Fr"),
+        Cell::new(&total_mutants.to_string()).style_spec("Frb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutants destroyed").style_spec("Fc"),
-        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fc"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Surviving mutants").style_spec("Fm"),
-        Cell::new(&surviving.load(Ordering::SeqCst).to_string()).style_spec("Fm"),
+        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutation score").style_spec("Fb"),
-        Cell::new(&mutation_score_string).style_spec("Fb"),
+        Cell::new(&mutation_score_string).style_spec("Fbb"),
     ]));
-
+    table.add_row(Row::new(vec![
+        Cell::new("Surviving mutants").style_spec("Fm"),
+        Cell::new(&surviving.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
+    ]));
     // Print the table to stdout
     table.printstd();
 }

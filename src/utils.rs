@@ -1,12 +1,64 @@
 use noirc_frontend::token::{SpannedToken, Token};
+use prettytable::{format, row, Cell as table_cell, Row, Table};
+use std::io::Write;
 use std::{
     cell::Cell,
-    fs::{self, File},
-    io::{BufReader, Read, Result},
+    fs::{self, File, OpenOptions},
+    io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
 };
+use toml;
 
 use regex::Regex;
+
+pub fn print_line_in_span(file_path: &Path, span: (usize, usize)) -> Result<()> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+    let mut byte_index = 0;
+    let mut table = Table::new();
+
+    for (index, line) in reader.lines().enumerate() {
+        let line = line?;
+        let line_length = line.len();
+
+        if byte_index <= span.0 && byte_index + line_length >= span.1 {
+            table.add_row(Row::new(vec![
+                table_cell::new(file_path.to_str().unwrap()).style_spec("Frb"),
+                table_cell::new(&(index + 1).to_string()).style_spec("Frb"),
+                table_cell::new(&line).style_spec("Frb"),
+            ]));
+            break;
+        }
+
+        byte_index += line_length + 1; // +1 for the newline character
+    }
+
+    table.printstd();
+
+    Ok(())
+}
+
+pub fn modify_toml() {
+    // add a workspace section to the Nargo.toml file if it doesn't exist and include the package "hunter"
+    let file_name = "Nargo.toml";
+    let mut name = String::new();
+
+    if Path::new(file_name).exists() {
+        let contents = fs::read_to_string(file_name).unwrap();
+        let value: toml::Value = toml::from_str(&contents).unwrap();
+        if let Some(n) = value.get("package").and_then(|p| p.get("name")) {
+            name = n.as_str().unwrap().to_string();
+        }
+    }
+
+    let mut file = OpenOptions::new().append(true).open(file_name).unwrap();
+
+    if !name.is_empty() {
+        writeln!(file, "[workspace]\nmembers = [\"{}\", \"hunter\"]", name).unwrap();
+    } else {
+        writeln!(file, "[workspace]\nmembers = [\"hunter\"]").unwrap();
+    }
+}
 
 pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
     let mut results: Vec<(File, PathBuf)> = vec![];
@@ -30,8 +82,6 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
 
                 // @todo use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
                 if !path.starts_with("./temp") {
-                    // let file_name = entry.file_name().to_str().unwrap().to_owned();
-                    // let temp_dir = Path::new("./temp");
                     let current_dir =
                         std::env::current_dir().expect("Failed to get current directory");
                     let temp_dir = current_dir.join("temp");
