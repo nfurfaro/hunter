@@ -136,8 +136,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         Cell::new(&total_mutants.to_string()).style_spec("Frb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("dbg! Mutants pending...").style_spec("Fmb"),
-        Cell::new(&pending.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
+        Cell::new("dbg! Mutants pending...").style_spec("Fyb"),
+        Cell::new(&pending.load(Ordering::SeqCst).to_string()).style_spec("Fyb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutants destroyed").style_spec("Fb"),
