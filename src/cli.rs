@@ -38,7 +38,7 @@ pub async fn run_cli() -> Result<()> {
     let noir_files = find_noir_files(Path::new("."))?;
     println!("{}", "Found:".cyan());
     for file in &noir_files {
-        println!("{}", format!("{}", file.1.as_path().display()).blue());
+        println!("{}", format!("{}", file.1.as_path().display()).red());
     }
 
     // @todo handle unwrap
@@ -67,6 +67,8 @@ pub async fn run_cli() -> Result<()> {
 
     parallel_process_mutated_tokens(&mut mutants);
 
+    println!("mutants: {:#?}", mutants);
+
     for mutant in &mutants {
         if mutant.status() == MutationStatus::Survived {
             let span = mutant.span();
@@ -75,19 +77,17 @@ pub async fn run_cli() -> Result<()> {
         }
     }
 
-    // Change to the parent directory
-    // let parent_dir = Path::new("..");
-    // std::env::set_current_dir(&parent_dir).expect("Failed to change directory");
     println!("{}", "Cleaning up temp files".cyan());
 
     let current_dir = std::env::current_dir().unwrap();
     println!("Current directory: {:?}", current_dir);
 
+    // @fix
     // Remove the ./temp directory
-    let temp_dir = Path::new("./temp");
-    if temp_dir.exists() {
-        std::fs::remove_dir_all(&temp_dir).expect("Failed to remove ./temp directory");
-    }
+    // let temp_dir = Path::new("./temp");
+    // if temp_dir.exists() {
+    //     std::fs::remove_dir_all(&temp_dir).expect("Failed to remove ./temp directory");
+    // }
 
     Ok(())
 }

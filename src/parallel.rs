@@ -1,5 +1,4 @@
-// use colored::*;
-// use colored::*;
+use regex::Regex;
 use std::{
     fs::{copy, create_dir_all, File, OpenOptions},
     io::{Read, Write},
@@ -22,7 +21,8 @@ use rayon::prelude::*;
 pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     let total_mutants = mutants.len();
     let destroyed = Arc::new(AtomicUsize::new(0));
-    let surviving = Arc::new(AtomicUsize::new(total_mutants));
+    let survived = Arc::new(AtomicUsize::new(0));
+    let pending = Arc::new(AtomicUsize::new(total_mutants));
 
     let bar = ProgressBar::new(total_mutants as u64);
     bar.set_style(
@@ -42,7 +42,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
 
     mutants.par_iter_mut().for_each(|m| {
-        let thread_index = rayon::current_thread_index().unwrap_or(0);
+        let _thread_index = rayon::current_thread_index().unwrap_or(0);
         let mut contents = String::new();
 
         let original_path = Path::new(m.path());
@@ -56,7 +56,10 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        // let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        // @fix use a temp file path that is unique to the mutant
+        // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
+        let temp_file_path = format!("./src/main.nr");
         copy(source_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
@@ -76,8 +79,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         // run_test_suite
         let output = Command::new("nargo")
             .arg("test")
-            // .arg("--package")
-            // .arg("hunter")
+            // .arg("-- package hunter")
             .output()
             .expect("Failed to execute command");
 
@@ -85,15 +87,27 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         if output.status.success() {
             // tests passed indicating mutant survived !
             m.set_status(MutationStatus::Survived);
+            survived.fetch_add(1, Ordering::SeqCst);
+            pending.fetch_sub(1, Ordering::SeqCst);
         } else {
             // test failed indicating mutant was killed !
             let stderr = String::from_utf8_lossy(&output.stderr);
-            // if stderr.contains("test failed") || !output.status.success() {
-            if stderr.contains("test failed") {
+            // @fix this is a brittle hack to get around the fact that
+            // the compiler fails to compile the mutated tests because the
+            // mutated code contains contraints that are always false !
+            // let re = Regex::new(r"aborting due to \d+ previous errors").unwrap();
+            // if re.is_match(&stderr) {
+            //     panic!("test aborted due to previous errors");
+            // }
+
+            if stderr.contains("test failed")
+                && !stderr.contains("aborting due to 1 previous errors")
+            {
+                println!("test failed and contains test failed");
                 eprint!("{}", stderr);
                 destroyed.fetch_add(1, Ordering::SeqCst);
-                surviving.fetch_sub(1, Ordering::SeqCst);
-                m.set_status(MutationStatus::Survived);
+                pending.fetch_sub(1, Ordering::SeqCst);
+                m.set_status(MutationStatus::Killed);
             }
         }
 
@@ -122,16 +136,25 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         Cell::new(&total_mutants.to_string()).style_spec("Frb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants destroyed").style_spec("Fc"),
-        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fcb"),
+        Cell::new("dbg! Mutants pending...").style_spec("Fmb"),
+        Cell::new(&pending.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutation score").style_spec("Fb"),
-        Cell::new(&mutation_score_string).style_spec("Fbb"),
+        Cell::new("Mutants destroyed").style_spec("Fb"),
+        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fbb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutation score").style_spec("Fc"),
+        Cell::new(&mutation_score_string).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Surviving mutants").style_spec("Fm"),
-        Cell::new(&surviving.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
+        Cell::new(&survived.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Source").style_spec("Fb"),
+        Cell::new("Line #").style_spec("Fb"),
+        Cell::new("Span").style_spec("Fb"),
     ]));
     // Print the table to stdout
     table.printstd();

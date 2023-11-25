@@ -1,5 +1,5 @@
 use noirc_frontend::token::{SpannedToken, Token};
-use prettytable::{format, row, Cell as table_cell, Row, Table};
+use prettytable::{Cell as table_cell, Row, Table};
 use std::io::Write;
 use std::{
     cell::Cell,
@@ -90,7 +90,7 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
                     // Create "Nargo.toml" file and "src" directory inside "./temp" directory
                     let nargo_path = temp_dir.join("Nargo.toml");
                     File::create(&nargo_path)?;
-                    fs::write(nargo_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"")?;
+                    fs::write(nargo_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"\n\n[dependencies]")?;
                     fs::create_dir_all(temp_dir.join("src"))?;
                     let file = File::open(&path)?;
                     results.push((file, path_buf));
@@ -115,7 +115,8 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            // Noir tests are included in the output files so they can be run against their respective mutants. They're excluded from token collection and mutant generation so we don't mess up the tests themselves !
+            // Noir tests are included in the output files so they can be run against their respective mutants.
+            // They're excluded from token collection and mutant generation so we don't mess up the tests themselves
             let pattern = Regex::new(r"#\[test\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
             contents = pattern.replace_all(&contents, "").to_string();
 
