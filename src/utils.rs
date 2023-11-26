@@ -11,11 +11,17 @@ use toml;
 
 use regex::Regex;
 
-pub fn print_line_in_span(file_path: &Path, span: (usize, usize)) -> Result<()> {
+pub fn print_line_in_span(
+    table: &mut Table,
+    file_path: &Path,
+    span: (usize, usize),
+    token: &Token,
+) -> Result<()> {
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let mut byte_index = 0;
-    let mut table = Table::new();
+    let temp = String::from_utf8_lossy(&get_bytes_from_token(token.clone()).unwrap());
+    let token_representation = temp.as_ref();
 
     for (index, line) in reader.lines().enumerate() {
         let line = line?;
@@ -23,17 +29,16 @@ pub fn print_line_in_span(file_path: &Path, span: (usize, usize)) -> Result<()> 
 
         if byte_index <= span.0 && byte_index + line_length >= span.1 {
             table.add_row(Row::new(vec![
-                table_cell::new(file_path.to_str().unwrap()).style_spec("Frb"),
-                table_cell::new(&(index + 1).to_string()).style_spec("Frb"),
-                table_cell::new(&line).style_spec("Frb"),
+                table_cell::new(file_path.to_str().unwrap()).style_spec("Fb"),
+                table_cell::new(&(index + 1).to_string()).style_spec("Fb"),
+                table_cell::new(&line).style_spec("Fmb"),
+                table_cell::new(token_representation).style_spec("Fyb"),
             ]));
             break;
         }
 
         byte_index += line_length + 1; // +1 for the newline character
     }
-
-    table.printstd();
 
     Ok(())
 }

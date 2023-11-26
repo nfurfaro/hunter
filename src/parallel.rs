@@ -1,4 +1,4 @@
-use regex::Regex;
+// use regex::Regex;
 use std::{
     fs::{copy, create_dir_all, File, OpenOptions},
     io::{Read, Write},
@@ -130,32 +130,30 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     let mutation_score_string = format!("{:.2}%", mutation_score);
 
     let mut table = Table::new();
-    table.add_row(row!["Metric", "Value"]);
     table.add_row(Row::new(vec![
-        Cell::new("Total mutants").style_spec("Fr"),
-        Cell::new(&total_mutants.to_string()).style_spec("Frb"),
+        Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
+        Cell::new("Value").style_spec("Fyb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("dbg! Mutants pending...").style_spec("Fyb"),
+        Cell::new("Mutants Total:").style_spec("Fbb"),
+        Cell::new(&total_mutants.to_string()).style_spec("Fbb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Pending...").style_spec("Fyb"),
         Cell::new(&pending.load(Ordering::SeqCst).to_string()).style_spec("Fyb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants destroyed").style_spec("Fb"),
-        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fbb"),
+        Cell::new("Mutants Destroyed:").style_spec("Fgb"),
+        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fgb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutation score").style_spec("Fc"),
-        Cell::new(&mutation_score_string).style_spec("Fcb"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Surviving mutants").style_spec("Fm"),
+        Cell::new("Mutants Survived:").style_spec("Fmb"),
         Cell::new(&survived.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Source").style_spec("Fb"),
-        Cell::new("Line #").style_spec("Fb"),
-        Cell::new("Span").style_spec("Fb"),
+        Cell::new("Mutation score:").style_spec("Fcb"),
+        Cell::new(&mutation_score_string).style_spec("Fcb"),
     ]));
-    // Print the table to stdout
+
     table.printstd();
 }

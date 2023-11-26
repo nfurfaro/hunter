@@ -4,10 +4,9 @@ version = 3
 
 [[package]]
 name = "acir"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "acir_field",
- "base64",
  "bincode",
  "brillig",
  "flate2",
@@ -17,7 +16,7 @@ dependencies = [
 
 [[package]]
 name = "acir_field"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "ark-bn254",
  "ark-ff",
@@ -30,7 +29,7 @@ dependencies = [
 
 [[package]]
 name = "acvm"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -44,7 +43,7 @@ dependencies = [
 
 [[package]]
 name = "acvm_blackbox_solver"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "acir",
  "blake2",
@@ -57,7 +56,7 @@ dependencies = [
 
 [[package]]
 name = "acvm_stdlib"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "acir",
 ]
@@ -180,7 +179,7 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "arena"
-version = "0.19.3"
+version = "0.18.0"
 dependencies = [
  "generational-arena",
 ]
@@ -382,7 +381,7 @@ dependencies = [
 
 [[package]]
 name = "brillig"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "acir_field",
  "serde",
@@ -390,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "brillig_vm"
-version = "0.34.0"
+version = "0.30.0"
 dependencies = [
  "acir",
  "acvm_blackbox_solver",
@@ -829,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "fm"
-version = "0.19.3"
+version = "0.18.0"
 dependencies = [
  "codespan-reporting",
  "rust-embed",
@@ -1051,7 +1050,7 @@ dependencies = [
 
 [[package]]
 name = "iter-extended"
-version = "0.19.3"
+version = "0.18.0"
 
 [[package]]
 name = "itertools"
@@ -1159,7 +1158,7 @@ dependencies = [
 
 [[package]]
 name = "noirc_errors"
-version = "0.19.3"
+version = "0.18.0"
 dependencies = [
  "acvm",
  "chumsky",
@@ -1172,7 +1171,7 @@ dependencies = [
 
 [[package]]
 name = "noirc_frontend"
-version = "0.19.3"
+version = "0.18.0"
 dependencies = [
  "acvm",
  "arena",
@@ -1192,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "noirc_printable_type"
-version = "0.19.3"
+version = "0.18.0"
 dependencies = [
  "acvm",
  "iter-extended",
