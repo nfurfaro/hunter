@@ -42,7 +42,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
     std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
 
     mutants.par_iter_mut().for_each(|m| {
-        let _thread_index = rayon::current_thread_index().unwrap_or(0);
+        let thread_index = rayon::current_thread_index().unwrap_or(0);
         let mut contents = String::new();
 
         let original_path = Path::new(m.path());
@@ -56,10 +56,10 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        // let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        let temp_file_path = format!("./src/main_{}.nr", thread_index);
         // @fix use a temp file path that is unique to the mutant
         // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
-        let temp_file_path = format!("./src/main.nr");
+        // let temp_file_path = format!("./src/main.nr");
         copy(source_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
