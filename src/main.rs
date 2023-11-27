@@ -1,5 +1,6 @@
 // #![allow(unused)]
 use anyhow::Result;
+pub mod handlers;
 pub mod mutant;
 pub mod parallel;
 pub mod utils;

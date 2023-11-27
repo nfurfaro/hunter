@@ -7,7 +7,7 @@ use std::{
 };
 
 use indicatif::{ProgressBar, ProgressStyle};
-use prettytable::{row, Cell, Row, Table};
+use prettytable::{Cell, Row, Table};
 use rayon::iter::ParallelIterator;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;

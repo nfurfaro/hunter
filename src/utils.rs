@@ -65,7 +65,7 @@ pub fn modify_toml() {
     }
 }
 
-pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
+pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
     let mut results: Vec<(File, PathBuf)> = vec![];
 
     if dir_path.is_dir() {
@@ -77,11 +77,11 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
                 if path_buf.ends_with("/temp") {
                     continue;
                 }
-                let sub_results = find_noir_files(&path_buf)?;
+                let sub_results = find_source_files(ext, &path_buf)?;
                 results.extend(sub_results);
             } else if path_buf
                 .extension()
-                .map_or(false, |extension| extension == "nr")
+                .map_or(false, |extension| extension == ext)
             {
                 let path = path_buf.as_path();
 
@@ -108,8 +108,9 @@ pub fn find_noir_files(dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
 
 pub fn collect_tokens(
     src_noir_files: &Vec<(File, PathBuf)>,
-) -> Option<Vec<(SpannedToken, &PathBuf, u32)>> {
+) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
+    let mut test_count = 0;
 
     if src_noir_files.is_empty() {
         return None;
@@ -123,6 +124,7 @@ pub fn collect_tokens(
             // Noir tests are included in the output files so they can be run against their respective mutants.
             // They're excluded from token collection and mutant generation so we don't mess up the tests themselves
             let pattern = Regex::new(r"#\[test\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            test_count += pattern.find_iter(&contents).count();
             contents = pattern.replace_all(&contents, "").to_string();
 
             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
@@ -133,7 +135,7 @@ pub fn collect_tokens(
             }));
         }
 
-        Some(tokens)
+        Some((tokens, test_count))
     }
 }
 
@@ -192,7 +194,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_find_noir_files() {
+    fn test_find_files() {
         // Create a temporary directory.
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.nr");
@@ -202,7 +204,7 @@ mod tests {
         writeln!(file, "Hello, world!").unwrap();
 
         // Call `find_noir_files` with the path of the temporary directory.
-        let result = find_noir_files(dir.path()).unwrap();
+        let result = find_source_files("nr", dir.path()).unwrap();
 
         // Assert that exactly one file was found.
         assert_eq!(result.len(), 1);
@@ -221,7 +223,7 @@ mod tests {
         let mut file = File::create(&file_path).unwrap();
         writeln!(file, "let x = 42;").unwrap();
         let temp_noir_files = vec![(file, file_path.clone())];
-        let tokens = collect_tokens(&temp_noir_files).unwrap();
+        let (tokens, _) = collect_tokens(&temp_noir_files).unwrap();
         assert!(!tokens.is_empty());
         assert_eq!(tokens[0].1, &file_path);
         dir.close().unwrap();

@@ -1,14 +1,49 @@
-use crate::mutant::{mutant_builder, Mutant, MutationStatus};
-use crate::parallel::parallel_process_mutated_tokens;
-use crate::utils::{collect_tokens, find_noir_files, print_line_in_span};
+use crate::handlers;
 use clap::Parser;
 use colored::*;
-use prettytable::{Cell, Row, Table};
-use std::{io::Result, path::Path};
+use std::io::Result;
+use std::str::FromStr;
+
+#[derive(Parser, PartialEq)]
+pub enum Subcommand {
+    /// Scan for mutants without running tests
+    Scan,
+    /// Mutate and run tests
+    Mutate,
+}
+
+pub struct LangConfig {
+    pub name: &'static str,
+    pub ext: &'static str,
+    pub test_command: &'static str,
+    pub test_runner: &'static str,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Language {
+    Noir,
+    Sway,
+}
+
+impl FromStr for Language {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "noir" => Ok(Language::Noir),
+            "sway" => Ok(Language::Sway),
+            _ => Err("no matching languages supported"),
+        }
+    }
+}
 
 /// Mutate Noir code and run tests against each mutation.
-#[derive(Parser)]
-struct Cli {
+#[derive(Parser, PartialEq, Default)]
+pub struct Args {
+    /// The target language (defaults to Noir).
+    /// Supported languages: Noir, Sway
+    #[clap(short, long)]
+    language: Option<Language>,
     /// The path to the Noir source files directory, defaults to ./src
     #[clap(short, long)]
     source_dir: Option<std::path::PathBuf>,
@@ -18,10 +53,13 @@ struct Cli {
     // Display information about the program
     #[clap(short, long)]
     info: bool,
+    // Collect info about number of mutants found without running tests
+    #[clap(subcommand)]
+    subcommand: Option<Subcommand>,
 }
 
 pub async fn run_cli() -> Result<()> {
-    let args = Cli::parse();
+    let args = Args::parse();
 
     if args.info {
         println!(
@@ -30,89 +68,43 @@ pub async fn run_cli() -> Result<()> {
         );
         return Ok(());
     }
-    // add a [workspace] to the project manifest
-    // modify_toml();
 
-    println!("{}", "Initiating mutant hunter...".cyan());
-    // collect all noir files in the current directory recursively
-    println!("{}", "Searching for Noir files".cyan());
-    let noir_files = find_noir_files(Path::new("."))?;
-    println!("{}", "Found:".cyan());
-    for file in &noir_files {
-        println!("{}", format!("{}", file.1.as_path().display()).red());
-    }
+    let language_config = match args.language {
+        Some(Language::Noir) => LangConfig {
+            name: "Noir",
+            ext: "nr",
+            test_command: "test",
+            test_runner: "nargo",
+        },
+        Some(Language::Sway) => LangConfig {
+            name: "Sway",
+            ext: "sw",
+            test_command: "test",
+            test_runner: "forc",
+        },
+        None => {
+            println!("No language specified, defaulting to Noir");
+            LangConfig {
+                name: "Noir",
+                ext: "nr",
+                test_command: "test",
+                test_runner: "nargo",
+            }
+        }
+    };
 
-    // @todo handle unwrap
-    // get all the tokens from the collected noir files, along with the path to their origin file
-    println!("{}", "Collecting tokens from files".cyan());
-    let tokens_with_paths = collect_tokens(&noir_files)
-        .expect("No Noir files found... Are you in the right directory?");
+    match args.subcommand {
+        Some(Subcommand::Scan) => handlers::scan::scan(args, language_config),
+        Some(Subcommand::Mutate) => handlers::mutate::mutate(args, language_config),
+        None => {
+            println!(
+                "{}",
+                "Welcome to Hunter, a tool for mutation-testing Noir source code.".cyan()
+            );
 
-    let mut mutants: Vec<Mutant> = vec![];
-    println!("{}", "Building mutants".cyan());
-    for entry in tokens_with_paths {
-        let path = entry.1.as_path();
-        let spanned_token = entry.0.clone();
-        let span = spanned_token.to_span();
-        let maybe_mutant = mutant_builder(
-            entry.2,
-            spanned_token.token().clone(),
-            (span.start(), span.end()),
-            Path::new(path),
-        );
-        match maybe_mutant {
-            None => continue,
-            Some(m) => mutants.push(m),
+            Ok(())
         }
     }
-
-    parallel_process_mutated_tokens(&mut mutants);
-
-    // println!("mutants: {:#?}", mutants);
-
-    // Create a new table
-    let mut table = Table::new();
-    table.add_row(Row::new(vec![
-        Cell::new("Surviving Mutants").style_spec("Fmb")
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Source file:").style_spec("Fyb"),
-        Cell::new("Line #:").style_spec("Fyb"),
-        Cell::new("    Mutant context:").style_spec("Fyb"),
-        Cell::new("Original:").style_spec("Fyb"),
-    ]));
-
-    for mutant in &mutants {
-        if mutant.status() == MutationStatus::Survived || mutant.status() == MutationStatus::Pending
-        {
-            let span = mutant.span();
-            let span_usize = (span.0 as usize, span.1 as usize);
-
-            print_line_in_span(
-                &mut table,
-                Path::new(mutant.path()),
-                span_usize,
-                &mutant.token(),
-            )
-            .unwrap();
-        }
-    }
-
-    table.printstd();
-
-    println!("{}", "Cleaning up temp files".cyan());
-
-    let current_dir = std::env::current_dir().unwrap();
-    println!("Current directory: {:?}", current_dir);
-
-    // @fix
-    // Remove the ./temp directory
-    // let temp_dir = Path::new("./temp");
-    // if temp_dir.exists() {
-    //     std::fs::remove_dir_all(&temp_dir).expect("Failed to remove ./temp directory");
-    // }
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -120,7 +112,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    #[should_panic(expected = "No Noir files found... Are you in the right directory?")]
+    #[should_panic(expected = "No Source files found... Are you in the right directory?")]
     async fn test_run_cli() {
         run_cli().await.unwrap();
     }
