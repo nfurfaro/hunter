@@ -44,7 +44,10 @@ pub struct Args {
     /// Supported languages: Noir, Sway
     #[clap(short, long)]
     language: Option<Language>,
-    /// The path to the Noir source files directory, defaults to ./src
+    /// The location of the hunter config file, defaults to ./hunter.toml
+    #[clap(short, long)]
+    config: Option<std::path::PathBuf>,
+    /// The path to the source files directory, defaults to ./src
     #[clap(short, long)]
     source_dir: Option<std::path::PathBuf>,
     /// The path to the test directory, defaults to ./tests
@@ -64,7 +67,7 @@ pub async fn run_cli() -> Result<()> {
     if args.info {
         println!(
             "{}",
-            "Welcome to Hunter, a tool for mutation-testing Noir source code.".cyan()
+            "Welcome to Hunter, a tool for performing mutation-testing.".cyan()
         );
         return Ok(());
     }
@@ -94,12 +97,12 @@ pub async fn run_cli() -> Result<()> {
     };
 
     match args.subcommand {
-        Some(Subcommand::Scan) => handlers::scan::scan(args, language_config),
+        Some(Subcommand::Scan) => handlers::scan::analize(args, language_config),
         Some(Subcommand::Mutate) => handlers::mutate::mutate(args, language_config),
         None => {
             println!(
                 "{}",
-                "Welcome to Hunter, a tool for mutation-testing Noir source code.".cyan()
+                "Welcome to Hunter, a tool for performing automated mutation-testing.".cyan()
             );
 
             Ok(())

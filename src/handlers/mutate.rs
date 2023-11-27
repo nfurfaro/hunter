@@ -10,23 +10,29 @@ pub fn mutate(_args: Args, config: LangConfig) -> Result<()> {
     // add a [workspace] to the project manifest
     // modify_toml();
 
-    println!("{}", "Initiating mutant hunter...".cyan());
-    // collect all noir files in the current directory recursively
-    println!("{}", "Searching for Noir files".cyan());
-    let noir_files = find_source_files("nr", Path::new("."))?;
-    println!("{}", "Found:".cyan());
-    for file in &noir_files {
+    println!("{}", "Initiating source file analysis...".green());
+    println!("{}", format!("Searching for {} files", config.name).green());
+    let files = find_source_files(config.ext, Path::new(".")).expect(&format!(
+        "No {} files found... Are you in the right directory?",
+        config.name.red()
+    ));
+
+    println!("{}", "Files found:".cyan());
+    for file in &files {
         println!("{}", format!("{}", file.1.as_path().display()).red());
     }
 
-    // @todo handle unwrap
-    // get all the tokens from the collected noir files, along with the path to their origin file
-    println!("{}", "Collecting tokens from files".cyan());
-    let (tokens_with_paths, _) = collect_tokens(&noir_files)
-        .expect("No Noir files found... Are you in the right directory?");
+    println!("{}", "Collecting tokens from files".green());
+
+    let (tokens_with_paths, test_count) = collect_tokens(&files).expect(
+        "No tokens found");
+
+    println!(
+        "{}",
+        format!("Analysing {} tokens", tokens_with_paths.len()).green()
+    );
 
     let mut mutants: Vec<Mutant> = vec![];
-    println!("{}", "Building mutants".cyan());
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();
@@ -43,9 +49,19 @@ pub fn mutate(_args: Args, config: LangConfig) -> Result<()> {
         }
     }
 
-    parallel_process_mutated_tokens(&mut mutants);
+    let num_mutants: usize = mutants.len();
 
-    // println!("mutants: {:#?}", mutants);
+    println!(
+        "{}",
+        format!("Mutable tokens found: {}", num_mutants).cyan()
+    );
+    println!(
+        "{}",
+        format!("Runs of test suite required: {}", num_mutants * test_count).magenta()
+    );
+
+    println!("{}", "Running tests...".green());
+    parallel_process_mutated_tokens(&mut mutants);
 
     // Create a new table
     let mut table = Table::new();

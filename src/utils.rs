@@ -77,8 +77,11 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
                 if path_buf.ends_with("/temp") {
                     continue;
                 }
-                let sub_results = find_source_files(ext, &path_buf)?;
-                results.extend(sub_results);
+                let sub_results = find_source_files(ext, &path_buf);
+                match sub_results {
+                    Ok(sub_results) => results.extend(sub_results),
+                    Err(_) => continue,
+                }
             } else if path_buf
                 .extension()
                 .map_or(false, |extension| extension == ext)
@@ -103,6 +106,12 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
             }
         }
     }
+    if results.is_empty() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "No files found",
+        ));
+    }
     Ok(results)
 }
 
@@ -123,8 +132,8 @@ pub fn collect_tokens(
 
             // Noir tests are included in the output files so they can be run against their respective mutants.
             // They're excluded from token collection and mutant generation so we don't mess up the tests themselves
-            let pattern = Regex::new(r"#\[test\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            test_count += pattern.find_iter(&contents).count();
+            let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+test_count += pattern.find_iter(&contents).count();
             contents = pattern.replace_all(&contents, "").to_string();
 
             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());

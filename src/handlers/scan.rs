@@ -4,24 +4,27 @@ use crate::utils::{collect_tokens, find_source_files};
 use colored::*;
 use std::{io::Result, path::Path};
 
-pub fn scan(_args: Args, config: LangConfig) -> Result<()> {
-    println!("{}", format!("Searching for {} files", config.name).cyan());
-    println!("Scanning files for mutants...");
-    let files = find_source_files(config.ext, Path::new("."))?;
-    println!("{}", "Found:".cyan());
-    for file in &files {
-        println!("{}", format!("{}", file.1.as_path().display()).red());
-    }
-    println!("{}", "Collecting tokens from files".cyan());
-    let (tokens_with_paths, test_count) = collect_tokens(&files).expect(&format!(
+pub fn analize(_args: Args, config: LangConfig) -> Result<()> {
+    println!("{}", "Initiating source file analysis...".green());
+    println!("{}", format!("Searching for {} files", config.name).green());
+    let files = find_source_files(config.ext, Path::new(".")).expect(&format!(
         "No {} files found... Are you in the right directory?",
         config.name.red()
     ));
-    println!("Scanning...");
+
+    println!("{}", "Files found:".cyan());
+    for file in &files {
+        println!("{}", format!("{}", file.1.as_path().display()).red());
+    }
+
+    println!("{}", "Collecting tokens from files".green());
+
+    let (tokens_with_paths, test_count) = collect_tokens(&files).expect(
+        "No tokens found");
 
     println!(
         "{}",
-        format!("Analysing {} tokens", tokens_with_paths.len()).cyan()
+        format!("Analysing {} tokens", tokens_with_paths.len()).green()
     );
 
     let mut mutants: Vec<Mutant> = vec![];
@@ -45,11 +48,11 @@ pub fn scan(_args: Args, config: LangConfig) -> Result<()> {
 
     println!(
         "{}",
-        format!("Found {} tokens to mutate", num_mutants).yellow()
+        format!("Mutable tokens found: {}", num_mutants).cyan()
     );
     println!(
         "{}",
-        format!("{} runs of test suite required !", num_mutants * test_count).magenta()
+        format!("Runs of test suite required: {}", num_mutants * test_count).magenta()
     );
 
     Ok(())
