@@ -1,4 +1,5 @@
-use noirc_frontend::token::Token;
+// use noirc_frontend::token::Token;
+use crate::utils::Token;
 use std::{fmt, path::Path};
 
 #[derive(Debug, Clone)]

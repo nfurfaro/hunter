@@ -24,8 +24,7 @@ pub fn mutate(_args: Args, config: LangConfig) -> Result<()> {
 
     println!("{}", "Collecting tokens from files".green());
 
-    let (tokens_with_paths, test_count) = collect_tokens(&files).expect(
-        "No tokens found");
+    let (tokens_with_paths, test_count) = collect_tokens(&files).expect("No tokens found");
 
     println!(
         "{}",
@@ -36,11 +35,10 @@ pub fn mutate(_args: Args, config: LangConfig) -> Result<()> {
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();
-        let span = spanned_token.to_span();
         let maybe_mutant = mutant_builder(
             entry.2,
             spanned_token.token().clone(),
-            (span.start(), span.end()),
+            spanned_token.span(),
             Path::new(path),
         );
         match maybe_mutant {

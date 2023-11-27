@@ -122,10 +122,13 @@ mod tests {
             .output()
             .expect("Failed to execute command");
 
-            assert!(str::from_utf8(&output.stdout).unwrap().contains("No language specified, defaulting to Noir"));
-            assert!(str::from_utf8(&output.stdout).unwrap().contains("Welcome to Hunter, a tool for performing automated mutation-testing."));
+        assert!(str::from_utf8(&output.stdout)
+            .unwrap()
+            .contains("No language specified, defaulting to Noir"));
+        assert!(str::from_utf8(&output.stdout)
+            .unwrap()
+            .contains("Welcome to Hunter, a tool for performing automated mutation-testing."));
     }
-
 
     #[test]
     fn test_run_cli_scan() {

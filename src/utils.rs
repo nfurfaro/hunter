@@ -1,5 +1,6 @@
-use noirc_frontend::token::{SpannedToken, Token};
+// use noirc_frontend::token::{SpannedToken, Token};
 use prettytable::{Cell as table_cell, Row, Table};
+use regex::Regex;
 use std::io::Write;
 use std::{
     cell::Cell,
@@ -9,7 +10,71 @@ use std::{
 };
 use toml;
 
-use regex::Regex;
+#[derive(Debug, PartialEq, Clone)]
+pub enum Token {
+    /// <
+    Less,
+    /// <=
+    LessEqual,
+    /// >
+    Greater,
+    /// >=
+    GreaterEqual,
+    /// ==
+    Equal,
+    /// !=
+    NotEqual,
+    /// +
+    Plus,
+    /// -
+    Minus,
+    /// *
+    Star,
+    /// /
+    Slash,
+    /// %
+    Percent,
+    /// &
+    Ampersand,
+    /// ^
+    Caret,
+    /// <<
+    ShiftLeft,
+    /// >>
+    ShiftRight,
+    /// |
+    Pipe,
+    /// !
+    Bang,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct SpannedToken {
+    token: Token,
+    span: (u32, u32),
+}
+
+impl SpannedToken {
+    pub fn new(token: Token, span: (u32, u32)) -> Self {
+        Self { token, span }
+    }
+
+    pub fn token(&self) -> &Token {
+        &self.token
+    }
+
+    pub fn span(&self) -> (u32, u32) {
+        self.span
+    }
+
+    pub fn span_start(&self) -> u32 {
+        self.span.0
+    }
+
+    pub fn span_end(&self) -> u32 {
+        self.span.1
+    }
+}
 
 pub fn print_line_in_span(
     table: &mut Table,
@@ -130,23 +195,79 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            // Noir tests are included in the output files so they can be run against their respective mutants.
-            // They're excluded from token collection and mutant generation so we don't mess up the tests themselves
             let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-test_count += pattern.find_iter(&contents).count();
+            test_count += pattern.find_iter(&contents).count();
             contents = pattern.replace_all(&contents, "").to_string();
 
-            let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
-            tokens.extend(t.0.iter().map(|spanned_token| {
-                let token = (spanned_token.clone(), path, i.get());
-                i.set(i.get() + 1);
-                token
-            }));
+            let token_patterns: Vec<(&str, Token)> = vec![
+                (r"<=", Token::LessEqual),
+                (r"<", Token::Less),
+                (r">=", Token::GreaterEqual),
+                (r">", Token::Greater),
+                (r"==", Token::Equal),
+                (r"!=", Token::NotEqual),
+                (r"\+", Token::Plus),
+                (r"-", Token::Minus),
+                (r"\*", Token::Star),
+                (r"/", Token::Slash),
+                (r"%", Token::Percent),
+                (r"&", Token::Ampersand),
+                (r"\^", Token::Caret),
+                (r"<<", Token::ShiftLeft),
+                (r">>", Token::ShiftRight),
+                (r"\|", Token::Pipe),
+                (r"!", Token::Bang),
+            ];
+
+            for (pattern, token) in token_patterns {
+                let regex = Regex::new(pattern).unwrap();
+                for mat in regex.find_iter(&contents) {
+                    tokens.push((
+                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
+                        path,
+                        i.get(),
+                    ));
+                    i.set(i.get() + 1);
+                }
+            }
         }
 
         Some((tokens, test_count))
     }
 }
+
+// pub fn collect_tokens(
+//     src_noir_files: &Vec<(File, PathBuf)>,
+// ) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
+//     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
+//     let mut test_count = 0;
+
+//     if src_noir_files.is_empty() {
+//         return None;
+//     } else {
+//         let i = Cell::new(0);
+//         for (file, path) in src_noir_files {
+//             let mut buf_reader = BufReader::new(file);
+//             let mut contents = String::new();
+//             let _res = buf_reader.read_to_string(&mut contents);
+
+//             // Noir tests are included in the output files so they can be run against their respective mutants.
+//             // They're excluded from token collection and mutant generation so we don't mess up the tests themselves
+//             let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+// test_count += pattern.find_iter(&contents).count();
+//             contents = pattern.replace_all(&contents, "").to_string();
+
+//             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
+//             tokens.extend(t.0.iter().map(|spanned_token| {
+//                 let token = (spanned_token.clone(), path, i.get());
+//                 i.set(i.get() + 1);
+//                 token
+//             }));
+//         }
+
+//         Some((tokens, test_count))
+//     }
+// }
 
 pub fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
     match token {
