@@ -18,8 +18,8 @@ rayon = "1.5"
 tempfile = "3.8.1"
 
 # switch to git dependency
-noirc_frontend = { path = "../../noir_dev/noir/compiler/noirc_frontend" }
-noirc_errors = { path = "../../noir_dev/noir/compiler/noirc_errors"}
+# noirc_frontend = { path = "../../noir_dev/noir/compiler/noirc_frontend" }
+# noirc_errors = { path = "../../noir_dev/noir/compiler/noirc_errors"}
 regex = "1.10.2"
 toml = "0.8.8"
 

@@ -1,24 +1,23 @@
-// use regex::Regex;
 use std::{
     fs::{copy, create_dir_all, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
     process::Command,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
-
-use indicatif::{ProgressBar, ProgressStyle};
-use prettytable::{Cell, Row, Table};
-use rayon::iter::ParallelIterator;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 
 use crate::mutant::{Mutant, MutationStatus};
 use crate::utils::*;
-
+use indicatif::{ProgressBar, ProgressStyle};
+use prettytable::{Cell, Row, Table};
+use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
 
-pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
+pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: LangConfig) {
     let total_mutants = mutants.len();
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
@@ -63,7 +62,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         copy(source_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
-        replace_bytes(&mut original_bytes, m.start() as usize, &m.bytes());
+        replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
         // After modifying the contents, write it back to the file
@@ -77,7 +76,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         file.write_all(contents.as_bytes()).unwrap();
 
         // run_test_suite
-        let output = Command::new("nargo")
+        let test_runner = config.test_runner;
+        let output = Command::new(test_runner)
             .arg("test")
             // .arg("-- package hunter")
             .output()

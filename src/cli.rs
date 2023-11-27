@@ -1,8 +1,8 @@
 use crate::handlers;
+use crate::utils::{LangConfig, Language};
 use clap::Parser;
 use colored::*;
 use std::io::Result;
-use std::str::FromStr;
 
 #[derive(Parser, PartialEq)]
 pub enum Subcommand {
@@ -10,31 +10,6 @@ pub enum Subcommand {
     Scan,
     /// Mutate and run tests
     Mutate,
-}
-
-pub struct LangConfig {
-    pub name: &'static str,
-    pub ext: &'static str,
-    pub test_command: &'static str,
-    pub test_runner: &'static str,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Language {
-    Noir,
-    Sway,
-}
-
-impl FromStr for Language {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "noir" => Ok(Language::Noir),
-            "sway" => Ok(Language::Sway),
-            _ => Err("no matching languages supported"),
-        }
-    }
 }
 
 /// Mutate Noir code and run tests against each mutation.

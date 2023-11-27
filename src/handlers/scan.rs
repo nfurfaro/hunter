@@ -1,6 +1,6 @@
-use crate::cli::{Args, LangConfig};
+use crate::cli::Args;
 use crate::mutant::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, find_source_files};
+use crate::utils::{collect_tokens, find_source_files, LangConfig};
 use colored::*;
 use std::{io::Result, path::Path};
 

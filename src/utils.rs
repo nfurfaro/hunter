@@ -1,4 +1,3 @@
-// use noirc_frontend::token::{SpannedToken, Token};
 use prettytable::{Cell as table_cell, Row, Table};
 use regex::Regex;
 use std::io::Write;
@@ -7,8 +6,34 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 use toml;
+
+pub struct LangConfig {
+    pub name: &'static str,
+    pub ext: &'static str,
+    pub test_command: &'static str,
+    pub test_runner: &'static str,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Language {
+    Noir,
+    Sway,
+}
+
+impl FromStr for Language {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "noir" => Ok(Language::Noir),
+            "sway" => Ok(Language::Sway),
+            _ => Err("no matching languages supported"),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -44,8 +69,7 @@ pub enum Token {
     ShiftRight,
     /// |
     Pipe,
-    /// !
-    Bang,
+    // Bang,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -153,7 +177,8 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
             {
                 let path = path_buf.as_path();
 
-                // @todo use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
+                // @refactor use cli options to configure excluded directories here, ie: file prefix, temp location, etc.
+                // @refactor move /temp creation out of this function, should be read-only !
                 if !path.starts_with("./temp") {
                     let current_dir =
                         std::env::current_dir().expect("Failed to get current directory");
@@ -181,16 +206,16 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
 }
 
 pub fn collect_tokens(
-    src_noir_files: &Vec<(File, PathBuf)>,
+    src_files: &Vec<(File, PathBuf)>,
 ) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
     let mut test_count = 0;
 
-    if src_noir_files.is_empty() {
+    if src_files.is_empty() {
         return None;
     } else {
         let i = Cell::new(0);
-        for (file, path) in src_noir_files {
+        for (file, path) in src_files {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
@@ -201,22 +226,21 @@ pub fn collect_tokens(
 
             let token_patterns: Vec<(&str, Token)> = vec![
                 (r"<=", Token::LessEqual),
-                (r"<", Token::Less),
+                (r" < ", Token::Less),
                 (r">=", Token::GreaterEqual),
-                (r">", Token::Greater),
+                (r" > ", Token::Greater),
                 (r"==", Token::Equal),
                 (r"!=", Token::NotEqual),
                 (r"\+", Token::Plus),
-                (r"-", Token::Minus),
-                (r"\*", Token::Star),
-                (r"/", Token::Slash),
+                (r" - ", Token::Minus),
+                (r" \* ", Token::Star),
+                (r" / ", Token::Slash),
                 (r"%", Token::Percent),
                 (r"&", Token::Ampersand),
                 (r"\^", Token::Caret),
                 (r"<<", Token::ShiftLeft),
                 (r">>", Token::ShiftRight),
                 (r"\|", Token::Pipe),
-                (r"!", Token::Bang),
             ];
 
             for (pattern, token) in token_patterns {
@@ -287,7 +311,6 @@ pub fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
         Token::Star => Some(b"*"),
         Token::Slash => Some(b"/"),
         Token::Percent => Some(b"%"),
-        _ => None,
     }
 }
 
@@ -351,9 +374,16 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.noir");
         let mut file = File::create(&file_path).unwrap();
-        writeln!(file, "let x = 42;").unwrap();
-        let temp_noir_files = vec![(file, file_path.clone())];
-        let (tokens, _) = collect_tokens(&temp_noir_files).unwrap();
+        write!(
+            file,
+            "fn main(x : Field, y : pub Field) {{
+            assert(x == y);
+        }}"
+        )
+        .expect("Could not write to file");
+        let temp_files = vec![(file, file_path.clone())];
+        let (tokens, _) = collect_tokens(&temp_files).unwrap();
+        dbg!(tokens.clone());
         assert!(!tokens.is_empty());
         assert_eq!(tokens[0].1, &file_path);
         dir.close().unwrap();
