@@ -55,7 +55,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: LangCo
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.ext);
         // @fix use a temp file path that is unique to the mutant
         // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
         // let temp_file_path = format!("./src/main.nr");
@@ -76,10 +76,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: LangCo
         file.write_all(contents.as_bytes()).unwrap();
 
         // run_test_suite
-        let test_runner = config.test_runner;
-        let output = Command::new(test_runner)
-            .arg("test")
-            // .arg("-- package hunter")
+        let output = Command::new(config.test_runner)
+            .arg(config.test_command)
             .output()
             .expect("Failed to execute command");
 
@@ -100,7 +98,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: LangCo
             //     panic!("test aborted due to previous errors");
             // }
 
-            if stderr.contains("test failed")
+            if (stderr.contains("test failed") || stderr.contains("FAILED"))
                 && !stderr.contains("aborting due to 1 previous errors")
             {
                 println!("test failed and contains test failed");
