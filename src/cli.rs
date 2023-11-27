@@ -112,11 +112,44 @@ pub async fn run_cli() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::process::Command;
+    use std::str;
 
-    #[tokio::test]
-    #[should_panic(expected = "No Source files found... Are you in the right directory?")]
-    async fn test_run_cli() {
-        run_cli().await.unwrap();
+    #[test]
+    fn test_run_cli() {
+        let output = Command::new("cargo")
+            .arg("run")
+            .output()
+            .expect("Failed to execute command");
+
+            assert!(str::from_utf8(&output.stdout).unwrap().contains("No language specified, defaulting to Noir"));
+            assert!(str::from_utf8(&output.stdout).unwrap().contains("Welcome to Hunter, a tool for performing automated mutation-testing."));
+    }
+
+
+    #[test]
+    fn test_run_cli_scan() {
+        let output = Command::new("cargo")
+            .arg("run")
+            .arg("--")
+            .arg("scan")
+            .output()
+            .expect("Failed to execute command");
+
+        let output_str = str::from_utf8(&output.stderr).unwrap();
+        assert!(output_str.contains("No Noir files found... Are you in the right directory?"));
+    }
+
+    #[test]
+    fn test_run_cli_mutate() {
+        let output = Command::new("cargo")
+            .arg("run")
+            .arg("--")
+            .arg("mutate")
+            .output()
+            .expect("Failed to execute command");
+
+        let output_str = str::from_utf8(&output.stderr).unwrap();
+        assert!(output_str.contains("No Noir files found... Are you in the right directory?"));
     }
 }
