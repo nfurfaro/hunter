@@ -17,7 +17,7 @@ use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
 
-pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: LangConfig) {
+pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config) {
     let total_mutants = mutants.len();
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
@@ -120,7 +120,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: LangCo
         .parent()
         .unwrap()
         .to_path_buf();
-    std::env::set_current_dir(&parent_dir).expect("Failed to change directory");
+    std::env::set_current_dir(parent_dir).expect("Failed to change directory");
 
     bar.finish_with_message("All mutants processed!");
 

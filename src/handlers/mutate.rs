@@ -1,12 +1,12 @@
 use crate::cli::Args;
 use crate::mutant::{mutant_builder, Mutant, MutationStatus};
 use crate::parallel::parallel_process_mutated_tokens;
-use crate::utils::{collect_tokens, find_source_files, print_line_in_span, LangConfig};
+use crate::utils::{collect_tokens, find_source_files, print_line_in_span, Config};
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
 
-pub fn mutate(_args: Args, config: LangConfig) -> Result<()> {
+pub fn mutate(_args: Args, config: Config) -> Result<()> {
     // add a [workspace] to the project manifest
     // modify_toml();
 

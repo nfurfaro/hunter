@@ -1,5 +1,5 @@
 use crate::handlers;
-use crate::utils::{LangConfig, Language};
+use crate::utils::{Config, Language};
 use clap::Parser;
 use colored::*;
 use std::io::Result;
@@ -48,13 +48,13 @@ pub async fn run_cli() -> Result<()> {
     }
 
     let language_config = match args.language {
-        Some(Language::Noir) => LangConfig {
+        Some(Language::Noir) => Config {
             name: "Noir",
             ext: "nr",
             test_command: "test",
             test_runner: "nargo",
         },
-        Some(Language::Sway) => LangConfig {
+        Some(Language::Sway) => Config {
             name: "Sway",
             ext: "sw",
             test_command: "test",
@@ -62,7 +62,7 @@ pub async fn run_cli() -> Result<()> {
         },
         None => {
             println!("No language specified, defaulting to Noir");
-            LangConfig {
+            Config {
                 name: "Noir",
                 ext: "nr",
                 test_command: "test",
@@ -72,7 +72,7 @@ pub async fn run_cli() -> Result<()> {
     };
 
     match args.subcommand {
-        Some(Subcommand::Scan) => handlers::scan::analize(args, language_config),
+        Some(Subcommand::Scan) => handlers::scan::analyze(args, language_config),
         Some(Subcommand::Mutate) => handlers::mutate::mutate(args, language_config),
         None => {
             println!(

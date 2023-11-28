@@ -10,7 +10,7 @@ use std::{
 };
 use toml;
 
-pub struct LangConfig {
+pub struct Config {
     pub name: &'static str,
     pub ext: &'static str,
     pub test_command: &'static str,
