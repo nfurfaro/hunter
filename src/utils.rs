@@ -199,13 +199,16 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            let exclude_pattern =
+            // let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            // let exclude_pattern =
                 Regex::new(r"/\*[*]?([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/").unwrap();
 
-            pattern
+            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            let comment_pattern = Regex::new(r"(^//.*)|(/\*(?s:.*?)\*/)").unwrap();
+
+            test_pattern
                 .find_iter(&contents)
-                .filter(|mat| !exclude_pattern.is_match(mat.as_str()))
+                .filter(|mat| !comment_pattern.is_match(mat.as_str()))
                 .filter(|mat| {
                     mat.as_str()
                         .lines()
@@ -214,7 +217,7 @@ pub fn collect_tokens(
                 .for_each(|_| {
                     test_count += 1;
                 });
-            contents = pattern.replace_all(&contents, "").to_string();
+            contents = test_pattern.replace_all(&contents, "").to_string();
 
             let token_patterns: Vec<(&str, Token)> = vec![
                 (r"<=", Token::LessEqual),
