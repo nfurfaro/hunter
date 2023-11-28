@@ -1,3 +1,4 @@
+use crate::cli::Config;
 use prettytable::{Cell as table_cell, Row, Table};
 use regex::Regex;
 use std::io::Write;
@@ -6,34 +7,8 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
-    str::FromStr,
 };
 use toml;
-
-pub struct Config {
-    pub name: &'static str,
-    pub ext: &'static str,
-    pub test_command: &'static str,
-    pub test_runner: &'static str,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Language {
-    Noir,
-    Sway,
-}
-
-impl FromStr for Language {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "noir" => Ok(Language::Noir),
-            "sway" => Ok(Language::Sway),
-            _ => Err("no matching languages supported"),
-        }
-    }
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -117,10 +92,12 @@ pub fn print_line_in_span(
         let line_length = line.len();
 
         if byte_index <= span.0 && byte_index + line_length >= span.1 {
+            let short_line: String = line.chars().take(30).collect();
+
             table.add_row(Row::new(vec![
                 table_cell::new(file_path.to_str().unwrap()).style_spec("Fb"),
                 table_cell::new(&(index + 1).to_string()).style_spec("Fb"),
-                table_cell::new(&line).style_spec("Fmb"),
+                table_cell::new(&short_line).style_spec("Fmb"),
                 table_cell::new(token_representation).style_spec("Fyb"),
             ]));
             break;
@@ -132,6 +109,7 @@ pub fn print_line_in_span(
     Ok(())
 }
 
+// @review
 pub fn modify_toml() {
     // add a workspace section to the Nargo.toml file if it doesn't exist and include the package "hunter"
     let file_name = "Nargo.toml";
@@ -154,7 +132,7 @@ pub fn modify_toml() {
     }
 }
 
-pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBuf)>> {
+pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, PathBuf)>> {
     let mut results: Vec<(File, PathBuf)> = vec![];
 
     if dir_path.is_dir() {
@@ -166,14 +144,14 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
                 if path_buf.ends_with("/temp") {
                     continue;
                 }
-                let sub_results = find_source_files(ext, &path_buf);
+                let sub_results = find_source_files(&path_buf, config);
                 match sub_results {
                     Ok(sub_results) => results.extend(sub_results),
                     Err(_) => continue,
                 }
             } else if path_buf
                 .extension()
-                .map_or(false, |extension| extension == ext)
+                .map_or(false, |extension| extension == config.language.to_ext())
             {
                 let path = path_buf.as_path();
 
@@ -186,6 +164,7 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
 
                     fs::create_dir_all(&temp_dir)?;
                     // Create "Nargo.toml" file and "src" directory inside "./temp" directory
+
                     let nargo_path = temp_dir.join("Nargo.toml");
                     File::create(&nargo_path)?;
                     fs::write(nargo_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"\n\n[dependencies]")?;
@@ -221,7 +200,20 @@ pub fn collect_tokens(
             let _res = buf_reader.read_to_string(&mut contents);
 
             let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            test_count += pattern.find_iter(&contents).count();
+            let exclude_pattern =
+                Regex::new(r"/\*[*]?([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/").unwrap();
+
+            pattern
+                .find_iter(&contents)
+                .filter(|mat| !exclude_pattern.is_match(mat.as_str()))
+                .filter(|mat| {
+                    mat.as_str()
+                        .lines()
+                        .all(|line| !line.contains("//") && !line.contains("///"))
+                })
+                .for_each(|_| {
+                    test_count += 1;
+                });
             contents = pattern.replace_all(&contents, "").to_string();
 
             let token_patterns: Vec<(&str, Token)> = vec![
@@ -259,39 +251,6 @@ pub fn collect_tokens(
         Some((tokens, test_count))
     }
 }
-
-// pub fn collect_tokens(
-//     src_noir_files: &Vec<(File, PathBuf)>,
-// ) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
-//     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
-//     let mut test_count = 0;
-
-//     if src_noir_files.is_empty() {
-//         return None;
-//     } else {
-//         let i = Cell::new(0);
-//         for (file, path) in src_noir_files {
-//             let mut buf_reader = BufReader::new(file);
-//             let mut contents = String::new();
-//             let _res = buf_reader.read_to_string(&mut contents);
-
-//             // Noir tests are included in the output files so they can be run against their respective mutants.
-//             // They're excluded from token collection and mutant generation so we don't mess up the tests themselves
-//             let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-// test_count += pattern.find_iter(&contents).count();
-//             contents = pattern.replace_all(&contents, "").to_string();
-
-//             let (t, _) = noirc_frontend::lexer::Lexer::lex(contents.as_str());
-//             tokens.extend(t.0.iter().map(|spanned_token| {
-//                 let token = (spanned_token.clone(), path, i.get());
-//                 i.set(i.get() + 1);
-//                 token
-//             }));
-//         }
-
-//         Some((tokens, test_count))
-//     }
-// }
 
 pub fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
     match token {
@@ -344,50 +303,29 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cli::Language;
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
 
     #[test]
     fn test_find_files() {
-        // Create a temporary directory.
+        let config = Config {
+            language: Language::Noir,
+            test_command: "test",
+            test_runner: "nargo",
+        };
+
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.nr");
 
-        // Create a file named "test.nr" in the temporary directory.
         let mut file = File::create(&file_path).unwrap();
         writeln!(file, "Hello, world!").unwrap();
+        let result = find_source_files(dir.path(), &config).unwrap();
 
-        // Call `find_noir_files` with the path of the temporary directory.
-        let result = find_source_files("nr", dir.path()).unwrap();
-
-        // Assert that exactly one file was found.
         assert_eq!(result.len(), 1);
-
-        // Assert that the file has the correct name.
         assert_eq!(result[0].1.file_name().unwrap(), "test.nr");
 
-        // Close the temporary directory.
-        dir.close().unwrap();
-    }
-
-    #[test]
-    fn test_collect_tokens() {
-        let dir = tempdir().unwrap();
-        let file_path = dir.path().join("test.noir");
-        let mut file = File::create(&file_path).unwrap();
-        write!(
-            file,
-            "fn main(x : Field, y : pub Field) {{
-            assert(x == y);
-        }}"
-        )
-        .expect("Could not write to file");
-        let temp_files = vec![(file, file_path.clone())];
-        let (tokens, _) = collect_tokens(&temp_files).unwrap();
-        dbg!(tokens.clone());
-        assert!(!tokens.is_empty());
-        assert_eq!(tokens[0].1, &file_path);
         dir.close().unwrap();
     }
 

@@ -1,8 +1,47 @@
 use crate::handlers;
-use crate::utils::{Config, Language};
 use clap::Parser;
 use colored::*;
-use std::io::Result;
+use std::{io::Result, str::FromStr};
+
+pub struct Config {
+    pub language: Language,
+    pub test_command: &'static str,
+    pub test_runner: &'static str,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Language {
+    Noir,
+    Sway,
+}
+
+impl FromStr for Language {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "noir" => Ok(Language::Noir),
+            "sway" => Ok(Language::Sway),
+            _ => Err("no matching languages supported"),
+        }
+    }
+}
+
+impl Language {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            Language::Noir => "Noir",
+            Language::Sway => "Sway",
+        }
+    }
+
+    pub fn to_ext(&self) -> &'static str {
+        match self {
+            Language::Noir => "nr",
+            Language::Sway => "sw",
+        }
+    }
+}
 
 #[derive(Parser, PartialEq)]
 pub enum Subcommand {
@@ -47,24 +86,22 @@ pub async fn run_cli() -> Result<()> {
         return Ok(());
     }
 
-    let language_config = match args.language {
+    let config = match args.language {
         Some(Language::Noir) => Config {
-            name: "Noir",
-            ext: "nr",
+            language: Language::Noir,
             test_command: "test",
             test_runner: "nargo",
         },
         Some(Language::Sway) => Config {
-            name: "Sway",
-            ext: "sw",
+            language: Language::Sway,
             test_command: "test",
             test_runner: "forc",
         },
         None => {
+            // @review this default
             println!("No language specified, defaulting to Noir");
             Config {
-                name: "Noir",
-                ext: "nr",
+                language: Language::Noir,
                 test_command: "test",
                 test_runner: "nargo",
             }
@@ -72,8 +109,8 @@ pub async fn run_cli() -> Result<()> {
     };
 
     match args.subcommand {
-        Some(Subcommand::Scan) => handlers::scan::analyze(args, language_config),
-        Some(Subcommand::Mutate) => handlers::mutate::mutate(args, language_config),
+        Some(Subcommand::Scan) => handlers::scan::analyze(args, config),
+        Some(Subcommand::Mutate) => handlers::mutate::mutate(args, config),
         None => {
             println!(
                 "{}",

@@ -9,6 +9,7 @@ use std::{
     },
 };
 
+use crate::cli::Config;
 use crate::mutant::{Mutant, MutationStatus};
 use crate::utils::*;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -55,7 +56,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.ext);
+        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language.to_ext());
         // @fix use a temp file path that is unique to the mutant
         // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
         // let temp_file_path = format!("./src/main.nr");

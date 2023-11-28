@@ -1,14 +1,21 @@
-use crate::cli::Args;
+use crate::cli::{Args, Config};
 use crate::mutant::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, find_source_files, Config};
+use crate::utils::{collect_tokens, find_source_files};
 use colored::*;
 use std::{io::Result, path::Path};
 
 pub fn analyze(_args: Args, config: Config) -> Result<()> {
     println!("{}", "Initiating source file analysis...".green());
-    println!("{}", format!("Searching for {} files", config.name).green());
-    let files = find_source_files(config.ext, Path::new(".")).unwrap_or_else(|_| panic!("No {} files found... Are you in the right directory?",
-        config.name.red()));
+    println!(
+        "{}",
+        format!("Searching for {} files", config.language.to_str()).green()
+    );
+    let files = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
+        panic!(
+            "No {} files found... Are you in the right directory?",
+            config.language.to_str().red()
+        )
+    });
 
     println!("{}", "Files found:".cyan());
     for file in &files {

@@ -1,7 +1,7 @@
-use crate::cli::Args;
+use crate::cli::{Args, Config};
 use crate::mutant::{mutant_builder, Mutant, MutationStatus};
 use crate::parallel::parallel_process_mutated_tokens;
-use crate::utils::{collect_tokens, find_source_files, print_line_in_span, Config};
+use crate::utils::{collect_tokens, find_source_files, print_line_in_span};
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
@@ -11,11 +11,14 @@ pub fn mutate(_args: Args, config: Config) -> Result<()> {
     // modify_toml();
 
     println!("{}", "Initiating source file analysis...".green());
-    println!("{}", format!("Searching for {} files", config.name).green());
-    let files = find_source_files(config.ext, Path::new(".")).unwrap_or_else(|_| {
+    println!(
+        "{}",
+        format!("Searching for {} files", config.language.to_str()).green()
+    );
+    let files = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
-            config.name.red()
+            config.language.to_str().red()
         )
     });
 
@@ -71,7 +74,7 @@ pub fn mutate(_args: Args, config: Config) -> Result<()> {
     table.add_row(Row::new(vec![
         Cell::new("Source file:").style_spec("Fyb"),
         Cell::new("Line #:").style_spec("Fyb"),
-        Cell::new("    Mutant context:").style_spec("Fyb"),
+        Cell::new("Mutant context:").style_spec("Fyb"),
         Cell::new("Original:").style_spec("Fyb"),
     ]));
 
