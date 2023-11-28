@@ -66,7 +66,10 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
     println!("{}", "Running tests...".green());
     parallel_process_mutated_tokens(&mut mutants, config);
 
-    // Create a new table
+
+
+    if args.verbose {
+        // Create a new table
     let mut table = Table::new();
     table.add_row(Row::new(vec![
         Cell::new("Surviving Mutants").style_spec("Fmb")
@@ -78,7 +81,6 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
         Cell::new("Original:").style_spec("Fyb"),
     ]));
 
-    if args.verbose {
         for mutant in &mutants {
             if mutant.status() == MutationStatus::Survived || mutant.status() == MutationStatus::Pending
             {
