@@ -7,10 +7,8 @@ use std::{io::Result, path::Path};
 pub fn analyze(_args: Args, config: Config) -> Result<()> {
     println!("{}", "Initiating source file analysis...".green());
     println!("{}", format!("Searching for {} files", config.name).green());
-    let files = find_source_files(config.ext, Path::new(".")).expect(&format!(
-        "No {} files found... Are you in the right directory?",
-        config.name.red()
-    ));
+    let files = find_source_files(config.ext, Path::new(".")).unwrap_or_else(|_| panic!("No {} files found... Are you in the right directory?",
+        config.name.red()));
 
     println!("{}", "Files found:".cyan());
     for file in &files {

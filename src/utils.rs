@@ -109,7 +109,7 @@ pub fn print_line_in_span(
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let mut byte_index = 0;
-    let temp = String::from_utf8_lossy(&get_bytes_from_token(token.clone()).unwrap());
+    let temp = String::from_utf8_lossy(get_bytes_from_token(token.clone()).unwrap());
     let token_representation = temp.as_ref();
 
     for (index, line) in reader.lines().enumerate() {
@@ -190,7 +190,7 @@ pub fn find_source_files(ext: &str, dir_path: &Path) -> Result<Vec<(File, PathBu
                     File::create(&nargo_path)?;
                     fs::write(nargo_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"\n\n[dependencies]")?;
                     fs::create_dir_all(temp_dir.join("src"))?;
-                    let file = File::open(&path)?;
+                    let file = File::open(path)?;
                     results.push((file, path_buf));
                 }
             }
@@ -212,7 +212,7 @@ pub fn collect_tokens(
     let mut test_count = 0;
 
     if src_files.is_empty() {
-        return None;
+        None
     } else {
         let i = Cell::new(0);
         for (file, path) in src_files {
@@ -328,15 +328,17 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
     };
     let replacement_length = replacement.len();
 
-    if original_operator_length > replacement_length {
-        original_bytes.remove(start_index + 1);
-    } else if original_operator_length < replacement_length {
-        original_bytes.insert(start_index + 1, b' ');
+    match original_operator_length.cmp(&replacement_length) {
+        std::cmp::Ordering::Greater => {
+            original_bytes.remove(start_index + 1);
+        }
+        std::cmp::Ordering::Less => {
+            original_bytes.insert(start_index + 1, b' ');
+        }
+        _ => (),
     }
 
-    for i in 0..replacement.len() {
-        original_bytes[start_index + i] = replacement[i];
-    }
+    original_bytes[start_index..(replacement.len() + start_index)].copy_from_slice(replacement);
 }
 
 #[cfg(test)]
