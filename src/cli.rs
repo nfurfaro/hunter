@@ -5,8 +5,8 @@ use std::{io::Result, str::FromStr};
 
 pub struct Config {
     pub language: Language,
-    pub test_command: &'static str,
     pub test_runner: &'static str,
+    pub test_command: &'static str,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -83,18 +83,18 @@ pub fn config(language: Language) -> Config {
     match language {
         Language::Noir => Config {
             language: Language::Noir,
-            test_command: "test",
             test_runner: "nargo",
+            test_command: "test",
         },
         Language::Sway => Config {
             language: Language::Sway,
-            test_command: "test",
             test_runner: "forc",
+            test_command: "test",
         },
         Language::Rust => Config {
             language: Language::Rust,
-            test_command: "test",
             test_runner: "cargo",
+            test_command: "test",
         },
     }
 }
