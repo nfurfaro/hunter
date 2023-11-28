@@ -92,7 +92,7 @@ pub fn print_line_in_span(
         let line_length = line.len();
 
         if byte_index <= span.0 && byte_index + line_length >= span.1 {
-            let short_line: String = line.chars().take(30).collect();
+            let short_line: String = line.chars().take(40).collect();
 
             table.add_row(Row::new(vec![
                 table_cell::new(file_path.to_str().unwrap()).style_spec("Fb"),

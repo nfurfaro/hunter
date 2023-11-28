@@ -64,7 +64,7 @@ pub struct Args {
     language: Option<Language>,
     /// The location of the hunter config file, defaults to ./hunter.toml
     #[clap(short, long)]
-    config: Option<std::path::PathBuf>,
+    manifest: Option<std::path::PathBuf>,
     /// The path to the source files directory, defaults to ./src
     #[clap(short, long)]
     source_dir: Option<std::path::PathBuf>,
@@ -74,6 +74,9 @@ pub struct Args {
     // Display information about the program
     #[clap(short, long)]
     info: bool,
+    // print table of surviving mutants
+    #[clap(short, long)]
+    pub verbose: bool,
     // Collect info about number of mutants found without running tests
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,

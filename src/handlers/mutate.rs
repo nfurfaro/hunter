@@ -6,7 +6,7 @@ use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
 
-pub fn mutate(_args: Args, config: Config) -> Result<()> {
+pub fn mutate(args: Args, config: Config) -> Result<()> {
     // add a [workspace] to the project manifest
     // modify_toml();
 
@@ -78,28 +78,30 @@ pub fn mutate(_args: Args, config: Config) -> Result<()> {
         Cell::new("Original:").style_spec("Fyb"),
     ]));
 
-    for mutant in &mutants {
-        if mutant.status() == MutationStatus::Survived || mutant.status() == MutationStatus::Pending
-        {
-            let span = mutant.span();
-            let span_usize = (span.0 as usize, span.1 as usize);
+    if args.verbose {
+        for mutant in &mutants {
+            if mutant.status() == MutationStatus::Survived || mutant.status() == MutationStatus::Pending
+            {
+                let span = mutant.span();
+                let span_usize = (span.0 as usize, span.1 as usize);
 
-            print_line_in_span(
-                &mut table,
-                Path::new(mutant.path()),
-                span_usize,
-                &mutant.token(),
-            )
-            .unwrap();
+                print_line_in_span(
+                    &mut table,
+                    Path::new(mutant.path()),
+                    span_usize,
+                    &mutant.token(),
+                )
+                .unwrap();
+            }
         }
+        table.printstd();
     }
 
-    table.printstd();
+
 
     println!("{}", "Cleaning up temp files".cyan());
 
     let current_dir = std::env::current_dir().unwrap();
-    println!("Current directory: {:?}", current_dir);
 
     // @fix
     // Remove the ./temp directory
