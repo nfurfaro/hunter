@@ -110,9 +110,9 @@ pub fn print_line_in_span(
 }
 
 // @review
-pub fn modify_toml() {
+pub fn modify_toml(config: &Config) {
     // add a workspace section to the Nargo.toml file if it doesn't exist and include the package "hunter"
-    let file_name = "Nargo.toml";
+    let file_name = config.manifest_name();
     let mut name = String::new();
 
     if Path::new(file_name).exists() {
@@ -151,7 +151,7 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
                 }
             } else if path_buf
                 .extension()
-                .map_or(false, |extension| extension == config.language.to_ext())
+                .map_or(false, |extension| extension == config.language().to_ext())
             {
                 let path = path_buf.as_path();
 
@@ -306,18 +306,14 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::Language;
+    use crate::cli::{Language, config};
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
 
     #[test]
     fn test_find_files() {
-        let config = Config {
-            language: Language::Noir,
-            test_command: "test",
-            test_runner: "nargo",
-        };
+        let config = config(Language::Noir);
 
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("test.nr");

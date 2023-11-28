@@ -8,17 +8,17 @@ use std::{io::Result, path::Path};
 
 pub fn mutate(args: Args, config: Config) -> Result<()> {
     // add a [workspace] to the project manifest
-    // modify_toml();
+    // modify_toml(config);
 
     println!("{}", "Initiating source file analysis...".green());
     println!(
         "{}",
-        format!("Searching for {} files", config.language.to_str()).green()
+        format!("Searching for {} files", config.language().to_str()).green()
     );
     let files = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
-            config.language.to_str().red()
+            config.language().to_str().red()
         )
     });
 
@@ -103,7 +103,7 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
 
     println!("{}", "Cleaning up temp files".cyan());
 
-    let current_dir = std::env::current_dir().unwrap();
+    let _current_dir = std::env::current_dir().unwrap();
 
     // @fix
     // Remove the ./temp directory

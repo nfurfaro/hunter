@@ -56,7 +56,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language.to_ext());
+        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language().to_ext());
         // @fix use a temp file path that is unique to the mutant
         // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
         // let temp_file_path = format!("./src/main.nr");
@@ -77,8 +77,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         file.write_all(contents.as_bytes()).unwrap();
 
         // run_test_suite
-        let output = Command::new(config.test_runner)
-            .arg(config.test_command)
+        let output = Command::new(config.test_runner())
+            .arg(config.test_command())
             .output()
             .expect("Failed to execute command");
 

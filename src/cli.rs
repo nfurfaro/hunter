@@ -4,9 +4,28 @@ use colored::*;
 use std::{io::Result, str::FromStr};
 
 pub struct Config {
-    pub language: Language,
-    pub test_runner: &'static str,
-    pub test_command: &'static str,
+    language: Language,
+    test_runner: &'static str,
+    test_command: &'static str,
+    manifest_name: &'static str,
+}
+
+impl Config {
+    pub fn language(&self) -> Language {
+        self.language.clone()
+    }
+
+    pub fn test_runner(&self) -> &'static str {
+        self.test_runner
+    }
+
+    pub fn test_command(&self) -> &'static str {
+        self.test_command
+    }
+
+    pub fn manifest_name(&self) -> &'static str {
+        self.manifest_name
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -88,16 +107,19 @@ pub fn config(language: Language) -> Config {
             language: Language::Noir,
             test_runner: "nargo",
             test_command: "test",
+            manifest_name: "Nargo.toml",
         },
         Language::Sway => Config {
             language: Language::Sway,
             test_runner: "forc",
             test_command: "test",
+            manifest_name: "Forc.toml",
         },
         Language::Rust => Config {
             language: Language::Rust,
             test_runner: "cargo",
             test_command: "test",
+            manifest_name: "Cargo.toml",
         },
     }
 }
