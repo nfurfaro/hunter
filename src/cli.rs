@@ -79,6 +79,26 @@ pub struct Args {
     subcommand: Option<Subcommand>,
 }
 
+pub fn config(language: Language) -> Config {
+    match language {
+        Language::Noir => Config {
+            language: Language::Noir,
+            test_command: "test",
+            test_runner: "nargo",
+        },
+        Language::Sway => Config {
+            language: Language::Sway,
+            test_command: "test",
+            test_runner: "forc",
+        },
+        Language::Rust => Config {
+            language: Language::Rust,
+            test_command: "test",
+            test_runner: "cargo",
+        },
+    }
+}
+
 pub async fn run_cli() -> Result<()> {
     let args = Args::parse();
 
@@ -90,32 +110,7 @@ pub async fn run_cli() -> Result<()> {
         return Ok(());
     }
 
-    let config = match args.language {
-        Some(Language::Noir) => Config {
-            language: Language::Noir,
-            test_command: "test",
-            test_runner: "nargo",
-        },
-        Some(Language::Sway) => Config {
-            language: Language::Sway,
-            test_command: "test",
-            test_runner: "forc",
-        },
-        Some(Language::Rust) => Config {
-            language: Language::Rust,
-            test_command: "test",
-            test_runner: "cargo",
-        },
-        None => {
-            // @review this default
-            println!("No language specified, defaulting to Noir");
-            Config {
-                language: Language::Noir,
-                test_command: "test",
-                test_runner: "nargo",
-            }
-        }
-    };
+    let config = config(args.language.clone().expect("No language specified"));
 
     match args.subcommand {
         Some(Subcommand::Scan) => handlers::scan::analyze(args, config),
