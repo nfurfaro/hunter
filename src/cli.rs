@@ -13,6 +13,7 @@ pub struct Config {
 pub enum Language {
     Noir,
     Sway,
+    Rust,
 }
 
 impl FromStr for Language {
@@ -22,6 +23,7 @@ impl FromStr for Language {
         match s.to_lowercase().as_str() {
             "noir" => Ok(Language::Noir),
             "sway" => Ok(Language::Sway),
+            "rust" => Ok(Language::Rust),
             _ => Err("no matching languages supported"),
         }
     }
@@ -32,6 +34,7 @@ impl Language {
         match self {
             Language::Noir => "Noir",
             Language::Sway => "Sway",
+            Language::Rust => "Rust",
         }
     }
 
@@ -39,6 +42,7 @@ impl Language {
         match self {
             Language::Noir => "nr",
             Language::Sway => "sw",
+            Language::Rust => "rs",
         }
     }
 }
@@ -96,6 +100,11 @@ pub async fn run_cli() -> Result<()> {
             language: Language::Sway,
             test_command: "test",
             test_runner: "forc",
+        },
+        Some(Language::Rust) => Config {
+            language: Language::Rust,
+            test_command: "test",
+            test_runner: "cargo",
         },
         None => {
             // @review this default
