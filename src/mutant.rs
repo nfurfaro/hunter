@@ -1,4 +1,4 @@
-use noirc_frontend::token::Token;
+use crate::utils::Token;
 use std::{fmt, path::Path};
 
 #[derive(Debug, Clone)]
@@ -54,11 +54,11 @@ impl<'a> Mutant<'a> {
         self.src_path
     }
 
-    pub fn start(&self) -> u32 {
+    pub fn span_start(&self) -> u32 {
         self.span.0
     }
 
-    pub fn end(&self) -> u32 {
+    pub fn span_end(&self) -> u32 {
         self.span.1
     }
 
@@ -203,14 +203,13 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             src_path,
             status: MutationStatus::Pending,
         }),
-        _ => None,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use noirc_frontend::token::Token;
+    // use noirc_frontend::token::Token;
     use std::path::PathBuf;
 
     #[test]
@@ -242,10 +241,10 @@ mod tests {
         assert_eq!(mutant.path(), &path);
 
         // Test start method
-        assert_eq!(mutant.start(), 0);
+        assert_eq!(mutant.span_start(), 0);
 
         // Test end method
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_end(), 1);
 
         // Test status method
         assert_eq!(mutant.status(), MutationStatus::Pending);
@@ -280,10 +279,10 @@ mod tests {
         assert_eq!(mutant.path(), &path);
 
         // Test start method
-        assert_eq!(mutant.start(), 10);
+        assert_eq!(mutant.span_start(), 10);
 
         // Test end method
-        assert_eq!(mutant.end(), 20);
+        assert_eq!(mutant.span_end(), 20);
 
         // Test status method
         assert_eq!(mutant.status(), MutationStatus::Pending);
@@ -320,10 +319,10 @@ mod tests {
         assert_eq!(mutant.path(), &path);
 
         // Test start method
-        assert_eq!(mutant.start(), 1000);
+        assert_eq!(mutant.span_start(), 1000);
 
         // Test end method
-        assert_eq!(mutant.end(), 2000);
+        assert_eq!(mutant.span_end(), 2000);
 
         // Test status method
         assert_eq!(mutant.status(), MutationStatus::Pending);
@@ -340,8 +339,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "!=");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -357,8 +356,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "==");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -374,8 +373,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "<=");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -391,8 +390,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "<");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -408,8 +407,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, ">=");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -425,8 +424,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, ">");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -442,8 +441,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "|");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -459,8 +458,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "&");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -476,8 +475,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "&");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -493,8 +492,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "-");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -510,8 +509,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "+");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -527,8 +526,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "/");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -544,8 +543,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "*");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
     }
 
@@ -560,8 +559,8 @@ mod tests {
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "*");
-        assert_eq!(mutant.start(), 0);
-        assert_eq!(mutant.end(), 1);
+        assert_eq!(mutant.span_start(), 0);
+        assert_eq!(mutant.span_end(), 1);
         assert_eq!(mutant.path(), &path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }

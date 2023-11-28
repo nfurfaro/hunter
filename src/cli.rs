@@ -1,20 +1,10 @@
 use crate::handlers;
 use clap::Parser;
 use colored::*;
-use std::io::Result;
-use std::str::FromStr;
+use std::{io::Result, str::FromStr};
 
-#[derive(Parser, PartialEq)]
-pub enum Subcommand {
-    /// Scan for mutants without running tests
-    Scan,
-    /// Mutate and run tests
-    Mutate,
-}
-
-pub struct LangConfig {
-    pub name: &'static str,
-    pub ext: &'static str,
+pub struct Config {
+    pub language: Language,
     pub test_command: &'static str,
     pub test_runner: &'static str,
 }
@@ -23,6 +13,7 @@ pub struct LangConfig {
 pub enum Language {
     Noir,
     Sway,
+    Rust,
 }
 
 impl FromStr for Language {
@@ -32,9 +23,36 @@ impl FromStr for Language {
         match s.to_lowercase().as_str() {
             "noir" => Ok(Language::Noir),
             "sway" => Ok(Language::Sway),
+            "rust" => Ok(Language::Rust),
             _ => Err("no matching languages supported"),
         }
     }
+}
+
+impl Language {
+    pub fn to_str(&self) -> &'static str {
+        match self {
+            Language::Noir => "Noir",
+            Language::Sway => "Sway",
+            Language::Rust => "Rust",
+        }
+    }
+
+    pub fn to_ext(&self) -> &'static str {
+        match self {
+            Language::Noir => "nr",
+            Language::Sway => "sw",
+            Language::Rust => "rs",
+        }
+    }
+}
+
+#[derive(Parser, PartialEq)]
+pub enum Subcommand {
+    /// Scan for mutants without running tests
+    Scan,
+    /// Mutate and run tests
+    Mutate,
 }
 
 /// Mutate Noir code and run tests against each mutation.
@@ -72,24 +90,27 @@ pub async fn run_cli() -> Result<()> {
         return Ok(());
     }
 
-    let language_config = match args.language {
-        Some(Language::Noir) => LangConfig {
-            name: "Noir",
-            ext: "nr",
+    let config = match args.language {
+        Some(Language::Noir) => Config {
+            language: Language::Noir,
             test_command: "test",
             test_runner: "nargo",
         },
-        Some(Language::Sway) => LangConfig {
-            name: "Sway",
-            ext: "sw",
+        Some(Language::Sway) => Config {
+            language: Language::Sway,
             test_command: "test",
             test_runner: "forc",
         },
+        Some(Language::Rust) => Config {
+            language: Language::Rust,
+            test_command: "test",
+            test_runner: "cargo",
+        },
         None => {
+            // @review this default
             println!("No language specified, defaulting to Noir");
-            LangConfig {
-                name: "Noir",
-                ext: "nr",
+            Config {
+                language: Language::Noir,
                 test_command: "test",
                 test_runner: "nargo",
             }
@@ -97,8 +118,8 @@ pub async fn run_cli() -> Result<()> {
     };
 
     match args.subcommand {
-        Some(Subcommand::Scan) => handlers::scan::analize(args, language_config),
-        Some(Subcommand::Mutate) => handlers::mutate::mutate(args, language_config),
+        Some(Subcommand::Scan) => handlers::scan::analyze(args, config),
+        Some(Subcommand::Mutate) => handlers::mutate::mutate(args, config),
         None => {
             println!(
                 "{}",
@@ -122,10 +143,13 @@ mod tests {
             .output()
             .expect("Failed to execute command");
 
-            assert!(str::from_utf8(&output.stdout).unwrap().contains("No language specified, defaulting to Noir"));
-            assert!(str::from_utf8(&output.stdout).unwrap().contains("Welcome to Hunter, a tool for performing automated mutation-testing."));
+        assert!(str::from_utf8(&output.stdout)
+            .unwrap()
+            .contains("No language specified, defaulting to Noir"));
+        assert!(str::from_utf8(&output.stdout)
+            .unwrap()
+            .contains("Welcome to Hunter, a tool for performing automated mutation-testing."));
     }
-
 
     #[test]
     fn test_run_cli_scan() {
