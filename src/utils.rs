@@ -219,15 +219,15 @@ pub fn collect_tokens(
 
             let token_patterns: Vec<(&str, Token)> = vec![
                 (r"<=", Token::LessEqual),
-                (r" < ", Token::Less),
+                (r"<", Token::Less),
                 (r">=", Token::GreaterEqual),
-                (r" > ", Token::Greater),
+                (r">", Token::Greater),
                 (r"==", Token::Equal),
                 (r"!=", Token::NotEqual),
                 (r"\+", Token::Plus),
-                (r" - ", Token::Minus),
-                (r" \* ", Token::Star),
-                (r" / ", Token::Slash),
+                (r"-", Token::Minus),
+                (r"\*", Token::Star),
+                (r"/", Token::Slash),
                 (r"%", Token::Percent),
                 (r"&", Token::Ampersand),
                 (r"\^", Token::Caret),
@@ -314,31 +314,41 @@ pub fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
 
 pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
     let original_operator_length = if original_bytes.len() > start_index + 1 {
-        match &original_bytes[start_index..start_index + 2]
-            .try_into()
-            .unwrap()
-        {
-            b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" => 2,
-            _ => 1,
+        match original_bytes.get(start_index..start_index + 2) {
+            Some(slice) => match slice {
+                b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" => 2,
+                _ => 1,
+            },
+            None => 1,
         }
     } else {
         1
     };
-    let replacement_length = replacement.len();
 
-    match original_operator_length.cmp(&replacement_length) {
-        std::cmp::Ordering::Greater => {
-            original_bytes.remove(start_index + 1);
-        }
-        std::cmp::Ordering::Less => {
-            original_bytes.insert(start_index + 1, b' ');
-        }
-        _ => (),
+    original_bytes.drain(start_index..start_index + original_operator_length);
+    for (i, &byte) in replacement.iter().enumerate() {
+        original_bytes.insert(start_index + i, byte);
     }
 
-    original_bytes[start_index..(replacement.len() + start_index)].copy_from_slice(replacement);
-}
+    // If the original operator is ">" or "<", and the replacement is twice as long,
+    // and there is an extra character after the replacement, remove it.
+    if original_operator_length == 1
+        && replacement.len() == 2
+        && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+        && original_bytes.len() > start_index + 2
+    {
+        original_bytes.remove(start_index + 2);
+    }
 
+    // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+    if start_index > 0
+        && original_operator_length == 1
+        && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+        && original_bytes.get(start_index - 1) != Some(&b' ')
+    {
+        original_bytes.insert(start_index, b' ');
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -392,6 +402,15 @@ mod tests {
     }
 
     #[test]
+    fn test_replace_bytes_greater_than_2() {
+        let mut original_bytes = "assert(c as u64 > x as u64);".as_bytes().to_vec();
+        let replacement = b"<=";
+        let start_index = 15;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"assert(c as u64 <= x as u64);");
+    }
+
+    #[test]
     fn test_replace_bytes_greater_than_or_equal_to() {
         let mut original_bytes = ">=".as_bytes().to_vec();
         let replacement = b"<";
@@ -407,6 +426,15 @@ mod tests {
         let start_index = 0;
         replace_bytes(&mut original_bytes, start_index, replacement);
         assert_eq!(original_bytes, b">=");
+    }
+
+    #[test]
+    fn test_replace_bytes_less_than_2() {
+        let mut original_bytes = "assert(c as u64 < x as u64);".as_bytes().to_vec();
+        let replacement = b">=";
+        let start_index = 15;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"assert(c as u64 >= x as u64);");
     }
 
     #[test]

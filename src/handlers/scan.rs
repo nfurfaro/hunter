@@ -32,21 +32,10 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
         format!("Analysing {} tokens", tokens_with_paths.len()).green()
     );
 
-    // let bar = ProgressBar::new(tokens_with_paths.len() as u64);
-    // bar.set_style(
-    //     ProgressStyle::default_bar()
-    //         .template(
-    //             "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-    //         )
-    //         .unwrap()
-    //         .progress_chars("#>-"),
-    // );
-
     let mut mutants: Vec<Mutant> = vec![];
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();
-        // let span = spanned_token.to_span();
         let maybe_mutant = mutant_builder(
             entry.2,
             spanned_token.token().clone(),
@@ -57,9 +46,7 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
             None => continue,
             Some(m) => mutants.push(m),
         }
-        // bar.inc(1);
     }
-    // bar.finish_with_message("Done processing tokens.");
 
     let num_mutants: usize = mutants.len();
 
