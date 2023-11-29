@@ -2,6 +2,7 @@ use crate::cli::{Args, Config};
 use crate::mutant::{mutant_builder, Mutant};
 use crate::utils::{collect_tokens, find_source_files};
 use colored::*;
+
 use std::{io::Result, path::Path};
 
 pub fn analyze(_args: Args, config: Config) -> Result<()> {
@@ -31,6 +32,16 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
         format!("Analysing {} tokens", tokens_with_paths.len()).green()
     );
 
+    // let bar = ProgressBar::new(tokens_with_paths.len() as u64);
+    // bar.set_style(
+    //     ProgressStyle::default_bar()
+    //         .template(
+    //             "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+    //         )
+    //         .unwrap()
+    //         .progress_chars("#>-"),
+    // );
+
     let mut mutants: Vec<Mutant> = vec![];
     for entry in tokens_with_paths {
         let path = entry.1.as_path();
@@ -46,7 +57,9 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
             None => continue,
             Some(m) => mutants.push(m),
         }
+        // bar.inc(1);
     }
+    // bar.finish_with_message("Done processing tokens.");
 
     let num_mutants: usize = mutants.len();
 

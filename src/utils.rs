@@ -8,6 +8,7 @@ use std::{
     io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
 };
+use indicatif::{ProgressBar, ProgressStyle};
 use toml;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -140,8 +141,8 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
             let entry = entry?;
             let path_buf = entry.path();
             if path_buf.is_dir() {
-                // Skip the /temp directory
-                if path_buf.ends_with("/temp") {
+                // Skip the /temp & /target directories
+                if path_buf.ends_with("/temp") || path_buf.starts_with("./target"){
                     continue;
                 }
                 let sub_results = find_source_files(&path_buf, config);
@@ -200,6 +201,17 @@ pub fn collect_tokens(
     } else {
         let i = Cell::new(0);
         let j = Cell::new(0);
+
+        let bar = ProgressBar::new(src_files.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+
         for (file, path) in src_files {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
@@ -235,7 +247,7 @@ pub fn collect_tokens(
                     i.set(i.get() + 1);
                 }
             }
-            dbg!(tokens.clone());
+            // dbg!(tokens.clone());
 
             // Define your patterns
             let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
@@ -270,9 +282,11 @@ pub fn collect_tokens(
                     filtered_token.0.span = token.0.span;
                 }
             }
-            dbg!(filtered_tokens.clone());
+            bar.inc(1);
+            // dbg!(filtered_tokens.clone());
         }
 
+        bar.finish();
         Some((filtered_tokens, test_count))
     }
 }
