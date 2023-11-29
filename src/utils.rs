@@ -188,36 +188,18 @@ pub fn collect_tokens(
     src_files: &Vec<(File, PathBuf)>,
 ) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
+    let mut filtered_tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
     let mut test_count = 0;
 
     if src_files.is_empty() {
         None
     } else {
         let i = Cell::new(0);
+        let j = Cell::new(0);
         for (file, path) in src_files {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
-
-            // let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            // let exclude_pattern =
-                Regex::new(r"/\*[*]?([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/").unwrap();
-
-            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            let comment_pattern = Regex::new(r"(^//.*)|(/\*(?s:.*?)\*/)").unwrap();
-
-            test_pattern
-                .find_iter(&contents)
-                .filter(|mat| !comment_pattern.is_match(mat.as_str()))
-                .filter(|mat| {
-                    mat.as_str()
-                        .lines()
-                        .all(|line| !line.contains("//") && !line.contains("///"))
-                })
-                .for_each(|_| {
-                    test_count += 1;
-                });
-            contents = test_pattern.replace_all(&contents, "").to_string();
 
             let token_patterns: Vec<(&str, Token)> = vec![
                 (r"<=", Token::LessEqual),
@@ -238,7 +220,7 @@ pub fn collect_tokens(
                 (r"\|", Token::Pipe),
             ];
 
-            for (pattern, token) in token_patterns {
+            for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
                     tokens.push((
@@ -249,9 +231,41 @@ pub fn collect_tokens(
                     i.set(i.get() + 1);
                 }
             }
+            dbg!(tokens.clone());
+
+            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            let comment_pattern = Regex::new(r"^\s*//.*|^\s*///.*|/\*(?s:.*?)\*/").unwrap();
+
+            test_pattern.find_iter(&contents).for_each(|_| {
+                test_count += 1;
+            });
+
+            let filtered_contents = test_pattern.replace_all(&contents, "").to_string();
+            let filtered_contents = comment_pattern
+                .replace_all(&filtered_contents, "")
+                .to_string();
+
+            for (pattern, token) in token_patterns {
+                let regex = Regex::new(pattern).unwrap();
+                for mat in regex.find_iter(&filtered_contents) {
+                    filtered_tokens.push((
+                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
+                        path,
+                        j.get(),
+                    ));
+                    j.set(j.get() + 1);
+                }
+            }
+
+            for filtered_token in &mut filtered_tokens {
+                if let Some(token) = tokens.iter().find(|t| t.0.token == filtered_token.0.token) {
+                    filtered_token.0.span = token.0.span;
+                }
+            }
+            dbg!(filtered_tokens.clone());
         }
 
-        Some((tokens, test_count))
+        Some((filtered_tokens, test_count))
     }
 }
 
@@ -306,7 +320,7 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::{Language, config};
+    use crate::cli::{config, Language};
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
