@@ -1,24 +1,24 @@
-// use regex::Regex;
 use std::{
     fs::{copy, create_dir_all, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
     process::Command,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
+use crate::cli::Config;
+use crate::mutant::{Mutant, MutationStatus};
+use crate::utils::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
 use rayon::iter::ParallelIterator;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-
-use crate::mutant::{Mutant, MutationStatus};
-use crate::utils::*;
-
 extern crate rayon;
 use rayon::prelude::*;
 
-pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
+pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config) {
     let total_mutants = mutants.len();
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
@@ -56,14 +56,14 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.nr", thread_index);
+        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language().to_ext());
         // @fix use a temp file path that is unique to the mutant
         // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
         // let temp_file_path = format!("./src/main.nr");
         copy(source_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
-        replace_bytes(&mut original_bytes, m.start() as usize, &m.bytes());
+        replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
         // After modifying the contents, write it back to the file
@@ -77,9 +77,8 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         file.write_all(contents.as_bytes()).unwrap();
 
         // run_test_suite
-        let output = Command::new("nargo")
-            .arg("test")
-            // .arg("-- package hunter")
+        let output = Command::new(config.test_runner())
+            .arg(config.test_command())
             .output()
             .expect("Failed to execute command");
 
@@ -100,7 +99,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
             //     panic!("test aborted due to previous errors");
             // }
 
-            if stderr.contains("test failed")
+            if (stderr.contains("test failed") || stderr.contains("FAILED"))
                 && !stderr.contains("aborting due to 1 previous errors")
             {
                 println!("test failed and contains test failed");
@@ -122,7 +121,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>) {
         .parent()
         .unwrap()
         .to_path_buf();
-    std::env::set_current_dir(&parent_dir).expect("Failed to change directory");
+    std::env::set_current_dir(parent_dir).expect("Failed to change directory");
 
     bar.finish_with_message("All mutants processed!");
 
