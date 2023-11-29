@@ -220,10 +220,6 @@ pub fn collect_tokens(
                 (r"\|", Token::Pipe),
             ];
 
-<<<<<<< HEAD
-            let mut raw_tokens = Vec::new();
-=======
->>>>>>> night-shift
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
@@ -260,32 +256,6 @@ pub fn collect_tokens(
                     i.set(i.get() + 1);
                 }
             }
-<<<<<<< HEAD
-            dbg!(filtered_tokens.clone());
-
-            let final_tokens = Vec::new();
-            filtered_tokens
-                .iter()
-                .map(|filtered_token| {
-                    let raw_token = raw_tokens
-                        .iter()
-                        .find(|raw_token| raw_token.0.token == filtered_token.0.token);
-                    if let Some(raw_token) = raw_token {
-                        final_tokens.push(
-                            (SpannedToken::new(filtered_token.0.token.clone(), raw_token.0.span, 11),
-                             raw_token.1.clone(),
-                             11
-                            )
-                        );
-                    } else {
-                        final_tokens.push((filtered_token.0.clone(), raw_token.1.clone()));
-                    }
-                })
-                .collect();
-
-            // tokens = final_tokens;
-            dbg!(final_tokens);
-=======
             dbg!(tokens.clone());
 
             let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
@@ -318,7 +288,6 @@ pub fn collect_tokens(
                 }
             }
             dbg!(filtered_tokens.clone());
->>>>>>> night-shift
         }
 
         Some((filtered_tokens, test_count))
