@@ -223,7 +223,7 @@ pub fn collect_tokens(
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
-                    raw_tokens.push((
+                    tokens.push((
                         SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
                         path,
                         i.get(),
@@ -231,7 +231,7 @@ pub fn collect_tokens(
                     i.set(i.get() + 1);
                 }
             }
-            dbg!(raw_tokens.clone());
+            dbg!(tokens.clone());
 
             // Define your patterns
             let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
@@ -244,35 +244,9 @@ pub fn collect_tokens(
             let filtered_content = comment_pattern.replace_all(&filtered_content, "");
 
             // Find tokens in filtered content
-            let mut filtered_tokens = Vec::new();
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&filtered_content) {
-                    filtered_tokens.push((
-                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
-                        path,
-                        i.get(),
-                    ));
-                    i.set(i.get() + 1);
-                }
-            }
-            dbg!(tokens.clone());
-
-            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            let comment_pattern = Regex::new(r"^\s*//.*|^\s*///.*|/\*(?s:.*?)\*/").unwrap();
-
-            test_pattern.find_iter(&contents).for_each(|_| {
-                test_count += 1;
-            });
-
-            let filtered_contents = test_pattern.replace_all(&contents, "").to_string();
-            let filtered_contents = comment_pattern
-                .replace_all(&filtered_contents, "")
-                .to_string();
-
-            for (pattern, token) in token_patterns {
-                let regex = Regex::new(pattern).unwrap();
-                for mat in regex.find_iter(&filtered_contents) {
                     filtered_tokens.push((
                         SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
                         path,
