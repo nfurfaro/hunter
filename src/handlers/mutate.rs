@@ -66,23 +66,22 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
     println!("{}", "Running tests...".green());
     parallel_process_mutated_tokens(&mut mutants, config);
 
-
-
     if args.verbose {
         // Create a new table
-    let mut table = Table::new();
-    table.add_row(Row::new(vec![
-        Cell::new("Surviving Mutants").style_spec("Fmb")
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Source file:").style_spec("Fyb"),
-        Cell::new("Line #:").style_spec("Fyb"),
-        Cell::new("Mutant context:").style_spec("Fyb"),
-        Cell::new("Original:").style_spec("Fyb"),
-    ]));
+        let mut table = Table::new();
+        table.add_row(Row::new(vec![
+            Cell::new("Surviving Mutants").style_spec("Fmb")
+        ]));
+        table.add_row(Row::new(vec![
+            Cell::new("Source file:").style_spec("Fyb"),
+            Cell::new("Line #:").style_spec("Fyb"),
+            Cell::new("Mutant context:").style_spec("Fyb"),
+            Cell::new("Original:").style_spec("Fyb"),
+        ]));
 
         for mutant in &mutants {
-            if mutant.status() == MutationStatus::Survived || mutant.status() == MutationStatus::Pending
+            if mutant.status() == MutationStatus::Survived
+                || mutant.status() == MutationStatus::Pending
             {
                 let span = mutant.span();
                 let span_usize = (span.0 as usize, span.1 as usize);
@@ -98,8 +97,6 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
         }
         table.printstd();
     }
-
-
 
     println!("{}", "Cleaning up temp files".cyan());
 

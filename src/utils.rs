@@ -199,26 +199,6 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            // let pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            // let exclude_pattern =
-                Regex::new(r"/\*[*]?([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/").unwrap();
-
-            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
-            let comment_pattern = Regex::new(r"(^//.*)|(/\*(?s:.*?)\*/)").unwrap();
-
-            test_pattern
-                .find_iter(&contents)
-                .filter(|mat| !comment_pattern.is_match(mat.as_str()))
-                .filter(|mat| {
-                    mat.as_str()
-                        .lines()
-                        .all(|line| !line.contains("//") && !line.contains("///"))
-                })
-                .for_each(|_| {
-                    test_count += 1;
-                });
-            contents = test_pattern.replace_all(&contents, "").to_string();
-
             let token_patterns: Vec<(&str, Token)> = vec![
                 (r"<=", Token::LessEqual),
                 (r" < ", Token::Less),
@@ -238,10 +218,11 @@ pub fn collect_tokens(
                 (r"\|", Token::Pipe),
             ];
 
-            for (pattern, token) in token_patterns {
+            let mut raw_tokens = Vec::new();
+            for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
-                    tokens.push((
+                    raw_tokens.push((
                         SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
                         path,
                         i.get(),
@@ -249,6 +230,55 @@ pub fn collect_tokens(
                     i.set(i.get() + 1);
                 }
             }
+            dbg!(raw_tokens.clone());
+
+            // Define your patterns
+            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
+
+            // Remove all tests and comments from the content
+            let test_matches = test_pattern.find_iter(&contents).count();
+            test_count += test_matches;
+            let filtered_content = test_pattern.replace_all(&contents, "");
+            let filtered_content = comment_pattern.replace_all(&filtered_content, "");
+
+            // Find tokens in filtered content
+            let mut filtered_tokens = Vec::new();
+            for (pattern, token) in &token_patterns {
+                let regex = Regex::new(pattern).unwrap();
+                for mat in regex.find_iter(&filtered_content) {
+                    filtered_tokens.push((
+                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
+                        path,
+                        i.get(),
+                    ));
+                    i.set(i.get() + 1);
+                }
+            }
+            dbg!(filtered_tokens.clone());
+
+            let final_tokens = Vec::new();
+            filtered_tokens
+                .iter()
+                .map(|filtered_token| {
+                    let raw_token = raw_tokens
+                        .iter()
+                        .find(|raw_token| raw_token.0.token == filtered_token.0.token);
+                    if let Some(raw_token) = raw_token {
+                        final_tokens.push(
+                            (SpannedToken::new(filtered_token.0.token.clone(), raw_token.0.span, 11),
+                             raw_token.1.clone(),
+                             11
+                            )
+                        );
+                    } else {
+                        final_tokens.push((filtered_token.0.clone(), raw_token.1.clone()));
+                    }
+                })
+                .collect();
+
+            // tokens = final_tokens;
+            dbg!(final_tokens);
         }
 
         Some((tokens, test_count))
@@ -306,7 +336,7 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::{Language, config};
+    use crate::cli::{config, Language};
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;
