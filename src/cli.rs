@@ -130,7 +130,7 @@ pub async fn run_cli() -> Result<()> {
     if args.info {
         println!(
             "{}",
-            "Welcome to Hunter, a tool for performing mutation-testing.".cyan()
+            "Welcome to Hunter, a multi-language mutation-testing tool.".cyan()
         );
         return Ok(());
     }
@@ -143,7 +143,7 @@ pub async fn run_cli() -> Result<()> {
         None => {
             println!(
                 "{}",
-                "Welcome to Hunter, a tool for performing automated mutation-testing.".cyan()
+                "Welcome to Hunter, a multi-language mutation-testing tool.".cyan()
             );
 
             Ok(())
@@ -163,12 +163,23 @@ mod tests {
             .output()
             .expect("Failed to execute command");
 
+        assert!(str::from_utf8(&output.stderr)
+            .unwrap()
+            .contains("No language specified"));
+    }
+
+    #[test]
+    fn test_run_cli2() {
+        let output = Command::new("cargo")
+            .arg("run")
+            .arg("--")
+            .arg("--info")
+            .output()
+            .expect("Failed to execute command");
+
         assert!(str::from_utf8(&output.stdout)
             .unwrap()
-            .contains("No language specified, defaulting to Noir"));
-        assert!(str::from_utf8(&output.stdout)
-            .unwrap()
-            .contains("Welcome to Hunter, a tool for performing automated mutation-testing."));
+            .contains("Welcome to Hunter, a multi-language mutation-testing tool."));
     }
 
     #[test]
@@ -176,6 +187,8 @@ mod tests {
         let output = Command::new("cargo")
             .arg("run")
             .arg("--")
+            .arg("--language")
+            .arg("noir")
             .arg("scan")
             .output()
             .expect("Failed to execute command");
@@ -189,7 +202,9 @@ mod tests {
         let output = Command::new("cargo")
             .arg("run")
             .arg("--")
-            .arg("mutate")
+            .arg("--language")
+            .arg("noir")
+            .arg("scan")
             .output()
             .expect("Failed to execute command");
 

@@ -184,6 +184,10 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
     Ok(results)
 }
 
+pub struct TokenCollection {}
+
+// @review create awrapper type for return value? (ie: TokenCollection)
+// check that the id being used is unique and necessary !
 pub fn collect_tokens(
     src_files: &Vec<(File, PathBuf)>,
 ) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
@@ -256,8 +260,13 @@ pub fn collect_tokens(
                 }
             }
 
+            // compare tokens with filtered tokens by checking both token type and ID.
+            // for all matches, copy token.span to filtered_token.span
             for filtered_token in &mut filtered_tokens {
-                if let Some(token) = tokens.iter().find(|t| t.0.token == filtered_token.0.token) {
+                if let Some(token) = tokens
+                    .iter()
+                    .find(|t| (t.0.token == filtered_token.0.token) && t.2 == filtered_token.2)
+                {
                     filtered_token.0.span = token.0.span;
                 }
             }
