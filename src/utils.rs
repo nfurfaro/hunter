@@ -188,12 +188,14 @@ pub fn collect_tokens(
     src_files: &Vec<(File, PathBuf)>,
 ) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
+    let mut filtered_tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
     let mut test_count = 0;
 
     if src_files.is_empty() {
         None
     } else {
         let i = Cell::new(0);
+        let j = Cell::new(0);
         for (file, path) in src_files {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
@@ -218,7 +220,10 @@ pub fn collect_tokens(
                 (r"\|", Token::Pipe),
             ];
 
+<<<<<<< HEAD
             let mut raw_tokens = Vec::new();
+=======
+>>>>>>> night-shift
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
@@ -255,6 +260,7 @@ pub fn collect_tokens(
                     i.set(i.get() + 1);
                 }
             }
+<<<<<<< HEAD
             dbg!(filtered_tokens.clone());
 
             let final_tokens = Vec::new();
@@ -279,9 +285,43 @@ pub fn collect_tokens(
 
             // tokens = final_tokens;
             dbg!(final_tokens);
+=======
+            dbg!(tokens.clone());
+
+            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            let comment_pattern = Regex::new(r"^\s*//.*|^\s*///.*|/\*(?s:.*?)\*/").unwrap();
+
+            test_pattern.find_iter(&contents).for_each(|_| {
+                test_count += 1;
+            });
+
+            let filtered_contents = test_pattern.replace_all(&contents, "").to_string();
+            let filtered_contents = comment_pattern
+                .replace_all(&filtered_contents, "")
+                .to_string();
+
+            for (pattern, token) in token_patterns {
+                let regex = Regex::new(pattern).unwrap();
+                for mat in regex.find_iter(&filtered_contents) {
+                    filtered_tokens.push((
+                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
+                        path,
+                        j.get(),
+                    ));
+                    j.set(j.get() + 1);
+                }
+            }
+
+            for filtered_token in &mut filtered_tokens {
+                if let Some(token) = tokens.iter().find(|t| t.0.token == filtered_token.0.token) {
+                    filtered_token.0.span = token.0.span;
+                }
+            }
+            dbg!(filtered_tokens.clone());
+>>>>>>> night-shift
         }
 
-        Some((tokens, test_count))
+        Some((filtered_tokens, test_count))
     }
 }
 
