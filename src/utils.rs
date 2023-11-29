@@ -1,4 +1,5 @@
 use crate::cli::Config;
+use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell as table_cell, Row, Table};
 use regex::Regex;
 use std::io::Write;
@@ -8,7 +9,6 @@ use std::{
     io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
 };
-use indicatif::{ProgressBar, ProgressStyle};
 use toml;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -142,7 +142,7 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
             let path_buf = entry.path();
             if path_buf.is_dir() {
                 // Skip the /temp & /target directories
-                if path_buf.ends_with("/temp") || path_buf.starts_with("./target"){
+                if path_buf.ends_with("/temp") || path_buf.starts_with("./target") {
                     continue;
                 }
                 let sub_results = find_source_files(&path_buf, config);
@@ -203,14 +203,14 @@ pub fn collect_tokens(
         let j = Cell::new(0);
 
         let bar = ProgressBar::new(src_files.len() as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+                )
+                .unwrap()
+                .progress_chars("#>-"),
+        );
 
         for (file, path) in src_files {
             let mut buf_reader = BufReader::new(file);
