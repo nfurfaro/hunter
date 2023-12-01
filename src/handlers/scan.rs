@@ -57,7 +57,7 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
     );
     println!(
         "{}",
-        format!("Runs of test suite required: {}", num_mutants * test_count).magenta()
+        format!("Test runs required: {}", num_mutants * test_count).magenta()
     );
 
     Ok(())

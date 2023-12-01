@@ -157,5 +157,9 @@ sequenceDiagram
 - [ ] add a match for ++ and -- operators !
 - [ ] add a match for +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
 - [ ] refactor test_count collection
-- [ ] fix output: Runs of test suite required is wrong...
-- [ ]
+- [x] fix output: Runs of test suite required is wrong...
+- [ ] refactor: reporter should be responsible for printing results.
+- [ ] refactor: scan should scan and return results to be printed by reporter.
+- [ ] refactor: mutate should reuse scan results to mutate, and send results to reporter for printing.
+- [ ] refactor: need to consolidate file handling into a single module.
+- [ ] refactor: mutant_builder should use the get_bytes_from_token() function.
