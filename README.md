@@ -151,7 +151,6 @@ sequenceDiagram
 
 
 
-- [ ] fix wording of surviving mutants table (ie: Original -> Mutant)
 - [ ] add a match for +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
 - [ ] refactor test_count collection
 - [ ] refactor: reporter should be responsible for printing results.
