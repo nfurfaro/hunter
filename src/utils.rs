@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, Language};
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell as table_cell, Row, Table};
 use regex::Regex;
@@ -142,7 +142,12 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
             let path_buf = entry.path();
             if path_buf.is_dir() {
                 // Skip the /temp & /target directories
-                if path_buf.ends_with("/temp") || path_buf.starts_with("./target") {
+                let excluded_dirs = ["/temp", "./target", "./test", "./lib"]; // Add more directories to this array as needed
+
+                if excluded_dirs
+                    .iter()
+                    .any(|&dir| path_buf.ends_with(dir) || path_buf.starts_with(dir))
+                {
                     continue;
                 }
                 let sub_results = find_source_files(&path_buf, config);
@@ -166,9 +171,9 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
                     fs::create_dir_all(&temp_dir)?;
                     // Create "Nargo.toml" file and "src" directory inside "./temp" directory
 
-                    let nargo_path = temp_dir.join("Nargo.toml");
-                    File::create(&nargo_path)?;
-                    fs::write(nargo_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"\n\n[dependencies]")?;
+                    let manifest_path = temp_dir.join(config.manifest_name());
+                    File::create(&manifest_path)?;
+                    fs::write(manifest_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"\n\n[dependencies]")?;
                     fs::create_dir_all(temp_dir.join("src"))?;
                     let file = File::open(path)?;
                     results.push((file, path_buf));
@@ -189,9 +194,10 @@ pub struct TokenCollection {}
 
 // @review create awrapper type for return value? (ie: TokenCollection)
 // check that the id being used is unique and necessary !
-pub fn collect_tokens(
-    src_files: &Vec<(File, PathBuf)>,
-) -> Option<(Vec<(SpannedToken, &PathBuf, u32)>, usize)> {
+pub fn collect_tokens<'a>(
+    src_files: &'a Vec<(File, PathBuf)>,
+    config: &'a Config
+) -> Option<(Vec<(SpannedToken, &'a PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
     let mut filtered_tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
     let mut test_count = 0;
@@ -250,7 +256,11 @@ pub fn collect_tokens(
             // dbg!(tokens.clone());
 
             // Define your patterns
-            let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+            let test_pattern = match config.language() {
+                Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
+                _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
+            };
+            // let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
             let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
 
             // Remove all tests and comments from the content

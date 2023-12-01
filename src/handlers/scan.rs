@@ -26,7 +26,7 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
 
     println!("{}", "Collecting tokens from files".green());
 
-    let (tokens_with_paths, test_count) = collect_tokens(&files).expect("No tokens found");
+    let (tokens_with_paths, test_count) = collect_tokens(&files, &config).expect("No tokens found");
 
     println!(
         "{}",
