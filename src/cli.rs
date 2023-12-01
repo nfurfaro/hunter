@@ -1,70 +1,8 @@
+use crate::config::{config, Language};
 use crate::handlers;
 use clap::Parser;
 use colored::*;
-use std::{io::Result, str::FromStr};
-
-pub struct Config {
-    language: Language,
-    test_runner: &'static str,
-    test_command: &'static str,
-    manifest_name: &'static str,
-}
-
-impl Config {
-    pub fn language(&self) -> Language {
-        self.language.clone()
-    }
-
-    pub fn test_runner(&self) -> &'static str {
-        self.test_runner
-    }
-
-    pub fn test_command(&self) -> &'static str {
-        self.test_command
-    }
-
-    pub fn manifest_name(&self) -> &'static str {
-        self.manifest_name
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Language {
-    Noir,
-    Sway,
-    Rust,
-}
-
-impl FromStr for Language {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "noir" => Ok(Language::Noir),
-            "sway" => Ok(Language::Sway),
-            "rust" => Ok(Language::Rust),
-            _ => Err("no matching languages supported"),
-        }
-    }
-}
-
-impl Language {
-    pub fn to_str(&self) -> &'static str {
-        match self {
-            Language::Noir => "Noir",
-            Language::Sway => "Sway",
-            Language::Rust => "Rust",
-        }
-    }
-
-    pub fn to_ext(&self) -> &'static str {
-        match self {
-            Language::Noir => "nr",
-            Language::Sway => "sw",
-            Language::Rust => "rs",
-        }
-    }
-}
+use std::io::Result;
 
 #[derive(Parser, PartialEq)]
 pub enum Subcommand {
@@ -99,29 +37,6 @@ pub struct Args {
     // Collect info about number of mutants found without running tests
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,
-}
-
-pub fn config(language: Language) -> Config {
-    match language {
-        Language::Noir => Config {
-            language: Language::Noir,
-            test_runner: "nargo",
-            test_command: "test",
-            manifest_name: "Nargo.toml",
-        },
-        Language::Sway => Config {
-            language: Language::Sway,
-            test_runner: "forc",
-            test_command: "test",
-            manifest_name: "Forc.toml",
-        },
-        Language::Rust => Config {
-            language: Language::Rust,
-            test_runner: "cargo",
-            test_command: "test",
-            manifest_name: "Cargo.toml",
-        },
-    }
 }
 
 pub async fn run_cli() -> Result<()> {

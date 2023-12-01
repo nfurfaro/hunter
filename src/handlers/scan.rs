@@ -1,4 +1,5 @@
-use crate::cli::{Args, Config};
+use crate::cli::Args;
+use crate::config::Config;
 use crate::mutant::{mutant_builder, Mutant};
 use crate::utils::{collect_tokens, find_source_files};
 use colored::*;
