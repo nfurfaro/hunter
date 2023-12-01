@@ -34,7 +34,7 @@ pub fn print_line_in_span(
             table.add_row(Row::new(vec![
                 table_cell::new(file_path.to_str().unwrap()).style_spec("Fb"),
                 table_cell::new(&(index + 1).to_string()).style_spec("Fb"),
-                table_cell::new(&short_line).style_spec("Fmb"),
+                table_cell::new(&short_line).style_spec("Fcb"),
                 table_cell::new(token_representation).style_spec("Fyb"),
             ]));
             break;

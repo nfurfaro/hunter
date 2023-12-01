@@ -76,10 +76,10 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
             Cell::new("Surviving Mutants").style_spec("Fmb")
         ]));
         table.add_row(Row::new(vec![
-            Cell::new("Source file:").style_spec("Fyb"),
-            Cell::new("Line #:").style_spec("Fyb"),
-            Cell::new("Mutant context:").style_spec("Fyb"),
-            Cell::new("Original:").style_spec("Fyb"),
+            Cell::new("Source file:").style_spec("Fcb"),
+            Cell::new("Line #:").style_spec("Fcb"),
+            Cell::new("Original context:").style_spec("Fcb"),
+            Cell::new("Mutation:").style_spec("Fmb"),
         ]));
 
         for mutant in &mutants {
