@@ -152,7 +152,7 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
                 }
             } else if path_buf
                 .extension()
-                .map_or(false, |extension| extension == config.language().to_ext())
+                .map_or(false, |extension| extension == config.language().ext())
             {
                 let path = path_buf.as_path();
 
