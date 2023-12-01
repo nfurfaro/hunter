@@ -1,4 +1,5 @@
 use crate::config::{Config, Language};
+use crate::token::{token_as_bytes, token_regex_patterns, SpannedToken, Token};
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell as table_cell, Row, Table};
 use regex::Regex;
@@ -11,71 +12,6 @@ use std::{
 };
 use toml;
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {
-    /// <
-    Less,
-    /// <=
-    LessEqual,
-    /// >
-    Greater,
-    /// >=
-    GreaterEqual,
-    /// ==
-    Equal,
-    /// !=
-    NotEqual,
-    /// +
-    Plus,
-    /// -
-    Minus,
-    /// *
-    Star,
-    /// /
-    Slash,
-    /// %
-    Percent,
-    /// &
-    Ampersand,
-    /// ^
-    Caret,
-    /// <<
-    ShiftLeft,
-    /// >>
-    ShiftRight,
-    /// |
-    Pipe,
-    // Bang,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct SpannedToken {
-    token: Token,
-    span: (u32, u32),
-}
-
-impl SpannedToken {
-    pub fn new(token: Token, span: (u32, u32)) -> Self {
-        Self { token, span }
-    }
-
-    pub fn token(&self) -> &Token {
-        &self.token
-    }
-
-    pub fn span(&self) -> (u32, u32) {
-        self.span
-    }
-
-    pub fn span_start(&self) -> u32 {
-        self.span.0
-    }
-
-    pub fn span_end(&self) -> u32 {
-        self.span.1
-    }
-}
-
 pub fn print_line_in_span(
     table: &mut Table,
     file_path: &Path,
@@ -85,7 +21,7 @@ pub fn print_line_in_span(
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
     let mut byte_index = 0;
-    let temp = String::from_utf8_lossy(get_bytes_from_token(token.clone()).unwrap());
+    let temp = String::from_utf8_lossy(token_as_bytes(&token.clone()).unwrap());
     let token_representation = temp.as_ref();
 
     for (index, line) in reader.lines().enumerate() {
@@ -223,24 +159,7 @@ pub fn collect_tokens<'a>(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let token_patterns: Vec<(&str, Token)> = vec![
-                (r"<=", Token::LessEqual),
-                (r"<", Token::Less),
-                (r">=", Token::GreaterEqual),
-                (r">", Token::Greater),
-                (r"==", Token::Equal),
-                (r"!=", Token::NotEqual),
-                (r"\+", Token::Plus),
-                (r"-", Token::Minus),
-                (r"\*", Token::Star),
-                (r"/", Token::Slash),
-                (r"%", Token::Percent),
-                (r"&", Token::Ampersand),
-                (r"\^", Token::Caret),
-                (r"<<", Token::ShiftLeft),
-                (r">>", Token::ShiftRight),
-                (r"\|", Token::Pipe),
-            ];
+            let token_patterns = token_regex_patterns();
 
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
@@ -287,9 +206,9 @@ pub fn collect_tokens<'a>(
             for filtered_token in &mut filtered_tokens {
                 if let Some(token) = tokens
                     .iter()
-                    .find(|t| (t.0.token == filtered_token.0.token) && t.2 == filtered_token.2)
+                    .find(|t| (t.0.token() == filtered_token.0.token()) && t.2 == filtered_token.2)
                 {
-                    filtered_token.0.span = token.0.span;
+                    filtered_token.0.set_span(token.0.span());
                 }
             }
             bar.inc(1);
@@ -298,27 +217,6 @@ pub fn collect_tokens<'a>(
 
         bar.finish();
         Some((filtered_tokens, test_count))
-    }
-}
-
-pub fn get_bytes_from_token<'a>(token: Token) -> Option<&'a [u8]> {
-    match token {
-        Token::Equal => Some(b"=="),
-        Token::NotEqual => Some(b"!="),
-        Token::Less => Some(b"<"),
-        Token::LessEqual => Some(b"<="),
-        Token::Greater => Some(b">"),
-        Token::GreaterEqual => Some(b">="),
-        Token::Ampersand => Some(b"&"),
-        Token::Pipe => Some(b"|"),
-        Token::Caret => Some(b"^"),
-        Token::ShiftLeft => Some(b"<<"),
-        Token::ShiftRight => Some(b">>"),
-        Token::Plus => Some(b"+"),
-        Token::Minus => Some(b"-"),
-        Token::Star => Some(b"*"),
-        Token::Slash => Some(b"/"),
-        Token::Percent => Some(b"%"),
     }
 }
 
@@ -547,114 +445,114 @@ mod tests {
     }
 
     #[test]
-    fn test_get_bytes_from_token_equal() {
+    fn test_token_as_bytes_equal() {
         let token = Token::Equal;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"==");
     }
 
     #[test]
-    fn test_get_bytes_from_token_not_equal() {
+    fn test_token_as_bytes_not_equal() {
         let token = Token::NotEqual;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"!=");
     }
 
     #[test]
-    fn test_get_bytes_from_token_less_than() {
+    fn test_token_as_bytes_less_than() {
         let token = Token::Less;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"<");
     }
 
     #[test]
-    fn test_get_bytes_from_token_less_than_or_equal() {
+    fn test_token_as_bytes_less_than_or_equal() {
         let token = Token::LessEqual;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"<=");
     }
 
     #[test]
-    fn test_get_bytes_from_token_greater_than() {
+    fn test_token_as_bytes_greater_than() {
         let token = Token::Greater;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b">");
     }
 
     #[test]
-    fn test_get_bytes_from_token_greater_than_or_equal() {
+    fn test_token_as_bytes_greater_than_or_equal() {
         let token = Token::GreaterEqual;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b">=");
     }
 
     #[test]
-    fn test_get_bytes_from_token_and() {
+    fn test_token_as_bytes_and() {
         let token = Token::Ampersand;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"&");
     }
 
     #[test]
-    fn test_get_bytes_from_token_or() {
+    fn test_token_as_bytes_or() {
         let token = Token::Pipe;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"|");
     }
 
     #[test]
-    fn test_get_bytes_from_token_xor() {
+    fn test_token_as_bytes_xor() {
         let token = Token::Caret;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"^");
     }
 
     #[test]
-    fn test_get_bytes_from_token_left_shift() {
+    fn test_token_as_bytes_left_shift() {
         let token = Token::ShiftLeft;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"<<");
     }
 
     #[test]
-    fn test_get_bytes_from_token_right_shift() {
+    fn test_token_as_bytes_right_shift() {
         let token = Token::ShiftRight;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b">>");
     }
 
     #[test]
-    fn test_get_bytes_from_token_plus() {
+    fn test_token_as_bytes_plus() {
         let token = Token::Plus;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"+");
     }
 
     #[test]
-    fn test_get_bytes_from_token_minus() {
+    fn test_token_as_bytes_minus() {
         let token = Token::Minus;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"-");
     }
 
     #[test]
-    fn test_get_bytes_from_token_multiply() {
+    fn test_token_as_bytes_multiply() {
         let token = Token::Star;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"*");
     }
 
     #[test]
-    fn test_get_bytes_from_token_divide() {
+    fn test_token_as_bytes_divide() {
         let token = Token::Slash;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"/");
     }
 
     #[test]
-    fn test_get_bytes_from_token_modulo() {
+    fn test_token_as_bytes_modulo() {
         let token = Token::Percent;
-        let bytes = get_bytes_from_token(token).unwrap();
+        let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"%");
     }
 }

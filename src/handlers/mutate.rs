@@ -1,7 +1,7 @@
 use crate::cli::Args;
 use crate::config::Config;
-use crate::mutant::{mutant_builder, Mutant, MutationStatus};
 use crate::parallel::parallel_process_mutated_tokens;
+use crate::token::{mutant_builder, Mutant, MutationStatus};
 use crate::utils::{collect_tokens, find_source_files, print_line_in_span};
 use colored::*;
 use prettytable::{Cell, Row, Table};

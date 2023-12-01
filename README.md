@@ -148,18 +148,15 @@ sequenceDiagram
 ## todo
 
 - [ ] use tempdir create to manage temp dirs and files?
-- [ ] might have to:
-  - create a /temp/Nargo.toml once per run
-  - create a /temp/src/ dir once per run
-  - create a /temp/src/main.nr for each mutant
-  - main.nr file creation needs to happen in parallel threads, not before
+
+
+
 - [ ] fix wording of surviving mutants table (ie: Original -> Mutant)
 - [ ] add a match for ++ and -- operators !
 - [ ] add a match for +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
 - [ ] refactor test_count collection
-- [x] fix output: Runs of test suite required is wrong...
 - [ ] refactor: reporter should be responsible for printing results.
 - [ ] refactor: scan should scan and return results to be printed by reporter.
 - [ ] refactor: mutate should reuse scan results to mutate, and send results to reporter for printing.
 - [ ] refactor: need to consolidate file handling into a single module.
-- [ ] refactor: mutant_builder should use the get_bytes_from_token() function.
+- [x] refactor: mutant_builder should use the get_bytes_from_token() function.
