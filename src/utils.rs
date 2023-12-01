@@ -1,4 +1,4 @@
-use crate::cli::Config;
+use crate::config::Config;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell as table_cell, Row, Table};
 use regex::Regex;
@@ -352,7 +352,7 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::{config, Language};
+    use crate::config::{config, Language};
     use std::fs::File;
     use std::io::Write;
     use tempfile::tempdir;

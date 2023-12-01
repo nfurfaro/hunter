@@ -9,7 +9,7 @@ use std::{
     },
 };
 
-use crate::cli::Config;
+use crate::config::Config;
 use crate::mutant::{Mutant, MutationStatus};
 use crate::utils::*;
 use indicatif::{ProgressBar, ProgressStyle};
