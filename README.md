@@ -153,39 +153,9 @@ sequenceDiagram
   - create a /temp/src/ dir once per run
   - create a /temp/src/main.nr for each mutant
   - main.nr file creation needs to happen in parallel threads, not before
-
-
-let output = Command::new("pwd").output();
-=> Output { status: ExitStatus(unix_wait_status(0)), stdout: "/home/furnic/Dev/noir_dev/hello_world/temp\n", stderr: "" }
-
-
-        // Create a new path for the temporary file
-        // let file_stem = m.path().file_stem().unwrap().to_str().unwrap();
-        // let file_name = m.path().file_name().unwrap().to_str().unwrap();
-        // let temp_file_path = PathBuf::from(format!(
-        //     "./temp/{}/_temp_{}_{}",
-        //     file_stem,
-        //     m.id(),
-        //     file_name
-        // ));
-
-
-
-let mut table = Table::new();
-    table.add_row(row!["Metric", "Value"]);
-    table.add_row(Row::new(vec![
-        Cell::new("Total mutants").style_spec("Fr"),
-        Cell::new(&total_mutants.to_string()).style_spec("Fr"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutants destroyed").style_spec("Fc"),
-        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fc"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Surviving mutants").style_spec("Fm"),
-        Cell::new(&surviving.load(Ordering::SeqCst).to_string()).style_spec("Fm"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutation score").style_spec("Fb"),
-        Cell::new(&mutation_score_string).style_spec("Fb"),
-    ]));
+- [ ] fix wording of surviving mutants table (ie: Original -> Mutant)
+- [ ] add a match for ++ and -- operators !
+- [ ] add a match for +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
+- [ ] refactor test_count collection
+- [ ] fix output: Runs of test suite required is wrong...
+- [ ]

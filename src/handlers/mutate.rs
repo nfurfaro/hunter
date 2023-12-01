@@ -31,7 +31,8 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
     println!("{}", "Collecting tokens from files".green());
     let config_clone = config.clone();
 
-    let (tokens_with_paths, test_count) = collect_tokens(&files, &config_clone).expect("No tokens found");
+    let (tokens_with_paths, test_count) =
+        collect_tokens(&files, &config_clone).expect("No tokens found");
 
     println!(
         "{}",

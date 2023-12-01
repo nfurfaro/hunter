@@ -142,7 +142,7 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
             let path_buf = entry.path();
             if path_buf.is_dir() {
                 // Skip the /temp & /target directories
-                let excluded_dirs = ["/temp", "./target", "./test", "./lib"]; // Add more directories to this array as needed
+                let excluded_dirs = ["/temp", "./target", "./test", "./lib", "./script"]; // Add more directories to this array as needed
 
                 if excluded_dirs
                     .iter()
@@ -196,7 +196,7 @@ pub struct TokenCollection {}
 // check that the id being used is unique and necessary !
 pub fn collect_tokens<'a>(
     src_files: &'a Vec<(File, PathBuf)>,
-    config: &'a Config
+    config: &'a Config,
 ) -> Option<(Vec<(SpannedToken, &'a PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
     let mut filtered_tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
@@ -260,7 +260,7 @@ pub fn collect_tokens<'a>(
                 Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
                 _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
             };
-            // let test_pattern = Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap();
+
             let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
 
             // Remove all tests and comments from the content
