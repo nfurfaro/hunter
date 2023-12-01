@@ -159,4 +159,3 @@ sequenceDiagram
 - [ ] refactor: scan should scan and return results to be printed by reporter.
 - [ ] refactor: mutate should reuse scan results to mutate, and send results to reporter for printing.
 - [ ] refactor: need to consolidate file handling into a single module.
-- [x] refactor: mutant_builder should use the get_bytes_from_token() function.
