@@ -1,8 +1,5 @@
-
-use crate::cli::Args;
 use crate::config::Config;
-use crate::token::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, find_source_files};
+use crate::token::Mutant;
 use crate::token::SpannedToken;
 use colored::*;
 use std::{
@@ -12,27 +9,47 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub struct ScanResult<'a> {
-    files: &'a Vec<File>,
+#[derive(Debug, Clone)]
+pub struct ScanResult {
     paths: Vec<PathBuf>,
-    tokens_with_paths: Vec<(SpannedToken, &'a PathBuf, u32)>,
+    tokens_with_paths: Vec<(SpannedToken, PathBuf, u32)>,
     test_count: usize,
-    mutants: Vec<Mutant<'a>>,
+    mutants: Vec<Mutant>,
 }
 
-impl ScanResult<'_> {
-    pub fn new<'a>(files: &'a Vec<File>, paths: Vec<PathBuf>, tokens_with_paths: Vec<(SpannedToken, &'a PathBuf, u32)>, test_count: usize, mutants: Vec<Mutant<'a>>) -> ScanResult<'a> {
+impl ScanResult {
+    pub fn new(
+        paths: Vec<PathBuf>,
+        tokens_with_paths: Vec<(SpannedToken, PathBuf, u32)>,
+        test_count: usize,
+        mutants: Vec<Mutant>,
+    ) -> ScanResult {
         ScanResult {
-            files,
             paths,
             tokens_with_paths,
             test_count,
             mutants,
         }
     }
+
+    pub fn paths(&self) -> &Vec<PathBuf> {
+        &self.paths
+    }
+
+    pub fn tokens_with_paths(&self) -> &Vec<(SpannedToken, PathBuf, u32)> {
+        &self.tokens_with_paths
+    }
+
+    pub fn test_count(&self) -> usize {
+        self.test_count
+    }
+
+    pub fn mutants(&mut self) -> &mut Vec<Mutant> {
+        &mut self.mutants
+    }
 }
 
-pub fn report_scan_result(results: ScanResult, config: &Config) -> Result<()> {
+pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
     println!("{}", "Initiating source file analysis...".green());
 
     println!(
@@ -40,12 +57,10 @@ pub fn report_scan_result(results: ScanResult, config: &Config) -> Result<()> {
         format!("Searching for {} files", config.language().name()).green()
     );
 
-
     println!("{}", "Files found:".cyan());
     for path in results.paths {
         println!("{}", format!("{}", path.display()).red());
     }
-
 
     println!(
         "{}",
@@ -61,7 +76,8 @@ pub fn report_scan_result(results: ScanResult, config: &Config) -> Result<()> {
     );
     println!(
         "{}",
-        format!("Test runs required: {}", num_mutants * results.test_count).magenta());
+        format!("Test runs required: {}", num_mutants * results.test_count).magenta()
+    );
 
     Ok(())
 }

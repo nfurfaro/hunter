@@ -1,49 +1,33 @@
 use crate::cli::Args;
 use crate::config::Config;
-use crate::token::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, find_source_files};
 use crate::reporter::ScanResult;
+use crate::token::{mutant_builder, Mutant};
+use crate::utils::{collect_tokens, find_source_file_paths};
 use colored::*;
 
+use std::path::Path;
 
-use std::{io::Result, path::Path};
-
-pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
-    // println!("{}", "Initiating source file analysis...".green());
-    // println!(
-    //     "{}",
-    //     format!("Searching for {} files", config.language().name()).green()
-    // );
-    let (files, paths) = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
+pub fn analyze<'a>(_args: Args, config: &'a Config) -> ScanResult {
+    let paths = find_source_file_paths(Path::new("."), &config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
             config.language().name().red()
         )
     });
 
-    // println!("{}", "Files found:".cyan());
-    // for file in &files {
-    //     println!("{}", format!("{}", file.1.as_path().display()).red());
-    // }
-
-    // println!("{}", "Collecting tokens from files".green());
-
-    let (tokens_with_paths, test_count) = collect_tokens(&files, &paths, config).expect("No tokens found");
-
-    // println!(
-    //     "{}",
-    //     format!("Analysing {} tokens", tokens_with_paths.len()).green()
-    // );
+    let paths_clone = paths.clone();
+    let (tokens_with_paths, test_count) =
+        collect_tokens(paths_clone, config).expect("No tokens found");
 
     let mut mutants: Vec<Mutant> = vec![];
     for entry in &tokens_with_paths {
-        let path = entry.1.as_path();
+        let path = entry.1.clone();
         let spanned_token = entry.0.clone();
         let maybe_mutant = mutant_builder(
             entry.2,
             spanned_token.token().clone(),
             spanned_token.span(),
-            Path::new(path),
+            path,
         );
         match maybe_mutant {
             None => continue,
@@ -51,16 +35,5 @@ pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
         }
     }
 
-    // let num_mutants: usize = mutants.len();
-
-    // println!(
-    //     "{}",
-    //     format!("Mutable tokens found: {}", num_mutants).cyan()
-    // );
-    // println!(
-    //     "{}",
-    //     format!("Test runs required: {}", num_mutants * test_count).magenta()
-    // );
-
-ScanResult::new(&files, paths, tokens_with_paths, test_count, mutants)
+    ScanResult::new(paths, tokens_with_paths, test_count, mutants)
 }

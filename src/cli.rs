@@ -1,11 +1,11 @@
-use crate::config::{config, Language};
+use crate::config::{config, Config, Language};
 use crate::handlers;
-use crate::reporter::report_scan_result;
+use crate::reporter::print_scan_results;
 use clap::Parser;
 use colored::*;
 use std::io::Result;
 
-#[derive(Parser, PartialEq)]
+#[derive(Parser, PartialEq, Debug, Clone)]
 pub enum Subcommand {
     /// Scan for mutants without running tests
     Scan,
@@ -14,7 +14,7 @@ pub enum Subcommand {
 }
 
 /// Mutate Noir code and run tests against each mutation.
-#[derive(Parser, PartialEq, Default)]
+#[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
     /// The target language (defaults to Noir).
     /// Supported languages: Noir, Sway
@@ -55,10 +55,14 @@ pub async fn run_cli() -> Result<()> {
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-          let result = handlers::scan::analyze(args, &config);
-          report_scan_result(result, &config)
-        },
-        Some(Subcommand::Mutate) => handlers::mutate::mutate(args, config),
+            let results = handlers::scan::analyze(args.clone(), &config);
+            print_scan_results(results, &config)
+        }
+        Some(Subcommand::Mutate) => {
+            let mut results = handlers::scan::analyze(args.clone(), &config);
+            print_scan_results(results.clone(), &config);
+            handlers::mutate::mutate(args, config.clone(), &mut results)
+        }
         None => {
             println!(
                 "{}",

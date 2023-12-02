@@ -1,4 +1,7 @@
-use std::{fmt, path::Path};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
@@ -74,12 +77,12 @@ impl SpannedToken {
 }
 
 #[derive(Debug, Clone)]
-pub struct Mutant<'a> {
+pub struct Mutant {
     id: u32,
     mutation: Token,
     bytes: Vec<u8>,
     span: (u32, u32),
-    src_path: &'a Path,
+    src_path: Box<PathBuf>,
     status: MutationStatus,
 }
 
@@ -90,7 +93,7 @@ pub enum MutationStatus {
     Killed,
 }
 
-impl<'a> fmt::Display for Mutant<'a> {
+impl fmt::Display for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -105,7 +108,7 @@ impl<'a> fmt::Display for Mutant<'a> {
     }
 }
 
-impl<'a> Mutant<'a> {
+impl Mutant {
     pub fn id(&self) -> u32 {
         self.id
     }
@@ -123,7 +126,7 @@ impl<'a> Mutant<'a> {
     }
 
     pub fn path(&self) -> &Path {
-        self.src_path
+        &self.src_path
     }
 
     pub fn span_start(&self) -> u32 {
@@ -216,7 +219,12 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
 }
 
 // consider processing a token stream with this function.
-pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) -> Option<Mutant> {
+pub fn mutant_builder(
+    id: u32,
+    token: Token,
+    span: (u32, u32),
+    src_path: PathBuf,
+) -> Option<Mutant> {
     let mutation = token_mutation(token.clone()).unwrap();
     match token {
         Token::Equal => Some(Mutant {
@@ -224,7 +232,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::NotEqual => Some(Mutant {
@@ -232,7 +240,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Greater => Some(Mutant {
@@ -240,7 +248,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::GreaterEqual => Some(Mutant {
@@ -248,7 +256,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Less => Some(Mutant {
@@ -256,7 +264,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::LessEqual => Some(Mutant {
@@ -264,7 +272,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Ampersand => Some(Mutant {
@@ -272,7 +280,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Pipe => Some(Mutant {
@@ -280,7 +288,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Caret => Some(Mutant {
@@ -288,7 +296,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::ShiftLeft => Some(Mutant {
@@ -296,7 +304,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::ShiftRight => Some(Mutant {
@@ -304,7 +312,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Plus => Some(Mutant {
@@ -312,7 +320,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Minus => Some(Mutant {
@@ -320,7 +328,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Star => Some(Mutant {
@@ -328,7 +336,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Slash => Some(Mutant {
@@ -336,7 +344,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Percent => Some(Mutant {
@@ -344,7 +352,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Increment => Some(Mutant {
@@ -352,7 +360,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span: (span.0, span.1 + 1),
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         Token::Decrement => Some(Mutant {
@@ -360,7 +368,7 @@ pub fn mutant_builder(id: u32, token: Token, span: (u32, u32), src_path: &Path) 
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span: (span.0, span.1 + 1),
-            src_path,
+            src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
         _ => None,
@@ -383,7 +391,7 @@ mod tests {
             mutation: token.clone(),
             bytes: token_as_bytes(&token.clone()).unwrap().to_vec(),
             span,
-            src_path: &path,
+            src_path: Box::new(path.clone()),
             status: MutationStatus::Pending,
         };
 
@@ -399,7 +407,7 @@ mod tests {
         assert_eq!(mutant.span(), span);
 
         // Test path method
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
 
         // Test start method
         assert_eq!(mutant.span_start(), 0);
@@ -421,7 +429,7 @@ mod tests {
             mutation: token.clone(),
             bytes: token_as_bytes(&token.clone()).unwrap().to_vec(),
             span,
-            src_path: &path,
+            src_path: Box::new(path.clone()),
             status: MutationStatus::Pending,
         };
 
@@ -437,7 +445,7 @@ mod tests {
         assert_eq!(mutant.span(), span);
 
         // Test path method
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
 
         // Test start method
         assert_eq!(mutant.span_start(), 10);
@@ -461,7 +469,7 @@ mod tests {
             mutation: token.clone(),
             bytes: token_as_bytes(&token.clone()).unwrap().to_vec(),
             span,
-            src_path: &path,
+            src_path: Box::new(path.clone()),
             status: MutationStatus::Pending,
         };
 
@@ -477,7 +485,7 @@ mod tests {
         assert_eq!(mutant.span(), span);
 
         // Test path method
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
 
         // Test start method
         assert_eq!(mutant.span_start(), 1000);
@@ -495,14 +503,14 @@ mod tests {
         let token = Token::Equal;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::NotEqual);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "!=");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -512,14 +520,14 @@ mod tests {
         let token = Token::NotEqual;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Equal);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "==");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -529,14 +537,14 @@ mod tests {
         let token = Token::Greater;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::LessEqual);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "<=");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -546,14 +554,14 @@ mod tests {
         let token = Token::GreaterEqual;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Less);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "<");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -563,14 +571,14 @@ mod tests {
         let token = Token::Less;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::GreaterEqual);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, ">=");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -580,14 +588,14 @@ mod tests {
         let token = Token::LessEqual;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Greater);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, ">");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -597,14 +605,14 @@ mod tests {
         let token = Token::Ampersand;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Pipe);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "|");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -614,14 +622,14 @@ mod tests {
         let token = Token::Pipe;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Ampersand);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "&");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -631,14 +639,14 @@ mod tests {
         let token = Token::Caret;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Ampersand);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "&");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -648,14 +656,14 @@ mod tests {
         let token = Token::Plus;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Minus);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "-");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -665,14 +673,14 @@ mod tests {
         let token = Token::Minus;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Plus);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "+");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -682,14 +690,14 @@ mod tests {
         let token = Token::Star;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Slash);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "/");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 
@@ -699,14 +707,14 @@ mod tests {
         let token = Token::Slash;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Star);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "*");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
     }
 
     #[test]
@@ -715,14 +723,14 @@ mod tests {
         let token = Token::Percent;
         let span = (0, 1);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, &path).unwrap();
+        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
         assert_eq!(mutant.token(), Token::Star);
         let bytes_str =
             String::from_utf8(mutant.bytes().clone()).expect("Failed to convert bytes to string");
         assert_eq!(bytes_str, "*");
         assert_eq!(mutant.span_start(), 0);
         assert_eq!(mutant.span_end(), 1);
-        assert_eq!(mutant.path(), &path);
+        assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
 }
