@@ -7,7 +7,7 @@ use std::io::Write;
 use std::{
     cell::Cell,
     fs::{self, File, OpenOptions},
-    io::{BufRead, Read, BufReader, Result},
+    io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
 };
 use toml;
@@ -92,7 +92,7 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<(Vec<File>,
                     Ok((sub_results_files, sub_results_paths)) => {
                         files.extend(sub_results_files);
                         paths.extend(sub_results_paths);
-                    },
+                    }
                     Err(_) => continue,
                 }
             } else if path_buf
@@ -201,7 +201,7 @@ pub fn collect_tokens<'a>(
                 for mat in regex.find_iter(&filtered_content) {
                     filtered_tokens.push((
                         SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
-                        path,
+                        &path,
                         j.get(),
                     ));
                     j.set(j.get() + 1);
