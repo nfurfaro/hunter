@@ -1,70 +1,20 @@
-use crate::cli::{Args, Config};
-use crate::mutant::{mutant_builder, Mutant, MutationStatus};
+use crate::cli::Args;
+use crate::config::Config;
 use crate::parallel::parallel_process_mutated_tokens;
-use crate::utils::{collect_tokens, find_source_files, print_line_in_span};
+use crate::reporter::ScanResult;
+use crate::token::MutationStatus;
+use crate::utils::print_line_in_span;
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
 
-pub fn mutate(args: Args, config: Config) -> Result<()> {
+pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     // add a [workspace] to the project manifest
     // modify_toml(config);
 
-    println!("{}", "Initiating source file analysis...".green());
-    println!(
-        "{}",
-        format!("Searching for {} files", config.language().to_str()).green()
-    );
-    let files = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
-        panic!(
-            "No {} files found... Are you in the right directory?",
-            config.language().to_str().red()
-        )
-    });
-
-    println!("{}", "Files found:".cyan());
-    for file in &files {
-        println!("{}", format!("{}", file.1.as_path().display()).red());
-    }
-
-    println!("{}", "Collecting tokens from files".green());
-
-    let (tokens_with_paths, test_count) = collect_tokens(&files).expect("No tokens found");
-
-    println!(
-        "{}",
-        format!("Analysing {} tokens", tokens_with_paths.len()).green()
-    );
-
-    let mut mutants: Vec<Mutant> = vec![];
-    for entry in tokens_with_paths {
-        let path = entry.1.as_path();
-        let spanned_token = entry.0.clone();
-        let maybe_mutant = mutant_builder(
-            entry.2,
-            spanned_token.token().clone(),
-            spanned_token.span(),
-            Path::new(path),
-        );
-        match maybe_mutant {
-            None => continue,
-            Some(m) => mutants.push(m),
-        }
-    }
-
-    let num_mutants: usize = mutants.len();
-
-    println!(
-        "{}",
-        format!("Mutable tokens found: {}", num_mutants).cyan()
-    );
-    println!(
-        "{}",
-        format!("Runs of test suite required: {}", num_mutants * test_count).magenta()
-    );
-
     println!("{}", "Running tests...".green());
-    parallel_process_mutated_tokens(&mut mutants, config);
+    let mutants = results.mutants();
+    parallel_process_mutated_tokens(mutants, config);
 
     if args.verbose {
         // Create a new table
@@ -73,13 +23,13 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
             Cell::new("Surviving Mutants").style_spec("Fmb")
         ]));
         table.add_row(Row::new(vec![
-            Cell::new("Source file:").style_spec("Fyb"),
-            Cell::new("Line #:").style_spec("Fyb"),
-            Cell::new("Mutant context:").style_spec("Fyb"),
-            Cell::new("Original:").style_spec("Fyb"),
+            Cell::new("Source file:").style_spec("Fcb"),
+            Cell::new("Line #:").style_spec("Fcb"),
+            Cell::new("Original context:").style_spec("Fcb"),
+            Cell::new("Mutation:").style_spec("Fmb"),
         ]));
 
-        for mutant in &mutants {
+        for mutant in mutants.clone() {
             if mutant.status() == MutationStatus::Survived
                 || mutant.status() == MutationStatus::Pending
             {
