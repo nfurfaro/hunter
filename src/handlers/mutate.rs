@@ -16,7 +16,7 @@ pub fn mutate(args: Args, config: Config) -> Result<()> {
         "{}",
         format!("Searching for {} files", config.language().name()).green()
     );
-    let files = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
+    let (files, paths) = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
             config.language().name().red()
