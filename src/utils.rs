@@ -7,7 +7,7 @@ use std::io::Write;
 use std::{
     cell::Cell,
     fs::{self, File, OpenOptions},
-    io::{BufRead, BufReader, Result},
+    io::{BufRead, Read, BufReader, Result},
     path::{Path, PathBuf},
 };
 use toml;
@@ -283,8 +283,8 @@ mod tests {
         writeln!(file, "Hello, world!").unwrap();
         let result = find_source_files(dir.path(), &config).unwrap();
 
-        assert_eq!(result.len(), 1);
-        assert_eq!(result[0].1.file_name().unwrap(), "test.nr");
+        assert_eq!(result.0.len(), 1);
+        assert_eq!(result.0[0].1.file_name().unwrap(), "test.nr");
 
         dir.close().unwrap();
     }
