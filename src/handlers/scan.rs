@@ -7,8 +7,8 @@ use colored::*;
 
 use std::path::Path;
 
-pub fn analyze<'a>(_args: Args, config: &'a Config) -> ScanResult {
-    let paths = find_source_file_paths(Path::new("."), &config).unwrap_or_else(|_| {
+pub fn analyze(_args: Args, config: &Config) -> ScanResult {
+    let paths = find_source_file_paths(Path::new("."), config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
             config.language().name().red()

@@ -3,10 +3,8 @@ use crate::token::Mutant;
 use crate::token::SpannedToken;
 use colored::*;
 use std::{
-    cell::Cell,
-    fs::{self, File, OpenOptions},
-    io::{BufRead, BufReader, Read, Result},
-    path::{Path, PathBuf},
+    io::{Result},
+    path::{PathBuf},
 };
 
 #[derive(Debug, Clone)]

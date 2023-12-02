@@ -190,7 +190,6 @@ pub fn token_mutation(token: Token) -> Option<Token> {
         Token::Percent => Some(Token::Star),
         Token::Increment => Some(Token::Decrement),
         Token::Decrement => Some(Token::Increment),
-        _ => None,
     }
 }
 
@@ -214,7 +213,6 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
         Token::Percent => Some(b"%"),
         Token::Increment => Some(b"++"),
         Token::Decrement => Some(b"--"),
-        _ => None,
     }
 }
 
@@ -371,7 +369,6 @@ pub fn mutant_builder(
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
-        _ => None,
     }
 }
 

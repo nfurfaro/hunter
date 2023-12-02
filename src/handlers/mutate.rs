@@ -8,7 +8,7 @@ use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
 
-pub fn mutate<'a>(args: Args, config: Config, results: &'a mut ScanResult) -> Result<()> {
+pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     // add a [workspace] to the project manifest
     // modify_toml(config);
 

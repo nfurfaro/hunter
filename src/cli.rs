@@ -1,4 +1,4 @@
-use crate::config::{config, Config, Language};
+use crate::config::{config, Language};
 use crate::handlers;
 use crate::reporter::print_scan_results;
 use clap::Parser;
@@ -60,7 +60,7 @@ pub async fn run_cli() -> Result<()> {
         }
         Some(Subcommand::Mutate) => {
             let mut results = handlers::scan::analyze(args.clone(), &config);
-            print_scan_results(results.clone(), &config);
+            let _ = print_scan_results(results.clone(), &config);
             handlers::mutate::mutate(args, config.clone(), &mut results)
         }
         None => {

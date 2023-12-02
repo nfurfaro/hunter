@@ -134,9 +134,9 @@ pub struct TokenCollection {}
 
 // @review create awrapper type for return value? (ie: TokenCollection)
 // check that the id being used is unique and necessary !
-pub fn collect_tokens<'a>(
+pub fn collect_tokens(
     paths: Vec<PathBuf>,
-    config: &'a Config,
+    config: &Config,
 ) -> Option<(Vec<(SpannedToken, PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, PathBuf, u32)> = Vec::new();
     let mut filtered_tokens: Vec<(SpannedToken, PathBuf, u32)> = Vec::new();
