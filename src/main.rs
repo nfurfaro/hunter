@@ -3,9 +3,9 @@ use anyhow::Result;
 pub mod config;
 pub mod handlers;
 pub mod parallel;
+pub mod reporter;
 pub mod token;
 pub mod utils;
-pub mod reporter;
 
 mod cli;
 
