@@ -21,14 +21,14 @@ pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
         )
     });
 
-    println!("{}", "Files found:".cyan());
-    for file in &files {
-        println!("{}", format!("{}", file.1.as_path().display()).red());
-    }
+    // println!("{}", "Files found:".cyan());
+    // for file in &files {
+    //     println!("{}", format!("{}", file.1.as_path().display()).red());
+    // }
 
     println!("{}", "Collecting tokens from files".green());
 
-    let (tokens_with_paths, test_count) = collect_tokens(&files, config).expect("No tokens found");
+    let (tokens_with_paths, test_count) = collect_tokens(&files, &paths, config).expect("No tokens found");
 
     println!(
         "{}",
@@ -62,5 +62,5 @@ pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
         format!("Test runs required: {}", num_mutants * test_count).magenta()
     );
 
-ScanResult::new(&files, tokens_with_paths, test_count, mutants)
+ScanResult::new(&files, paths, tokens_with_paths, test_count, mutants)
 }
