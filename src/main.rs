@@ -5,6 +5,7 @@ pub mod handlers;
 pub mod parallel;
 pub mod token;
 pub mod utils;
+pub mod reporter;
 
 mod cli;
 

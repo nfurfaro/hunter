@@ -2,17 +2,19 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::token::{mutant_builder, Mutant};
 use crate::utils::{collect_tokens, find_source_files};
+use crate::reporter::ScanResult;
 use colored::*;
+
 
 use std::{io::Result, path::Path};
 
-pub fn analyze(_args: Args, config: Config) -> Result<()> {
+pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
     println!("{}", "Initiating source file analysis...".green());
     println!(
         "{}",
         format!("Searching for {} files", config.language().name()).green()
     );
-    let files = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
+    let (files, paths) = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
             config.language().name().red()
@@ -26,7 +28,7 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
 
     println!("{}", "Collecting tokens from files".green());
 
-    let (tokens_with_paths, test_count) = collect_tokens(&files, &config).expect("No tokens found");
+    let (tokens_with_paths, test_count) = collect_tokens(&files, config).expect("No tokens found");
 
     println!(
         "{}",
@@ -34,7 +36,7 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
     );
 
     let mut mutants: Vec<Mutant> = vec![];
-    for entry in tokens_with_paths {
+    for entry in &tokens_with_paths {
         let path = entry.1.as_path();
         let spanned_token = entry.0.clone();
         let maybe_mutant = mutant_builder(
@@ -60,5 +62,5 @@ pub fn analyze(_args: Args, config: Config) -> Result<()> {
         format!("Test runs required: {}", num_mutants * test_count).magenta()
     );
 
-    Ok(())
+ScanResult::new(&files, tokens_with_paths, test_count, mutants)
 }

@@ -1,5 +1,6 @@
 use crate::config::{config, Language};
 use crate::handlers;
+use crate::reporter::report_scan_result;
 use clap::Parser;
 use colored::*;
 use std::io::Result;
@@ -53,7 +54,10 @@ pub async fn run_cli() -> Result<()> {
     let config = config(args.language.clone().expect("No language specified"));
 
     match args.subcommand {
-        Some(Subcommand::Scan) => handlers::scan::analyze(args, config),
+        Some(Subcommand::Scan) => {
+          let result = handlers::scan::analyze(args, &config);
+          report_scan_result(result)
+        },
         Some(Subcommand::Mutate) => handlers::mutate::mutate(args, config),
         None => {
             println!(

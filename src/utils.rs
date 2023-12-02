@@ -7,7 +7,7 @@ use std::io::Write;
 use std::{
     cell::Cell,
     fs::{self, File, OpenOptions},
-    io::{BufRead, BufReader, Read, Result},
+    io::{BufRead, BufReader, Result},
     path::{Path, PathBuf},
 };
 use toml;
@@ -69,8 +69,9 @@ pub fn modify_toml(config: &Config) {
     }
 }
 
-pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, PathBuf)>> {
-    let mut results: Vec<(File, PathBuf)> = vec![];
+pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<(Vec<File>, Vec<PathBuf>)> {
+    let mut files: Vec<File> = vec![];
+    let mut paths: Vec<PathBuf> = vec![];
 
     if dir_path.is_dir() {
         for entry in std::fs::read_dir(dir_path)? {
@@ -86,9 +87,12 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
                 {
                     continue;
                 }
-                let sub_results = find_source_files(&path_buf, config);
-                match sub_results {
-                    Ok(sub_results) => results.extend(sub_results),
+                let results = find_source_files(&path_buf, config);
+                match results {
+                    Ok((sub_results_files, sub_results_paths)) => {
+                        files.extend(sub_results_files);
+                        paths.extend(sub_results_paths);
+                    },
                     Err(_) => continue,
                 }
             } else if path_buf
@@ -112,18 +116,19 @@ pub fn find_source_files(dir_path: &Path, config: &Config) -> Result<Vec<(File, 
                     fs::write(manifest_path, "[package]\nname = \"hunter\"\nauthors = [\"\"]\ncompiler_version = \"0.1\"\n\n[dependencies]")?;
                     fs::create_dir_all(temp_dir.join("src"))?;
                     let file = File::open(path)?;
-                    results.push((file, path_buf));
+                    files.push(file);
+                    paths.push(path_buf);
                 }
             }
         }
     }
-    if results.is_empty() {
+    if files.is_empty() {
         return Err(std::io::Error::new(
             std::io::ErrorKind::NotFound,
             "No files found",
         ));
     }
-    Ok(results)
+    Ok((files, paths))
 }
 
 pub struct TokenCollection {}
@@ -131,7 +136,8 @@ pub struct TokenCollection {}
 // @review create awrapper type for return value? (ie: TokenCollection)
 // check that the id being used is unique and necessary !
 pub fn collect_tokens<'a>(
-    src_files: &'a Vec<(File, PathBuf)>,
+    src_files: &'a Vec<(File)>,
+    paths: &'a Vec<PathBuf>,
     config: &'a Config,
 ) -> Option<(Vec<(SpannedToken, &'a PathBuf, u32)>, usize)> {
     let mut tokens: Vec<(SpannedToken, &PathBuf, u32)> = Vec::new();
@@ -154,7 +160,8 @@ pub fn collect_tokens<'a>(
                 .progress_chars("#>-"),
         );
 
-        for (file, path) in src_files {
+        for (index, file) in src_files.iter().enumerate() {
+            let path = paths[index];
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
@@ -166,7 +173,7 @@ pub fn collect_tokens<'a>(
                 for mat in regex.find_iter(&contents) {
                     tokens.push((
                         SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
-                        path,
+                        &path,
                         i.get(),
                     ));
                     i.set(i.get() + 1);
