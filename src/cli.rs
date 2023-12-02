@@ -56,7 +56,7 @@ pub async fn run_cli() -> Result<()> {
     match args.subcommand {
         Some(Subcommand::Scan) => {
           let result = handlers::scan::analyze(args, &config);
-          report_scan_result(result)
+          report_scan_result(result, &config)
         },
         Some(Subcommand::Mutate) => handlers::mutate::mutate(args, config),
         None => {

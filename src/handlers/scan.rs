@@ -9,11 +9,11 @@ use colored::*;
 use std::{io::Result, path::Path};
 
 pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
-    println!("{}", "Initiating source file analysis...".green());
-    println!(
-        "{}",
-        format!("Searching for {} files", config.language().name()).green()
-    );
+    // println!("{}", "Initiating source file analysis...".green());
+    // println!(
+    //     "{}",
+    //     format!("Searching for {} files", config.language().name()).green()
+    // );
     let (files, paths) = find_source_files(Path::new("."), &config).unwrap_or_else(|_| {
         panic!(
             "No {} files found... Are you in the right directory?",
@@ -26,14 +26,14 @@ pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
     //     println!("{}", format!("{}", file.1.as_path().display()).red());
     // }
 
-    println!("{}", "Collecting tokens from files".green());
+    // println!("{}", "Collecting tokens from files".green());
 
     let (tokens_with_paths, test_count) = collect_tokens(&files, &paths, config).expect("No tokens found");
 
-    println!(
-        "{}",
-        format!("Analysing {} tokens", tokens_with_paths.len()).green()
-    );
+    // println!(
+    //     "{}",
+    //     format!("Analysing {} tokens", tokens_with_paths.len()).green()
+    // );
 
     let mut mutants: Vec<Mutant> = vec![];
     for entry in &tokens_with_paths {
@@ -51,16 +51,16 @@ pub fn analyze<'a>(_args: Args, config: &Config) -> ScanResult<'a> {
         }
     }
 
-    let num_mutants: usize = mutants.len();
+    // let num_mutants: usize = mutants.len();
 
-    println!(
-        "{}",
-        format!("Mutable tokens found: {}", num_mutants).cyan()
-    );
-    println!(
-        "{}",
-        format!("Test runs required: {}", num_mutants * test_count).magenta()
-    );
+    // println!(
+    //     "{}",
+    //     format!("Mutable tokens found: {}", num_mutants).cyan()
+    // );
+    // println!(
+    //     "{}",
+    //     format!("Test runs required: {}", num_mutants * test_count).magenta()
+    // );
 
 ScanResult::new(&files, paths, tokens_with_paths, test_count, mutants)
 }
