@@ -96,17 +96,40 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
     Ok(paths)
 }
 
-pub struct TokenCollection {}
+pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
+    let mut test_count = 0;
+
+    if paths.is_empty() {
+        0
+    } else {
+        for path in paths {
+            let file = File::open(path.clone()).expect("Unable to open file");
+            let mut buf_reader = BufReader::new(file);
+            let mut contents = String::new();
+            let _res = buf_reader.read_to_string(&mut contents);
+
+            // Define your patterns
+            let test_pattern = match config.language() {
+                Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
+                _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
+            };
+
+            // Remove all tests and comments from the content
+            let test_matches = test_pattern.find_iter(&contents).count();
+            test_count += test_matches;
+        }
+        test_count
+    }
+}
 
 // @review create awrapper type for return value? (ie: TokenCollection)
 // check that the id being used is unique and necessary !
 pub fn collect_tokens(
     paths: Vec<PathBuf>,
     config: &Config,
-) -> Option<(Vec<(SpannedToken, PathBuf, u32)>, usize)> {
+) -> Option<Vec<(SpannedToken, PathBuf, u32)>> {
     let mut tokens: Vec<(SpannedToken, PathBuf, u32)> = Vec::new();
     let mut filtered_tokens: Vec<(SpannedToken, PathBuf, u32)> = Vec::new();
-    let mut test_count = 0;
 
     if paths.is_empty() {
         None
@@ -154,8 +177,8 @@ pub fn collect_tokens(
             let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
 
             // Remove all tests and comments from the content
-            let test_matches = test_pattern.find_iter(&contents).count();
-            test_count += test_matches;
+            // let test_matches = test_pattern.find_iter(&contents).count();
+
             let filtered_content = test_pattern.replace_all(&contents, "");
             let filtered_content = comment_pattern.replace_all(&filtered_content, "");
 
@@ -187,7 +210,7 @@ pub fn collect_tokens(
         }
 
         bar.finish();
-        Some((filtered_tokens, test_count))
+        Some(filtered_tokens)
     }
 }
 
@@ -231,10 +254,7 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{config, Language};
-    use std::fs::File;
-    use std::io::Write;
-    use tempfile::tempdir;
+    use crate::token::{token_as_bytes, Token};
 
     // #[test]
     // fn test_find_files() {

@@ -2,7 +2,7 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::reporter::ScanResult;
 use crate::token::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, find_source_file_paths};
+use crate::utils::{collect_tokens, count_tests, find_source_file_paths};
 use colored::*;
 
 use std::path::Path;
@@ -16,8 +16,8 @@ pub fn analyze(_args: Args, config: &Config) -> ScanResult {
     });
 
     let paths_clone = paths.clone();
-    let (tokens_with_paths, test_count) =
-        collect_tokens(paths_clone, config).expect("No tokens found");
+    let test_count = count_tests(paths.clone(), config);
+    let tokens_with_paths = collect_tokens(paths_clone, config).expect("No tokens found");
 
     let mut mutants: Vec<Mutant> = vec![];
     for entry in &tokens_with_paths {
