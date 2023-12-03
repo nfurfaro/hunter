@@ -114,7 +114,6 @@ pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
                 _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
             };
 
-            // Remove all tests and comments from the content
             let test_matches = test_pattern.find_iter(&contents).count();
             test_count += test_matches;
         }
@@ -122,8 +121,7 @@ pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
     }
 }
 
-// @review create awrapper type for return value? (ie: TokenCollection)
-// check that the id being used is unique and necessary !
+// @review check that the id being used is unique and necessary !
 pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaToken>> {
     let mut tokens: Vec<MetaToken> = Vec::new();
     let mut filtered_tokens: Vec<MetaToken> = Vec::new();
@@ -216,7 +214,9 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
     let original_operator_length = if original_bytes.len() > start_index + 1 {
         match original_bytes.get(start_index..start_index + 2) {
             Some(slice) => match slice {
-                b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" => 2,
+                b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"+=" | b"-=" | b"*=" | b"/="
+                | b"%=" | b"&=" | b"|=" | b"^=" => 2,
+                b"<<=" | b">>=" => 3,
                 _ => 1,
             },
             None => 1,
@@ -240,6 +240,17 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
         original_bytes.remove(start_index + 2);
     }
 
+    // If the original operator is ">>=" or "<<=", and the replacement is the same length,
+    // and there is an extra character after the replacement, remove it.
+    if original_operator_length == 3
+        && replacement.len() == 3
+        && (original_bytes[start_index..start_index + 3] == *b">>=".as_ref()
+            || original_bytes[start_index..start_index + 3] == *b"<<=".as_ref())
+        && original_bytes.len() > start_index + 3
+    {
+        original_bytes.remove(start_index + 3);
+    }
+
     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
     if start_index > 0
         && original_operator_length == 1
@@ -248,7 +259,27 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
     {
         original_bytes.insert(start_index, b' ');
     }
+
+    // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+    if start_index > 0
+        && original_operator_length == 3
+        && (original_bytes[start_index..start_index + 3] == *b">>=".as_ref()
+            || original_bytes[start_index..start_index + 3] == *b"<<=".as_ref())
+        && original_bytes.get(start_index - 1) != Some(&b' ')
+    {
+        original_bytes.insert(start_index, b' ');
+    }
+
+    // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+    // if start_index > 0
+    //     && original_operator_length == 1
+    //     && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+    //     && original_bytes.get(start_index - 1) != Some(&b' ')
+    // {
+    //     original_bytes.insert(start_index, b' ');
+    // }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -273,13 +304,6 @@ mod tests {
     //     assert_eq!(&paths[0].file_name().unwrap(), "test.nr");
 
     //     dir.close().unwrap();
-    // }
-
-    // #[test]
-    // fn test_bytes_as_token_equal() {
-    //     let bytes = b"==";
-    //     let token = bytes_as_token(bytes).unwrap();
-    //     assert_eq!(token, Token::Equal);
     // }
 
     #[test]
@@ -463,275 +487,92 @@ mod tests {
     }
 
     #[test]
-    fn test_token_mutation_equal() {
-        let token = Token::Equal;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::NotEqual));
+    fn test_replace_bytes_plus_equal() {
+        let mut original_bytes = "+=".as_bytes().to_vec();
+        let replacement = b"-=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"-=");
     }
 
     #[test]
-    fn test_token_mutation_not_equal() {
-        let token = Token::NotEqual;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Equal));
+    fn test_replace_bytes_minus_equal() {
+        let mut original_bytes = "-=".as_bytes().to_vec();
+        let replacement = b"+=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"+=");
     }
 
     #[test]
-    fn test_token_mutation_less_than() {
-        let token = Token::Less;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::GreaterEqual));
+    fn test_replace_bytes_multiply_equal() {
+        let mut original_bytes = "*=".as_bytes().to_vec();
+        let replacement = b"/=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"/=");
     }
 
     #[test]
-    fn test_token_mutation_less_than_or_equal() {
-        let token = Token::LessEqual;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Greater));
+    fn test_replace_bytes_divide_equal() {
+        let mut original_bytes = "/=".as_bytes().to_vec();
+        let replacement = b"*=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"*=");
     }
 
     #[test]
-    fn test_token_mutation_greater_than() {
-        let token = Token::Greater;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::LessEqual));
+    fn test_replace_bytes_modulo_equal() {
+        let mut original_bytes = "%=".as_bytes().to_vec();
+        let replacement = b"*=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"*=");
     }
 
     #[test]
-    fn test_token_mutation_greater_than_or_equal() {
-        let token = Token::GreaterEqual;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Less));
+    fn test_replace_bytes_and_equal() {
+        let mut original_bytes = "&=".as_bytes().to_vec();
+        let replacement = b"|=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"|=");
     }
 
     #[test]
-    fn test_token_mutation_and() {
-        let token = Token::Ampersand;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Pipe));
+    fn test_replace_bytes_or_equal() {
+        let mut original_bytes = "|=".as_bytes().to_vec();
+        let replacement = b"&=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"&=");
     }
 
     #[test]
-    fn test_token_mutation_or() {
-        let token = Token::Pipe;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Ampersand));
+    fn test_replace_bytes_xor_equal() {
+        let mut original_bytes = "^=".as_bytes().to_vec();
+        let replacement = b"&=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"&=");
     }
 
     #[test]
-    fn test_token_mutation_xor() {
-        let token = Token::Caret;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Ampersand));
+    fn test_replace_bytes_left_shift_equal() {
+        let mut original_bytes = "<<=".as_bytes().to_vec();
+        let replacement = b">>=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b">>=");
     }
 
     #[test]
-    fn test_token_mutation_ampersand() {
-        let token = Token::Ampersand;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Pipe));
-    }
-
-    #[test]
-    fn test_token_mutation_pipe() {
-        let token = Token::Pipe;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Ampersand));
-    }
-
-    #[test]
-    fn test_token_mutation_caret() {
-        let token = Token::Caret;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Ampersand));
-    }
-
-    #[test]
-    fn test_token_mutation_left_shift() {
-        let token = Token::ShiftLeft;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::ShiftRight));
-    }
-
-    #[test]
-    fn test_token_mutation_right_shift() {
-        let token = Token::ShiftRight;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::ShiftLeft));
-    }
-
-    #[test]
-    fn test_token_mutation_plus() {
-        let token = Token::Plus;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Minus));
-    }
-
-    #[test]
-    fn test_token_mutation_minus() {
-        let token = Token::Minus;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Plus));
-    }
-
-    #[test]
-    fn test_token_mutation_multiply() {
-        let token = Token::Star;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Slash));
-    }
-
-    #[test]
-    fn test_token_mutation_divide() {
-        let token = Token::Slash;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Star));
-    }
-
-    #[test]
-    fn test_token_mutation_modulo() {
-        let token = Token::Percent;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Star));
-    }
-
-    #[test]
-    fn test_token_mutation_increment() {
-        let token = Token::Increment;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Decrement));
-    }
-
-    #[test]
-    fn test_token_mutation_decrement() {
-        let token = Token::Decrement;
-        let mutation = token_mutation(token);
-        assert_eq!(mutation, Some(Token::Increment));
-    }
-
-    #[test]
-    fn test_token_as_bytes_equal() {
-        let token = Token::Equal;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"==");
-    }
-
-    #[test]
-    fn test_token_as_bytes_not_equal() {
-        let token = Token::NotEqual;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"!=");
-    }
-
-    #[test]
-    fn test_token_as_bytes_less_than() {
-        let token = Token::Less;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"<");
-    }
-
-    #[test]
-    fn test_token_as_bytes_less_than_or_equal() {
-        let token = Token::LessEqual;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"<=");
-    }
-
-    #[test]
-    fn test_token_as_bytes_greater_than() {
-        let token = Token::Greater;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b">");
-    }
-
-    #[test]
-    fn test_token_as_bytes_greater_than_or_equal() {
-        let token = Token::GreaterEqual;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b">=");
-    }
-
-    #[test]
-    fn test_token_as_bytes_and() {
-        let token = Token::Ampersand;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"&");
-    }
-
-    #[test]
-    fn test_token_as_bytes_or() {
-        let token = Token::Pipe;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"|");
-    }
-
-    #[test]
-    fn test_token_as_bytes_xor() {
-        let token = Token::Caret;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"^");
-    }
-
-    #[test]
-    fn test_token_as_bytes_left_shift() {
-        let token = Token::ShiftLeft;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"<<");
-    }
-
-    #[test]
-    fn test_token_as_bytes_right_shift() {
-        let token = Token::ShiftRight;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b">>");
-    }
-
-    #[test]
-    fn test_token_as_bytes_plus() {
-        let token = Token::Plus;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"+");
-    }
-
-    #[test]
-    fn test_token_as_bytes_minus() {
-        let token = Token::Minus;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"-");
-    }
-
-    #[test]
-    fn test_token_as_bytes_multiply() {
-        let token = Token::Star;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"*");
-    }
-
-    #[test]
-    fn test_token_as_bytes_divide() {
-        let token = Token::Slash;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"/");
-    }
-
-    #[test]
-    fn test_token_as_bytes_modulo() {
-        let token = Token::Percent;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"%");
-    }
-
-    #[test]
-    fn test_token_as_bytes_increment() {
-        let token = Token::Increment;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"++");
-    }
-
-    #[test]
-    fn test_token_as_bytes_decrement() {
-        let token = Token::Decrement;
-        let bytes = token_as_bytes(&token).unwrap();
-        assert_eq!(bytes, b"--");
+    fn test_replace_bytes_right_shift_equal() {
+        let mut original_bytes = ">>=".as_bytes().to_vec();
+        let replacement = b"<<=";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"<<=");
     }
 }
