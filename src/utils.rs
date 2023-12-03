@@ -1,5 +1,5 @@
 use crate::config::{Config, Language};
-use crate::token::{bytes_as_token, MetaToken};
+use crate::token::{token_patterns, MetaToken};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use regex::Regex;
@@ -150,7 +150,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let token_patterns = bytes_as_token();
+            let token_patterns = token_patterns();
 
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
@@ -252,13 +252,17 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::token::{token_as_bytes, Token};
+    use crate::config::config;
+    use crate::token::{token_as_bytes, token_mutation, Token};
+    // extern crate tempdir;
+
+    // use tempdir::Tempdir;
 
     // #[test]
     // fn test_find_files() {
     //     let config = config(Language::Noir);
 
-    //     let dir = tempdir().unwrap();
+    //     let dir = TempDir::new("my_temp_dir").expect("Could not create temporary directory");
     //     let file_path = dir.path().join("test.nr");
 
     //     let mut file = File::create(&file_path).unwrap();
@@ -270,6 +274,14 @@ mod tests {
 
     //     dir.close().unwrap();
     // }
+
+    // #[test]
+    // fn test_bytes_as_token_equal() {
+    //     let bytes = b"==";
+    //     let token = bytes_as_token(bytes).unwrap();
+    //     assert_eq!(token, Token::Equal);
+    // }
+
     #[test]
     fn test_replace_bytes_equal() {
         let mut original_bytes = "==".as_bytes().to_vec();
@@ -433,6 +445,171 @@ mod tests {
     }
 
     #[test]
+    fn test_replace_bytes_increment() {
+        let mut original_bytes = "++".as_bytes().to_vec();
+        let replacement = b"--";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"--");
+    }
+
+    #[test]
+    fn test_replace_bytes_decrement() {
+        let mut original_bytes = "--".as_bytes().to_vec();
+        let replacement = b"++";
+        let start_index = 0;
+        replace_bytes(&mut original_bytes, start_index, replacement);
+        assert_eq!(original_bytes, b"++");
+    }
+
+    #[test]
+    fn test_token_mutation_equal() {
+        let token = Token::Equal;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::NotEqual));
+    }
+
+    #[test]
+    fn test_token_mutation_not_equal() {
+        let token = Token::NotEqual;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Equal));
+    }
+
+    #[test]
+    fn test_token_mutation_less_than() {
+        let token = Token::Less;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::GreaterEqual));
+    }
+
+    #[test]
+    fn test_token_mutation_less_than_or_equal() {
+        let token = Token::LessEqual;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Greater));
+    }
+
+    #[test]
+    fn test_token_mutation_greater_than() {
+        let token = Token::Greater;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::LessEqual));
+    }
+
+    #[test]
+    fn test_token_mutation_greater_than_or_equal() {
+        let token = Token::GreaterEqual;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Less));
+    }
+
+    #[test]
+    fn test_token_mutation_and() {
+        let token = Token::Ampersand;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Pipe));
+    }
+
+    #[test]
+    fn test_token_mutation_or() {
+        let token = Token::Pipe;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Ampersand));
+    }
+
+    #[test]
+    fn test_token_mutation_xor() {
+        let token = Token::Caret;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Ampersand));
+    }
+
+    #[test]
+    fn test_token_mutation_ampersand() {
+        let token = Token::Ampersand;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Pipe));
+    }
+
+    #[test]
+    fn test_token_mutation_pipe() {
+        let token = Token::Pipe;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Ampersand));
+    }
+
+    #[test]
+    fn test_token_mutation_caret() {
+        let token = Token::Caret;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Ampersand));
+    }
+
+    #[test]
+    fn test_token_mutation_left_shift() {
+        let token = Token::ShiftLeft;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::ShiftRight));
+    }
+
+    #[test]
+    fn test_token_mutation_right_shift() {
+        let token = Token::ShiftRight;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::ShiftLeft));
+    }
+
+    #[test]
+    fn test_token_mutation_plus() {
+        let token = Token::Plus;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Minus));
+    }
+
+    #[test]
+    fn test_token_mutation_minus() {
+        let token = Token::Minus;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Plus));
+    }
+
+    #[test]
+    fn test_token_mutation_multiply() {
+        let token = Token::Star;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Slash));
+    }
+
+    #[test]
+    fn test_token_mutation_divide() {
+        let token = Token::Slash;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Star));
+    }
+
+    #[test]
+    fn test_token_mutation_modulo() {
+        let token = Token::Percent;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Star));
+    }
+
+    #[test]
+    fn test_token_mutation_increment() {
+        let token = Token::Increment;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Decrement));
+    }
+
+    #[test]
+    fn test_token_mutation_decrement() {
+        let token = Token::Decrement;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::Increment));
+    }
+
+    #[test]
     fn test_token_as_bytes_equal() {
         let token = Token::Equal;
         let bytes = token_as_bytes(&token).unwrap();
@@ -542,5 +719,19 @@ mod tests {
         let token = Token::Percent;
         let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"%");
+    }
+
+    #[test]
+    fn test_token_as_bytes_increment() {
+        let token = Token::Increment;
+        let bytes = token_as_bytes(&token).unwrap();
+        assert_eq!(bytes, b"++");
+    }
+
+    #[test]
+    fn test_token_as_bytes_decrement() {
+        let token = Token::Decrement;
+        let bytes = token_as_bytes(&token).unwrap();
+        assert_eq!(bytes, b"--");
     }
 }

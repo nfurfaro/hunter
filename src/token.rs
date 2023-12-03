@@ -41,6 +41,26 @@ pub enum Token {
     Increment,
     /// --
     Decrement,
+    /// +=
+    PlusEquals,
+    /// -=
+    MinusEquals,
+    /// *=
+    StarEquals,
+    /// /=
+    SlashEquals,
+    /// %=
+    PercentEquals,
+    /// &=
+    AmpersandEquals,
+    /// |=
+    PipeEquals,
+    /// ^=
+    CaretEquals,
+    /// <<=
+    ShiftLeftEquals,
+    /// >>=
+    ShiftRightEquals,
     // Bang,
 }
 
@@ -162,7 +182,7 @@ impl Mutant {
     }
 }
 
-pub fn bytes_as_token<'a>() -> Vec<(&'a str, Token)> {
+pub fn token_patterns<'a>() -> Vec<(&'a str, Token)> {
     vec![
         (r"<=", Token::LessEqual),
         (r"<", Token::Less),
@@ -182,7 +202,51 @@ pub fn bytes_as_token<'a>() -> Vec<(&'a str, Token)> {
         (r"\|", Token::Pipe),
         (r"\+\+", Token::Increment),
         (r"--", Token::Decrement),
+        (r"+=", Token::PlusEquals),
+        (r"-=", Token::MinusEquals),
+        (r"\*=", Token::StarEquals),
+        (r"/=", Token::SlashEquals),
+        (r"%=", Token::PercentEquals),
+        (r"&=", Token::AmpersandEquals),
+        (r"\|=", Token::PipeEquals),
+        (r"\^=", Token::CaretEquals),
+        (r"<<=", Token::ShiftLeftEquals),
+        (r">>=", Token::ShiftRightEquals),
     ]
+}
+
+pub fn raw_string_as_token(raw: &str) -> Option<Token> {
+    match raw {
+        "<=" => Some(Token::LessEqual),
+        "<" => Some(Token::Less),
+        ">=" => Some(Token::GreaterEqual),
+        ">" => Some(Token::Greater),
+        "==" => Some(Token::Equal),
+        "!=" => Some(Token::NotEqual),
+        "+" => Some(Token::Plus),
+        "-" => Some(Token::Minus),
+        "*" => Some(Token::Star),
+        "/" => Some(Token::Slash),
+        "%" => Some(Token::Percent),
+        "&" => Some(Token::Ampersand),
+        "^" => Some(Token::Caret),
+        "<<" => Some(Token::ShiftLeft),
+        ">>" => Some(Token::ShiftRight),
+        "|" => Some(Token::Pipe),
+        "++" => Some(Token::Increment),
+        "--" => Some(Token::Decrement),
+        "+=" => Some(Token::PlusEquals),
+        "-=" => Some(Token::MinusEquals),
+        "*=" => Some(Token::StarEquals),
+        "/=" => Some(Token::SlashEquals),
+        "%=" => Some(Token::PercentEquals),
+        "&=" => Some(Token::AmpersandEquals),
+        "|=" => Some(Token::PipeEquals),
+        "^=" => Some(Token::CaretEquals),
+        "<<=" => Some(Token::ShiftLeftEquals),
+        ">>=" => Some(Token::ShiftRightEquals),
+        _ => None,
+    }
 }
 
 pub fn token_mutation(token: Token) -> Option<Token> {
@@ -205,6 +269,16 @@ pub fn token_mutation(token: Token) -> Option<Token> {
         Token::Percent => Some(Token::Star),
         Token::Increment => Some(Token::Decrement),
         Token::Decrement => Some(Token::Increment),
+        Token::PlusEquals => Some(Token::MinusEquals),
+        Token::MinusEquals => Some(Token::PlusEquals),
+        Token::StarEquals => Some(Token::SlashEquals),
+        Token::SlashEquals => Some(Token::StarEquals),
+        Token::PercentEquals => Some(Token::StarEquals),
+        Token::AmpersandEquals => Some(Token::PipeEquals),
+        Token::PipeEquals => Some(Token::AmpersandEquals),
+        Token::CaretEquals => Some(Token::AmpersandEquals),
+        Token::ShiftLeftEquals => Some(Token::ShiftRightEquals),
+        Token::ShiftRightEquals => Some(Token::ShiftLeftEquals),
     }
 }
 
@@ -228,6 +302,16 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
         Token::Percent => Some(b"%"),
         Token::Increment => Some(b"++"),
         Token::Decrement => Some(b"--"),
+        Token::PlusEquals => Some(b"+="),
+        Token::MinusEquals => Some(b"-="),
+        Token::StarEquals => Some(b"*="),
+        Token::SlashEquals => Some(b"/="),
+        Token::PercentEquals => Some(b"%="),
+        Token::AmpersandEquals => Some(b"&="),
+        Token::PipeEquals => Some(b"|="),
+        Token::CaretEquals => Some(b"^="),
+        Token::ShiftLeftEquals => Some(b"<<="),
+        Token::ShiftRightEquals => Some(b">>="),
     }
 }
 
@@ -381,6 +465,92 @@ pub fn mutant_builder(
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::PlusEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::MinusEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::StarEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::SlashEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::PercentEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::AmpersandEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::PipeEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::CaretEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (span.0, span.1 + 1),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::ShiftLeftEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (
+                span.0,
+                span.1 + token_as_bytes(&Token::ShiftLeft).unwrap().len() as u32,
+            ),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::ShiftRightEquals => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (
+                span.0,
+                span.1 + token_as_bytes(&Token::ShiftRight).unwrap().len() as u32,
+            ),
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
