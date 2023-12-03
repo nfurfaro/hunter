@@ -45,14 +45,21 @@ pub enum Token {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct SpannedToken {
+pub struct MetaToken {
     token: Token,
     span: (u32, u32),
+    src: Box<PathBuf>,
+    id: u32,
 }
 
-impl SpannedToken {
-    pub fn new(token: Token, span: (u32, u32)) -> Self {
-        Self { token, span }
+impl MetaToken {
+    pub fn new(token: Token, span: (u32, u32), src: Box<PathBuf>, id: u32) -> Self {
+        Self {
+            token,
+            span,
+            src,
+            id,
+        }
     }
 
     pub fn token(&self) -> &Token {
@@ -61,6 +68,14 @@ impl SpannedToken {
 
     pub fn span(&self) -> (u32, u32) {
         self.span
+    }
+
+    pub fn src(&self) -> &PathBuf {
+        &self.src
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
     }
 
     pub fn set_span(&mut self, new_span: (u32, u32)) {
@@ -147,7 +162,7 @@ impl Mutant {
     }
 }
 
-pub fn token_regex_patterns<'a>() -> Vec<(&'a str, Token)> {
+pub fn bytes_as_token<'a>() -> Vec<(&'a str, Token)> {
     vec![
         (r"<=", Token::LessEqual),
         (r"<", Token::Less),

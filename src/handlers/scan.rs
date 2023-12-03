@@ -15,25 +15,18 @@ pub fn analyze(_args: Args, config: &Config) -> ScanResult {
         )
     });
 
-    let paths_clone = paths.clone();
     let test_count = count_tests(paths.clone(), config);
-    let tokens_with_paths = collect_tokens(paths_clone, config).expect("No tokens found");
+    let meta_tokens = collect_tokens(paths.clone(), config).expect("No tokens found");
 
     let mut mutants: Vec<Mutant> = vec![];
-    for entry in &tokens_with_paths {
-        let path = entry.1.clone();
-        let spanned_token = entry.0.clone();
-        let maybe_mutant = mutant_builder(
-            entry.2,
-            spanned_token.token().clone(),
-            spanned_token.span(),
-            path,
-        );
+    for entry in &meta_tokens {
+        let path = entry.src().clone();
+        let maybe_mutant = mutant_builder(entry.id(), entry.token().clone(), entry.span(), path);
         match maybe_mutant {
             None => continue,
             Some(m) => mutants.push(m),
         }
     }
 
-    ScanResult::new(paths, tokens_with_paths, test_count, mutants)
+    ScanResult::new(paths, meta_tokens, test_count, mutants)
 }

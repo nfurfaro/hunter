@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::token::{token_as_bytes, Mutant, SpannedToken, Token};
+use crate::token::{token_as_bytes, MetaToken, Mutant, Token};
 use colored::*;
 use prettytable::{Cell as table_cell, Row, Table};
 use std::{
@@ -11,7 +11,7 @@ use std::{
 #[derive(Debug, Clone)]
 pub struct ScanResult {
     paths: Vec<PathBuf>,
-    tokens_with_paths: Vec<(SpannedToken, PathBuf, u32)>,
+    spanned_tokens: Vec<MetaToken>,
     test_count: usize,
     mutants: Vec<Mutant>,
 }
@@ -19,13 +19,13 @@ pub struct ScanResult {
 impl ScanResult {
     pub fn new(
         paths: Vec<PathBuf>,
-        tokens_with_paths: Vec<(SpannedToken, PathBuf, u32)>,
+        spanned_tokens: Vec<MetaToken>,
         test_count: usize,
         mutants: Vec<Mutant>,
     ) -> ScanResult {
         ScanResult {
             paths,
-            tokens_with_paths,
+            spanned_tokens,
             test_count,
             mutants,
         }
@@ -35,8 +35,8 @@ impl ScanResult {
         &self.paths
     }
 
-    pub fn tokens_with_paths(&self) -> &Vec<(SpannedToken, PathBuf, u32)> {
-        &self.tokens_with_paths
+    pub fn tokens_with_paths(&self) -> &Vec<MetaToken> {
+        &self.spanned_tokens
     }
 
     pub fn test_count(&self) -> usize {
@@ -63,7 +63,7 @@ pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
 
     println!(
         "{}",
-        format!("Analysing {} tokens", results.tokens_with_paths.len()).green()
+        format!("Analysing {} tokens", results.spanned_tokens.len()).green()
     );
 
     println!("{}", "Collecting tokens from files".green());
@@ -109,7 +109,7 @@ pub fn print_line_in_span(
             break;
         }
 
-        byte_index += line_length + 1; // +1 for the newline character
+        byte_index += line_length + 1;
     }
 
     Ok(())

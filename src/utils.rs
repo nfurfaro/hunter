@@ -1,5 +1,5 @@
 use crate::config::{Config, Language};
-use crate::token::{token_regex_patterns, SpannedToken};
+use crate::token::{bytes_as_token, MetaToken};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use regex::Regex;
@@ -124,12 +124,9 @@ pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
 
 // @review create awrapper type for return value? (ie: TokenCollection)
 // check that the id being used is unique and necessary !
-pub fn collect_tokens(
-    paths: Vec<PathBuf>,
-    config: &Config,
-) -> Option<Vec<(SpannedToken, PathBuf, u32)>> {
-    let mut tokens: Vec<(SpannedToken, PathBuf, u32)> = Vec::new();
-    let mut filtered_tokens: Vec<(SpannedToken, PathBuf, u32)> = Vec::new();
+pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaToken>> {
+    let mut tokens: Vec<MetaToken> = Vec::new();
+    let mut filtered_tokens: Vec<MetaToken> = Vec::new();
 
     if paths.is_empty() {
         None
@@ -153,14 +150,15 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let token_patterns = token_regex_patterns();
+            let token_patterns = bytes_as_token();
 
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
-                    tokens.push((
-                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
-                        path.clone(),
+                    tokens.push(MetaToken::new(
+                        token.clone(),
+                        (mat.start() as u32, mat.end() as u32),
+                        Box::new(path.clone()),
                         i.get(),
                     ));
                     i.set(i.get() + 1);
@@ -186,9 +184,10 @@ pub fn collect_tokens(
             for (pattern, token) in &token_patterns {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&filtered_content) {
-                    filtered_tokens.push((
-                        SpannedToken::new(token.clone(), (mat.start() as u32, mat.end() as u32)),
-                        path.clone(),
+                    filtered_tokens.push(MetaToken::new(
+                        token.clone(),
+                        (mat.start() as u32, mat.end() as u32),
+                        Box::new(path.clone()),
                         j.get(),
                     ));
                     j.set(j.get() + 1);
@@ -198,11 +197,10 @@ pub fn collect_tokens(
             // compare tokens with filtered tokens by checking both token type and ID.
             // for all matches, copy token.span to filtered_token.span
             for filtered_token in &mut filtered_tokens {
-                if let Some(token) = tokens
-                    .iter()
-                    .find(|t| (t.0.token() == filtered_token.0.token()) && t.2 == filtered_token.2)
-                {
-                    filtered_token.0.set_span(token.0.span());
+                if let Some(token) = tokens.iter().find(|t| {
+                    (t.token() == filtered_token.token()) && t.id() == filtered_token.id()
+                }) {
+                    filtered_token.set_span(token.span());
                 }
             }
             bar.inc(1);
