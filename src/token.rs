@@ -182,57 +182,57 @@ impl Mutant {
     }
 }
 
-pub fn token_patterns<'a>() -> Vec<(&'a str, Token)> {
+pub fn token_patterns() -> Vec<(&'static str, Token)> {
     vec![
-        (r"<=", Token::LessEqual),
-        (r"<", Token::Less),
-        (r">=", Token::GreaterEqual),
-        (r">", Token::Greater),
-        (r"==", Token::Equal),
-        (r"!=", Token::NotEqual),
-        (r"\+", Token::Plus),
-        (r"-", Token::Minus),
-        (r"\*", Token::Star),
-        (r"/", Token::Slash),
-        (r"%", Token::Percent),
-        (r"&", Token::Ampersand),
-        (r"\^", Token::Caret),
-        (r"<<", Token::ShiftLeft),
-        (r">>", Token::ShiftRight),
-        (r"\|", Token::Pipe),
-        (r"\+\+", Token::Increment),
-        (r"--", Token::Decrement),
-        (r"+=", Token::PlusEquals),
-        (r"-=", Token::MinusEquals),
-        (r"\*=", Token::StarEquals),
-        (r"/=", Token::SlashEquals),
-        (r"%=", Token::PercentEquals),
-        (r"&=", Token::AmpersandEquals),
-        (r"\|=", Token::PipeEquals),
-        (r"\^=", Token::CaretEquals),
-        (r"<<=", Token::ShiftLeftEquals),
-        (r">>=", Token::ShiftRightEquals),
+        ("==", Token::Equal),
+        ("!=", Token::NotEqual),
+        ("<", Token::Less),
+        ("<=", Token::LessEqual),
+        (">", Token::Greater),
+        (">=", Token::GreaterEqual),
+        ("&", Token::Ampersand),
+        ("|", Token::Pipe),
+        ("^", Token::Caret),
+        ("<<", Token::ShiftLeft),
+        (">>", Token::ShiftRight),
+        ("+", Token::Plus),
+        ("-", Token::Minus),
+        ("*", Token::Star),
+        ("/", Token::Slash),
+        ("%", Token::Percent),
+        ("++", Token::Increment),
+        ("--", Token::Decrement),
+        ("+=", Token::PlusEquals),
+        ("-=", Token::MinusEquals),
+        ("*=", Token::StarEquals),
+        ("/=", Token::SlashEquals),
+        ("%=", Token::PercentEquals),
+        ("&=", Token::AmpersandEquals),
+        ("|=", Token::PipeEquals),
+        ("^=", Token::CaretEquals),
+        ("<<=", Token::ShiftLeftEquals),
+        (">>=", Token::ShiftRightEquals),
     ]
 }
 
 pub fn raw_string_as_token(raw: &str) -> Option<Token> {
     match raw {
-        "<=" => Some(Token::LessEqual),
-        "<" => Some(Token::Less),
-        ">=" => Some(Token::GreaterEqual),
-        ">" => Some(Token::Greater),
         "==" => Some(Token::Equal),
         "!=" => Some(Token::NotEqual),
+        "<" => Some(Token::Less),
+        "<=" => Some(Token::LessEqual),
+        ">" => Some(Token::Greater),
+        ">=" => Some(Token::GreaterEqual),
+        "&" => Some(Token::Ampersand),
+        "|" => Some(Token::Pipe),
+        "^" => Some(Token::Caret),
+        "<<" => Some(Token::ShiftLeft),
+        ">>" => Some(Token::ShiftRight),
         "+" => Some(Token::Plus),
         "-" => Some(Token::Minus),
         "*" => Some(Token::Star),
         "/" => Some(Token::Slash),
         "%" => Some(Token::Percent),
-        "&" => Some(Token::Ampersand),
-        "^" => Some(Token::Caret),
-        "<<" => Some(Token::ShiftLeft),
-        ">>" => Some(Token::ShiftRight),
-        "|" => Some(Token::Pipe),
         "++" => Some(Token::Increment),
         "--" => Some(Token::Decrement),
         "+=" => Some(Token::PlusEquals),
@@ -678,6 +678,13 @@ mod tests {
         // Test status method
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
+
+    // #[test]
+    // fn test_bytes_as_token_equal() {
+    //     let bytes = b"==";
+    //     let token = bytes_as_token(bytes).unwrap();
+    //     assert_eq!(token, Token::Equal);
+    // }
 
     #[test]
     fn test_mutant_builder_equal() {
