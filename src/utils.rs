@@ -214,8 +214,8 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
     let original_operator_length = if original_bytes.len() > start_index + 1 {
         match original_bytes.get(start_index..start_index + 2) {
             Some(slice) => match slice {
-                b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"+=" | b"-=" | b"*=" | b"/="
-                | b"%=" | b"&=" | b"|=" | b"^=" => 2,
+                b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"++" | b"--" | b"+=" | b"-="
+                | b"*=" | b"/=" | b"%=" | b"&=" | b"|=" | b"^=" => 2,
                 b"<<=" | b">>=" => 3,
                 _ => 1,
             },
