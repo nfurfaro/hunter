@@ -162,6 +162,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     i.set(i.get() + 1);
                 }
             }
+
             // dbg!(tokens.clone());
 
             // Define your patterns
@@ -210,6 +211,76 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
     }
 }
 
+// pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
+//     let original_operator_length = if original_bytes.len() > start_index + 1 {
+//         match original_bytes.get(start_index..start_index + 2) {
+//             Some(slice) => match slice {
+//                 b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"++" | b"--" | b"+=" | b"-="
+//                 | b"*=" | b"/=" | b"%=" | b"&=" | b"|=" | b"^=" => 2,
+//                 b"<<=" | b">>=" => 3,
+//                 _ => 1,
+//             },
+//             None => 1,
+//         }
+//     } else {
+//         1
+//     };
+
+//     original_bytes.drain(start_index..start_index + original_operator_length);
+//     for (i, &byte) in replacement.iter().enumerate() {
+//         original_bytes.insert(start_index + i, byte);
+//     }
+
+//     // If the original operator is ">" or "<", and the replacement is twice as long,
+//     // and there is an extra character after the replacement, remove it.
+//     if original_operator_length == 1
+//         && replacement.len() == 2
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.len() > start_index + 2
+//     {
+//         original_bytes.remove(start_index + 2);
+//     }
+
+//     // If the original operator is ">>=" or "<<=", and the replacement is the same length,
+//     // and there is an extra character after the replacement, remove it.
+//     if original_operator_length == 3
+//         && replacement.len() == 3
+//         && (original_bytes[start_index..start_index + 3] == *b">>=".as_ref()
+//             || original_bytes[start_index..start_index + 3] == *b"<<=".as_ref())
+//         && original_bytes.len() > start_index + 3
+//     {
+//         original_bytes.remove(start_index + 3);
+//     }
+
+//     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+//     if start_index > 0
+//         && original_operator_length == 1
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+
+//     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+//     if start_index > 0
+//         && original_operator_length == 3
+//         && (original_bytes[start_index..start_index + 3] == *b">>=".as_ref()
+//             || original_bytes[start_index..start_index + 3] == *b"<<=".as_ref())
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+
+//     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+//     // if start_index > 0
+//     //     && original_operator_length == 1
+//     //     && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//     //     && original_bytes.get(start_index - 1) != Some(&b' ')
+//     // {
+//     //     original_bytes.insert(start_index, b' ');
+//     // }
+// }
+
 pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
     let original_operator_length = if original_bytes.len() > start_index + 1 {
         match original_bytes.get(start_index..start_index + 2) {
@@ -240,15 +311,13 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
         original_bytes.remove(start_index + 2);
     }
 
-    // If the original operator is ">>=" or "<<=", and the replacement is the same length,
+    // If the original operator is ">>=" or "<<=", and the replacement is shorter,
     // and there is an extra character after the replacement, remove it.
     if original_operator_length == 3
-        && replacement.len() == 3
-        && (original_bytes[start_index..start_index + 3] == *b">>=".as_ref()
-            || original_bytes[start_index..start_index + 3] == *b"<<=".as_ref())
-        && original_bytes.len() > start_index + 3
+        && replacement.len() < 3
+        && original_bytes.len() > start_index + replacement.len()
     {
-        original_bytes.remove(start_index + 3);
+        original_bytes.remove(start_index + replacement.len());
     }
 
     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
@@ -261,23 +330,13 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
     }
 
     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+    // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
     if start_index > 0
         && original_operator_length == 3
-        && (original_bytes[start_index..start_index + 3] == *b">>=".as_ref()
-            || original_bytes[start_index..start_index + 3] == *b"<<=".as_ref())
         && original_bytes.get(start_index - 1) != Some(&b' ')
     {
         original_bytes.insert(start_index, b' ');
     }
-
-    // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
-    // if start_index > 0
-    //     && original_operator_length == 1
-    //     && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
-    //     && original_bytes.get(start_index - 1) != Some(&b' ')
-    // {
-    //     original_bytes.insert(start_index, b' ');
-    // }
 }
 
 #[cfg(test)]
