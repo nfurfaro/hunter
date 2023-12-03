@@ -153,7 +153,6 @@ sequenceDiagram
 
 - [ ] add a match for +=, -=, *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
 - [ ] refactor test_count collection
-- [ ] refactor: reporter should be responsible for printing results.
-- [ ] refactor: scan should scan and return results to be printed by reporter.
-- [ ] refactor: mutate should reuse scan results to mutate, and send results to reporter for printing.
 - [ ] refactor: need to consolidate file handling into a single module.
+- [ ] add unit tests for line comments
+- [ ] add unit tests for block comments

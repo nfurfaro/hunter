@@ -1,50 +1,16 @@
 use crate::config::{Config, Language};
-use crate::token::{token_as_bytes, token_regex_patterns, SpannedToken, Token};
+use crate::token::{token_regex_patterns, SpannedToken};
 use indicatif::{ProgressBar, ProgressStyle};
-use prettytable::{Cell as table_cell, Row, Table};
+
 use regex::Regex;
 use std::io::Write;
 use std::{
     cell::Cell,
     fs::{self, File, OpenOptions},
-    io::{BufRead, BufReader, Read, Result},
+    io::{BufReader, Read, Result},
     path::{Path, PathBuf},
 };
 use toml;
-
-pub fn print_line_in_span(
-    table: &mut Table,
-    file_path: &Path,
-    span: (usize, usize),
-    token: &Token,
-) -> Result<()> {
-    let file = File::open(file_path)?;
-    let reader = BufReader::new(file);
-    let mut byte_index = 0;
-    let temp = String::from_utf8_lossy(token_as_bytes(&token.clone()).unwrap());
-    let token_representation = temp.as_ref();
-
-    for (index, line) in reader.lines().enumerate() {
-        let line = line?;
-        let line_length = line.len();
-
-        if byte_index <= span.0 && byte_index + line_length >= span.1 {
-            let short_line: String = line.chars().take(40).collect();
-
-            table.add_row(Row::new(vec![
-                table_cell::new(file_path.to_str().unwrap()).style_spec("Fb"),
-                table_cell::new(&(index + 1).to_string()).style_spec("Fb"),
-                table_cell::new(&short_line).style_spec("Fcb"),
-                table_cell::new(token_representation).style_spec("Fyb"),
-            ]));
-            break;
-        }
-
-        byte_index += line_length + 1; // +1 for the newline character
-    }
-
-    Ok(())
-}
 
 // @review
 pub fn modify_toml(config: &Config) {

@@ -1,9 +1,9 @@
 use crate::cli::Args;
 use crate::config::Config;
 use crate::parallel::parallel_process_mutated_tokens;
-use crate::reporter::ScanResult;
+use crate::reporter::{print_line_in_span, ScanResult};
 use crate::token::MutationStatus;
-use crate::utils::print_line_in_span;
+// use crate::utils::print_line_in_span;
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
