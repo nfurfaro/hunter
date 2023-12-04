@@ -289,11 +289,13 @@ mod tests {
         dir.close().unwrap();
     }
 
-
     #[test]
     fn test_get_test_pattern_rust() {
         let pattern = get_test_pattern(&Language::Rust);
-        assert_eq!(pattern.as_str(), r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}");
+        assert_eq!(
+            pattern.as_str(),
+            r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
+        );
     }
 
     #[test]
@@ -305,13 +307,19 @@ mod tests {
     #[test]
     fn test_get_test_pattern_sway() {
         let pattern = get_test_pattern(&Language::Sway);
-        assert_eq!(pattern.as_str(), r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}");
+        assert_eq!(
+            pattern.as_str(),
+            r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
+        );
     }
 
     #[test]
     fn test_get_test_pattern_noir() {
         let pattern = get_test_pattern(&Language::Noir);
-        assert_eq!(pattern.as_str(), r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}");
+        assert_eq!(
+            pattern.as_str(),
+            r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
+        );
     }
 
     #[test]
@@ -369,7 +377,6 @@ mod tests {
         let expected = "Hello, world!";
         assert_eq!(remove_comments(content), expected);
     }
-
 
     #[test]
     fn test_replace_bytes_equal() {
