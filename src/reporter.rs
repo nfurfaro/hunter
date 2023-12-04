@@ -11,7 +11,7 @@ use std::{
 #[derive(Debug, Clone)]
 pub struct ScanResult {
     paths: Vec<PathBuf>,
-    spanned_tokens: Vec<MetaToken>,
+    meta_tokens: Vec<MetaToken>,
     test_count: usize,
     mutants: Vec<Mutant>,
 }
@@ -19,13 +19,13 @@ pub struct ScanResult {
 impl ScanResult {
     pub fn new(
         paths: Vec<PathBuf>,
-        spanned_tokens: Vec<MetaToken>,
+        meta_tokens: Vec<MetaToken>,
         test_count: usize,
         mutants: Vec<Mutant>,
     ) -> ScanResult {
         ScanResult {
             paths,
-            spanned_tokens,
+            meta_tokens,
             test_count,
             mutants,
         }
@@ -35,8 +35,8 @@ impl ScanResult {
         &self.paths
     }
 
-    pub fn tokens_with_paths(&self) -> &Vec<MetaToken> {
-        &self.spanned_tokens
+    pub fn meta_tokens(&self) -> &Vec<MetaToken> {
+        &self.meta_tokens
     }
 
     pub fn test_count(&self) -> usize {
@@ -63,7 +63,7 @@ pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
 
     println!(
         "{}",
-        format!("Analysing {} tokens", results.spanned_tokens.len()).green()
+        format!("Analysing {} tokens", results.meta_tokens.len()).green()
     );
 
     println!("{}", "Collecting tokens from files".green());

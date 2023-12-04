@@ -296,6 +296,7 @@ pub fn mutant_builder(
     span: (u32, u32),
     src_path: PathBuf,
 ) -> Option<Mutant> {
+
     let mutation = token_mutation(token.clone()).unwrap();
     match token {
         Token::Equal => Some(Mutant {
