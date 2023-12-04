@@ -61,6 +61,10 @@ pub enum Token {
     ShiftLeftEquals,
     /// >>=
     ShiftRightEquals,
+    /// ||
+    DoublePipe,
+    /// &&
+    DoubleAmpersand,
     // Bang,
 }
 
@@ -185,12 +189,11 @@ impl Mutant {
 pub fn token_patterns() -> Vec<&'static str> {
     vec![
         r" (==) ", r" (!=) ", r" (<) ", r" (<=) ", r" (>) ", r" (>=) ", r" (&) ", r" (\|) ", r" (^) ", r" (<<) ", r" (>>) ", r" (\+) ", r" (-) ", r" (\*) ", r" (/) ", r" (%) ", r" (\+\+) ",
-        r" (--) ", r" (\+=) ", r" (-=) ", r" (\*=) ", r" (/=) ", r" (%=) ", r" (&=) ", r" (\|=) ", r" (^=) ", r" (<<=) ", r" (>>=) ",
+        r" (--) ", r" (\+=) ", r" (-=) ", r" (\*=) ", r" (/=) ", r" (%=) ", r" (&=) ", r" (\|=) ", r" (^=) ", r" (<<=) ", r" (>>=) ", r" (\|\|) ", r" (&&) ",
     ]
 }
 
 pub fn raw_string_as_token(raw: &str) -> Option<Token> {
-    dbg!(raw);
     match raw {
         r"==" => Some(Token::Equal),
         r"!=" => Some(Token::NotEqual),
@@ -220,6 +223,8 @@ pub fn raw_string_as_token(raw: &str) -> Option<Token> {
         r"^=" => Some(Token::CaretEquals),
         r"<<=" => Some(Token::ShiftLeftEquals),
         r">>=" => Some(Token::ShiftRightEquals),
+        r"||" => Some(Token::DoublePipe),
+        r"&&" => Some(Token::DoubleAmpersand),
         _ => None,
     }
 }
@@ -254,6 +259,8 @@ pub fn token_mutation(token: Token) -> Option<Token> {
         Token::CaretEquals => Some(Token::AmpersandEquals),
         Token::ShiftLeftEquals => Some(Token::ShiftRightEquals),
         Token::ShiftRightEquals => Some(Token::ShiftLeftEquals),
+        Token::DoublePipe => Some(Token::DoubleAmpersand),
+        Token::DoubleAmpersand => Some(Token::DoublePipe),
     }
 }
 
@@ -287,6 +294,8 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
         Token::CaretEquals => Some(b"^="),
         Token::ShiftLeftEquals => Some(b"<<="),
         Token::ShiftRightEquals => Some(b">>="),
+        Token::DoublePipe => Some(b"||"),
+        Token::DoubleAmpersand => Some(b"&&"),
     }
 }
 
@@ -299,8 +308,6 @@ pub fn mutant_builder(
 ) -> Option<Mutant> {
 
     let mutation = token_mutation(token.clone()).unwrap();
-    println!("logged in mutant_builder");
-    dbg!(mutation.clone());
     match token {
         Token::Equal => Some(Mutant {
             id,
@@ -523,6 +530,22 @@ pub fn mutant_builder(
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::DoublePipe => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (0, 0),
+            src_path: Box::new(src_path),
+            status: MutationStatus::Pending,
+        }),
+        Token::DoubleAmpersand => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span: (0, 0),
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -848,6 +871,20 @@ mod tests {
     }
 
     #[test]
+    fn test_raw_string_as_token_double_pipe() {
+        let bytes = r"||";
+        let token = raw_string_as_token(bytes).unwrap();
+        assert_eq!(token, Token::DoublePipe);
+    }
+
+    #[test]
+    fn test_raw_string_as_token_double_ampersand() {
+        let bytes = "&&";
+        let token = raw_string_as_token(bytes).unwrap();
+        assert_eq!(token, Token::DoubleAmpersand);
+    }
+
+    #[test]
     fn test_token_mutation_equal() {
         let token = Token::Equal;
         let mutation = token_mutation(token);
@@ -1065,6 +1102,20 @@ mod tests {
     }
 
     #[test]
+    fn test_token_mutation_double_pipe() {
+        let token = Token::DoublePipe;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::DoubleAmpersand));
+    }
+
+    #[test]
+    fn test_token_mutation_double_ampersand() {
+        let token = Token::DoubleAmpersand;
+        let mutation = token_mutation(token);
+        assert_eq!(mutation, Some(Token::DoublePipe));
+    }
+
+    #[test]
     fn test_token_as_bytes_equal() {
         let token = Token::Equal;
         let bytes = token_as_bytes(&token).unwrap();
@@ -1258,6 +1309,20 @@ mod tests {
         let token = Token::ShiftRightEquals;
         let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b">>=");
+    }
+
+    #[test]
+    fn test_token_as_bytes_double_pipe() {
+        let token = Token::DoublePipe;
+        let bytes = token_as_bytes(&token).unwrap();
+        assert_eq!(bytes, b"||");
+    }
+
+    #[test]
+    fn test_token_as_bytes_double_ampersand() {
+        let token = Token::DoubleAmpersand;
+        let bytes = token_as_bytes(&token).unwrap();
+        assert_eq!(bytes, b"&&");
     }
 
     #[test]
@@ -1656,6 +1721,46 @@ mod tests {
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
 
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
+        assert_eq!(mutant.path(), path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
+    }
+
+    #[test]
+    fn mutant_builder_double_pipe() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::DoublePipe;
+        let span = (0, 2);
+        let id = 42;
+        let mutant = mutant_builder(id, token.clone(), span, path.clone()).unwrap();
+
+        assert_eq!(mutant.id(), id);
+        assert_eq!(mutant.token(), token_mutation(token.clone()).unwrap());
+        assert_eq!(
+            &mutant.bytes(),
+            token_as_bytes(&token_mutation(token).unwrap()).unwrap()
+        );
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
+        assert_eq!(mutant.path(), path);
+        assert_eq!(mutant.status(), MutationStatus::Pending);
+    }
+
+    #[test]
+    fn mutant_builder_double_ampersand() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::DoubleAmpersand;
+        let span = (0, 2);
+        let id = 42;
+        let mutant = mutant_builder(id, token.clone(), span, path.clone()).unwrap();
+
+        assert_eq!(mutant.id(), id);
+        assert_eq!(mutant.token(), token_mutation(token.clone()).unwrap());
+        assert_eq!(
+            &mutant.bytes(),
+            token_as_bytes(&token_mutation(token).unwrap()).unwrap()
+        );
         assert_eq!(mutant.span_start(), span.0);
         assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
