@@ -147,12 +147,14 @@ sequenceDiagram
 
 ## todo
 
-- [ ] use tempdir create to manage temp dirs and files?
+- [ ] use tempdir create to manage temp dirs and files
+- [ ] create a mechanism to init and persist a `Campaign` object on the local filesystem.
+  - the campaign must allow for:
+    - incremental testing, ie: run the tool, kill some mutants, then run the tool again and only the surviving mutants will be tested.
+    - persisting the campaign to disk, so that it can be resumed at a later time.
+    - after an initial run of the tool, resuming the campaign at a later time should only test new source code added since the last run.
+    - consider mechanisms to allow for comparing source diffs between runs, ie:
+      - git commit hashes
+      - sled DB snapshots
+      - other?
 
-
-
-- [ ] add a match for *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
-- [x] refactor test_count collection
-- [ ] refactor: need to consolidate file handling into a single module.
-- [ ] add unit tests for line comments
-- [ ] add unit tests for block comments
