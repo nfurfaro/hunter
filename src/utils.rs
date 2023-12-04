@@ -79,21 +79,21 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
             let _res = buf_reader.read_to_string(&mut contents);
 
             for pattern in token_patterns() {
-                dbg!(pattern);
-                dbg!(raw_string_as_token(pattern).unwrap());
                 let regex = Regex::new(pattern).unwrap();
-                dbg!(regex.as_str());
-                for mat in regex.find_iter(&contents) {
+                for mat in regex.captures_iter(&contents) {
+                    if mat.get(1).is_none() {
+                        continue;
+                    }
+                    let token_str = mat.get(1).unwrap().as_str();
                     tokens.push(MetaToken::new(
-                        raw_string_as_token(pattern).unwrap(),
-                        (mat.start() as u32, mat.end() as u32),
+                        raw_string_as_token(token_str).unwrap(),
+                        (mat.get(0).unwrap().start() as u32, mat.get(0).unwrap().end() as u32),
                         Box::new(path.clone()),
                         i.get(),
                     ));
                     i.set(i.get() + 1);
                 }
             }
-            dbg!(tokens.len());
 
             // Remove all tests & comments from the contents
             let test_regex = test_regex(&config.language());
@@ -103,18 +103,20 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
             // Find tokens in filtered content
             for pattern in token_patterns() {
                 let regex = Regex::new(pattern).unwrap();
-                for mat in regex.find_iter(&pure_content) {
+                for mat in regex.captures_iter(&pure_content) {
+                    if mat.get(1).is_none() {
+                        continue;
+                    }
+                    let token_str = mat.get(1).unwrap().as_str();
                     filtered_tokens.push(MetaToken::new(
-                        raw_string_as_token(pattern).unwrap(),
-                        (mat.start() as u32, mat.end() as u32),
+                        raw_string_as_token(token_str).unwrap(),
+                        (mat.get(0).unwrap().start() as u32, mat.get(0).unwrap().end() as u32),
                         Box::new(path.clone()),
                         j.get(),
                     ));
                     j.set(j.get() + 1);
                 }
             }
-            dbg!(pure_content.len());
-            dbg!(filtered_tokens.len());
 
             // compare tokens with filtered tokens by checking both token type and ID.
             // for all matches, copy token.span to filtered_token.span
@@ -129,7 +131,6 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
         }
 
         bar.finish();
-        dbg!(filtered_tokens.len());
         Some(filtered_tokens)
     }
 }

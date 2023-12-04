@@ -151,6 +151,8 @@ sequenceDiagram
 - [ ] fix printed output for Number of mutable tokens found
 - [ ] test that => is not counted as a token!
 - [ ] consider adding tokens and matchers for the ! operator
+- [ ] don't mutate tokens that are part of a string literal by default
+- [ ] make collect_tokens() multithreaded
 
 - [ ] use tempdir create to manage temp dirs and files
 - [ ] create a mechanism to init and persist a `Campaign` object on the local filesystem.

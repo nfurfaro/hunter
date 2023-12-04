@@ -3,6 +3,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+fn do_nothing() {
+    let a = 42;
+    let b = 42;
+    let c = a + b;
+    let d = c == a;
+    println!("do nothing");
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     /// <
@@ -184,41 +192,42 @@ impl Mutant {
 
 pub fn token_patterns() -> Vec<&'static str> {
     vec![
-        r" == ", r" != ", r" < ", r" <= ", r" > ", r" >= ", r" & ", r" | ", r" ^ ", r" << ", r" >> ", r" \+ ", r" - ", r" \* ", r" / ", r" % ", r" \++ ",
-        r" -- ", r" \+= ", r" -= ", r" \*= ", r" /= ", r" %= ", r" &= ", r" |= ", r" ^= ", r" <<= ", r" >>= ",
+        r" (==) ", r" (!=) ", r" (<) ", r" (<=) ", r" (>) ", r" (>=) ", r" (&) ", r" (\|) ", r" (^) ", r" (<<) ", r" (>>) ", r" (\+) ", r" (-) ", r" (\*) ", r" (/) ", r" (%) ", r" (\++) ",
+        r" (--) ", r" (\+=) ", r" (-=) ", r" (\*=) ", r" (/=) ", r" (%=) ", r" (&=) ", r" (\|=) ", r" (^=) ", r" (<<=) ", r" (>>=) ",
     ]
 }
 
 pub fn raw_string_as_token(raw: &str) -> Option<Token> {
+    dbg!(raw);
     match raw {
-        r" == " => Some(Token::Equal),
-        r" != " => Some(Token::NotEqual),
-        r" < " => Some(Token::Less),
-        r" <= " => Some(Token::LessEqual),
-        r" > " => Some(Token::Greater),
-        r" >= " => Some(Token::GreaterEqual),
-        r" & " => Some(Token::Ampersand),
-        r" | " => Some(Token::Pipe),
-        r" ^ " => Some(Token::Caret),
-        r" << " => Some(Token::ShiftLeft),
-        r" >> " => Some(Token::ShiftRight),
-        r" \+ " => Some(Token::Plus),
-        r" - " => Some(Token::Minus),
-        r" \* " => Some(Token::Star),
-        r" / " => Some(Token::Slash),
-        r" % " => Some(Token::Percent),
-        r" \++ " => Some(Token::Increment),
-        r" -- " => Some(Token::Decrement),
-        r" \+= " => Some(Token::PlusEquals),
-        r" -= " => Some(Token::MinusEquals),
-        r" \*= " => Some(Token::StarEquals),
-        r" /= " => Some(Token::SlashEquals),
-        r" %= " => Some(Token::PercentEquals),
-        r" &= " => Some(Token::AmpersandEquals),
-        r" |= " => Some(Token::PipeEquals),
-        r" ^= " => Some(Token::CaretEquals),
-        r" <<= " => Some(Token::ShiftLeftEquals),
-        r" >>= " => Some(Token::ShiftRightEquals),
+        r"==" => Some(Token::Equal),
+        r"!=" => Some(Token::NotEqual),
+        r"<" => Some(Token::Less),
+        r"<=" => Some(Token::LessEqual),
+        r">" => Some(Token::Greater),
+        r">=" => Some(Token::GreaterEqual),
+        r"&" => Some(Token::Ampersand),
+        r"|" => Some(Token::Pipe),
+        r"^" => Some(Token::Caret),
+        r"<<" => Some(Token::ShiftLeft),
+        r">>" => Some(Token::ShiftRight),
+        r"+" => Some(Token::Plus),
+        r"-" => Some(Token::Minus),
+        r"*" => Some(Token::Star),
+        r"/" => Some(Token::Slash),
+        r"%" => Some(Token::Percent),
+        r"++" => Some(Token::Increment),
+        r"--" => Some(Token::Decrement),
+        r"+=" => Some(Token::PlusEquals),
+        r"-=" => Some(Token::MinusEquals),
+        r"*=" => Some(Token::StarEquals),
+        r"/=" => Some(Token::SlashEquals),
+        r"%=" => Some(Token::PercentEquals),
+        r"&=" => Some(Token::AmpersandEquals),
+        r"|=" => Some(Token::PipeEquals),
+        r"^=" => Some(Token::CaretEquals),
+        r"<<=" => Some(Token::ShiftLeftEquals),
+        r">>=" => Some(Token::ShiftRightEquals),
         _ => None,
     }
 }
@@ -298,6 +307,8 @@ pub fn mutant_builder(
 ) -> Option<Mutant> {
 
     let mutation = token_mutation(token.clone()).unwrap();
+    println!("logged in mutant_builder");
+    dbg!(mutation.clone());
     match token {
         Token::Equal => Some(Mutant {
             id,
@@ -650,196 +661,196 @@ mod tests {
 
     #[test]
     fn test_raw_string_as_token_equal() {
-        let bytes = " == ";
+        let bytes = "==";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Equal);
     }
 
     #[test]
     fn test_raw_string_as_token_not_equal() {
-        let bytes = " != ";
+        let bytes = "!=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::NotEqual);
     }
 
     #[test]
     fn test_raw_string_as_token_less() {
-        let bytes = " < ";
+        let bytes = "<";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Less);
     }
 
     #[test]
     fn test_raw_string_as_token_less_equal() {
-        let bytes = " <= ";
+        let bytes = "<=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::LessEqual);
     }
 
     #[test]
     fn test_raw_string_as_token_greater() {
-        let bytes = " > ";
+        let bytes = ">";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Greater);
     }
 
     #[test]
     fn test_raw_string_as_token_greater_equal() {
-        let bytes = " >= ";
+        let bytes = ">=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::GreaterEqual);
     }
 
     #[test]
     fn test_raw_string_as_token_ampersand() {
-        let bytes = " & ";
+        let bytes = "&";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Ampersand);
     }
 
     #[test]
     fn test_raw_string_as_token_pipe() {
-        let bytes = " | ";
+        let bytes = "|";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Pipe);
     }
 
     #[test]
     fn test_raw_string_as_token_caret() {
-        let bytes = " ^ ";
+        let bytes = "^";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Caret);
     }
 
     #[test]
     fn test_raw_string_as_token_shift_left() {
-        let bytes = " << ";
+        let bytes = "<<";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::ShiftLeft);
     }
 
     #[test]
     fn test_raw_string_as_token_shift_right() {
-        let bytes = " >> ";
+        let bytes = ">>";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::ShiftRight);
     }
 
     #[test]
     fn test_raw_string_as_token_plus() {
-        let bytes = r" \+ ";
+        let bytes = r"+";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Plus);
     }
 
     #[test]
     fn test_raw_string_as_token_minus() {
-        let bytes = " - ";
+        let bytes = "-";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Minus);
     }
 
     #[test]
     fn test_raw_string_as_token_star() {
-        let bytes = r" \* ";
+        let bytes = r"*";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Star);
     }
 
     #[test]
     fn test_raw_string_as_token_slash() {
-        let bytes = " / ";
+        let bytes = "/";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Slash);
     }
 
     #[test]
     fn test_raw_string_as_token_percent() {
-        let bytes = " % ";
+        let bytes = "%";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Percent);
     }
 
     #[test]
     fn test_raw_string_as_token_increment() {
-        let bytes = r" \++ ";
+        let bytes = r"++";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Increment);
     }
 
     #[test]
     fn test_raw_string_as_token_decrement() {
-        let bytes = " -- ";
+        let bytes = "--";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::Decrement);
     }
 
     #[test]
     fn test_raw_string_as_token_plus_equals() {
-        let bytes = r" \+= ";
+        let bytes = r"+=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::PlusEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_minus_equals() {
-        let bytes = " -= ";
+        let bytes = "-=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::MinusEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_star_equals() {
-        let bytes = r" \*= ";
+        let bytes = r"*=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::StarEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_slash_equals() {
-        let bytes = " /= ";
+        let bytes = "/=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::SlashEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_percent_equals() {
-        let bytes = " %= ";
+        let bytes = "%=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::PercentEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_ampersand_equals() {
-        let bytes = " &= ";
+        let bytes = "&=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::AmpersandEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_pipe_equals() {
-        let bytes = " |= ";
+        let bytes = "|=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::PipeEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_caret_equals() {
-        let bytes = " ^= ";
+        let bytes = "^=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::CaretEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_shift_left_equals() {
-        let bytes = " <<= ";
+        let bytes = "<<=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::ShiftLeftEquals);
     }
 
     #[test]
     fn test_raw_string_as_token_shift_right_equals() {
-        let bytes = " >>= ";
+        let bytes = ">>=";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::ShiftRightEquals);
     }
