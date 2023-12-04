@@ -152,7 +152,7 @@ sequenceDiagram
 
 
 - [ ] add a match for *=, /=, %=, &=, |=, ^=, <<=, >>= operators !
-- [ ] refactor test_count collection
+- [x] refactor test_count collection
 - [ ] refactor: need to consolidate file handling into a single module.
 - [ ] add unit tests for line comments
 - [ ] add unit tests for block comments

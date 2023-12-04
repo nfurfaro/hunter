@@ -122,6 +122,19 @@ pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
     }
 }
 
+fn get_test_pattern(language: &Language) -> Regex {
+    match language {
+        Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
+        _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
+    }
+}
+
+fn remove_comments(content: &str) -> String {
+    let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
+    let filtered_content = comment_pattern.replace_all(content, "");
+    filtered_content.into_owned()
+}
+
 // @review check that the id being used is unique and necessary !
 pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaToken>> {
     let mut tokens: Vec<MetaToken> = Vec::new();
@@ -161,24 +174,16 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     i.set(i.get() + 1);
                 }
             }
-            // dbg!(tokens.clone());
 
-            // Define patterns
-            let test_pattern = match config.language() {
-                Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
-                _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
-            };
-
-            let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
-
-            // Remove all tests and comments from the contents
-            let filtered_content = test_pattern.replace_all(&contents, "");
-            let filtered_content = comment_pattern.replace_all(&filtered_content, "");
+            // Remove all tests & comments from the contents
+            let test_pattern = get_test_pattern(&config.language());
+            let test_free_content = test_pattern.replace_all(&contents, "");
+            let pure_content = remove_comments(&test_free_content);
 
             // Find tokens in filtered content
             for pattern in token_patterns() {
                 let regex = Regex::new(pattern).unwrap();
-                for mat in regex.find_iter(&filtered_content) {
+                for mat in regex.find_iter(&pure_content) {
                     filtered_tokens.push(MetaToken::new(
                         raw_string_as_token(pattern).unwrap(),
                         (mat.start() as u32, mat.end() as u32),
@@ -199,7 +204,6 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                 }
             }
             bar.inc(1);
-            // dbg!(filtered_tokens.clone());
         }
 
         bar.finish();
@@ -254,26 +258,41 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    // extern crate tempdir;
+    use crate::config::config;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::tempdir;
 
-    // use tempdir::Tempdir;
+    #[test]
+    fn test_find_source_file_paths() {
+        // Create a temporary directory.
+        let dir = tempdir().unwrap();
 
-    // #[test]
-    // fn test_find_files() {
-    //     let config = config(Language::Noir);
+        // Create files in the temporary directory.
+        let mut file_paths = Vec::new();
+        for i in 0..5 {
+            let file_path = dir.path().join(format!("test{}.rs", i));
+            let mut file = File::create(&file_path).unwrap();
+            writeln!(file, "fn main() {{ println!(\"Hello, world!\"); }}").unwrap();
+            file_paths.push(file_path);
+        }
 
-    //     let dir = TempDir::new("my_temp_dir").expect("Could not create temporary directory");
-    //     let file_path = dir.path().join("test.nr");
+        // Create a Config object.
+        let config = config(Language::Rust);
 
-    //     let mut file = File::create(&file_path).unwrap();
-    //     writeln!(file, "Hello, world!").unwrap();
-    //     let paths = find_source_file_paths(dir.path(), &config).unwrap();
+        // Call find_source_file_paths with the temporary directory.
+        let paths = find_source_file_paths(dir.path(), &config).unwrap();
 
-    //     assert_eq!(paths.len(), 1);
-    //     assert_eq!(&paths[0].file_name().unwrap(), "test.nr");
+        // Sort paths because find_source_file_paths does not guarantee order
+        let mut sorted_paths = paths.clone();
+        sorted_paths.sort();
 
-    //     dir.close().unwrap();
-    // }
+        // Check that the returned paths contain the files we created.
+        assert_eq!(sorted_paths, file_paths);
+
+        // Delete the temporary directory.
+        dir.close().unwrap();
+    }
 
     #[test]
     fn test_replace_bytes_equal() {
