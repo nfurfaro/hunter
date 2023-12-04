@@ -1,7 +1,8 @@
 use crate::config::{Config, Language};
-use crate::token::{token_patterns, MetaToken};
+use crate::token::{raw_string_as_token, token_mutation, token_patterns, MetaToken, Token};
 use indicatif::{ProgressBar, ProgressStyle};
 
+// use core::slice::SlicePattern;
 use regex::Regex;
 use std::io::Write;
 use std::{
@@ -148,13 +149,11 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let token_patterns = token_patterns();
-
-            for (pattern, token) in &token_patterns {
+            for pattern in token_patterns() {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&contents) {
                     tokens.push(MetaToken::new(
-                        token.clone(),
+                        raw_string_as_token(pattern).unwrap(),
                         (mat.start() as u32, mat.end() as u32),
                         Box::new(path.clone()),
                         i.get(),
@@ -162,10 +161,9 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     i.set(i.get() + 1);
                 }
             }
-
             // dbg!(tokens.clone());
 
-            // Define your patterns
+            // Define patterns
             let test_pattern = match config.language() {
                 Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
                 _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
@@ -173,18 +171,16 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
 
             let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
 
-            // Remove all tests and comments from the content
-            // let test_matches = test_pattern.find_iter(&contents).count();
-
+            // Remove all tests and comments from the contents
             let filtered_content = test_pattern.replace_all(&contents, "");
             let filtered_content = comment_pattern.replace_all(&filtered_content, "");
 
             // Find tokens in filtered content
-            for (pattern, token) in &token_patterns {
+            for pattern in token_patterns() {
                 let regex = Regex::new(pattern).unwrap();
                 for mat in regex.find_iter(&filtered_content) {
                     filtered_tokens.push(MetaToken::new(
-                        token.clone(),
+                        raw_string_as_token(pattern).unwrap(),
                         (mat.start() as u32, mat.end() as u32),
                         Box::new(path.clone()),
                         j.get(),
@@ -281,62 +277,299 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
 //     // }
 // }
 
+// pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
+//     let original_operator_length = if original_bytes.len() > start_index + 1 {
+//         match original_bytes.get(start_index..start_index + 2) {
+//             Some(slice) => match slice {
+//                 b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"++" | b"--" | b"+=" | b"-="
+//                 | b"*=" | b"/=" | b"%=" | b"&=" | b"|=" | b"^=" => 2,
+//                 b"<<=" | b">>=" => 3,
+//                 _ => 1,
+//             },
+//             None => 1,
+//         }
+//     } else {
+//         1
+//     };
+
+//     original_bytes.drain(start_index..start_index + original_operator_length);
+//     for (i, &byte) in replacement.iter().enumerate() {
+//         original_bytes.insert(start_index + i, byte);
+//     }
+
+//     // If the original operator is ">" or "<", and the replacement is twice as long,
+//     // and there is an extra character after the replacement, remove it.
+//     if original_operator_length == 1
+//         && replacement.len() == 2
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.len() > start_index + 2
+//     {
+//         original_bytes.remove(start_index + 2);
+//     }
+
+//     // If the original operator is ">>=" or "<<=", and the replacement is shorter,
+//     // and there is an extra character after the replacement, remove it.
+//     if original_operator_length == 3
+//         && replacement.len() < 3
+//         && original_bytes.len() > start_index + replacement.len()
+//     {
+//         original_bytes.remove(start_index + replacement.len());
+//     }
+
+//     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+//     if start_index > 0
+//         && original_operator_length == 1
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+
+//     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+//     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+//     if start_index > 0
+//         && original_operator_length == 3
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+// }
+
+// pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
+//     dbg!(original_bytes.len());
+//     let original_operator_length = if original_bytes.len() > start_index + 1 {
+//         match original_bytes.get(start_index..start_index + 2) {
+//             Some(slice) => match slice {
+//                 b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"++" | b"--" | b"+=" | b"-="
+//                 | b"*=" | b"/=" | b"%=" | b"&=" | b"|=" | b"^=" => 2,
+//                 b"<<=" | b">>=" => 3,
+//                 _ => 1,
+//             },
+//             None => 1,
+//         }
+//     } else {
+//         1
+//     };
+
+//     original_bytes.drain(start_index..start_index + original_operator_length);
+//     for (i, &byte) in replacement.iter().enumerate() {
+//         original_bytes.insert(start_index + i, byte);
+//     }
+
+//     // If the original operator is ">" or "<", and the replacement is longer,
+//     // and there is an extra character after the replacement, remove it.
+//     if original_operator_length == 1
+//         && replacement.len() > original_operator_length
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.len() > start_index + replacement.len()
+//     {
+//         original_bytes.remove(start_index + replacement.len());
+//     }
+
+//     // If the original operator is ">>=" or "<<="
+//     // and there is an extra character after the replacement, remove it.
+//     if original_operator_length == 3 && original_bytes.len() > start_index + replacement.len() {
+//         original_bytes.remove(start_index + replacement.len());
+//     }
+
+//     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+//     if start_index > 0
+//         && original_operator_length == 1
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+
+//     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+//     if start_index > 0
+//         && original_operator_length == 3
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+// }
+
+// pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+//     if let Ok(string) = std::str::from_utf8(&replacement) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+//     dbg!(original_bytes.len());
+//     dbg!(replacement.len());
+//     let original_bytes_length = original_bytes.len();
+
+//     println!("Original operator length 1: {}", original_bytes_length);
+
+//     println!("checkpoint 1");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+//     println!("start_index: {}", start_index);
+
+//     original_bytes.drain(start_index..start_index + original_bytes_length);
+//     println!("Original operator length 2: {}", original_bytes_length);
+//     println!("checkpoint 1.5");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+
+//     for (i, &byte) in replacement.iter().enumerate() {
+//         original_bytes.insert(start_index + i, byte);
+//     }
+
+//     println!("checkpoint 2");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+
+//     // If the original operator is ">" or "<", and the replacement is longer,
+//     // and there is an extra character after the replacement, remove it.
+//     if original_bytes_length == 1
+//         && replacement.len() > original_bytes_length
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.len() > start_index + replacement.len()
+//     {
+//         original_bytes.remove(start_index + replacement.len());
+//     }
+//     println!("checkpoint 3");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+
+//     // If the original operator is ">>=" or "<<="
+//     // and there is an extra character after the replacement, remove it.
+//     if original_bytes_length == 3 && original_bytes.len() > start_index + replacement.len() {
+//         original_bytes.remove(start_index + replacement.len());
+//     }
+
+//     println!("checkpoint 4");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+
+//     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
+//     if start_index > 0
+//         && original_bytes_length == 1
+//         && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+//     println!("checkpoint 5");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+
+//     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
+//     if start_index > 0
+//         && original_bytes_length == 3
+//         && original_bytes.get(start_index - 1) != Some(&b' ')
+//     {
+//         original_bytes.insert(start_index, b' ');
+//     }
+//     println!("checkpoint 6");
+//     if let Ok(string) = std::str::from_utf8(&original_bytes) {
+//         dbg!(string);
+//     } else {
+//         eprintln!("original_bytes contains invalid UTF-8");
+//     }
+// }
+
 pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
-    let original_operator_length = if original_bytes.len() > start_index + 1 {
-        match original_bytes.get(start_index..start_index + 2) {
-            Some(slice) => match slice {
-                b"<=" | b">=" | b"==" | b"!=" | b"<<" | b">>" | b"++" | b"--" | b"+=" | b"-="
-                | b"*=" | b"/=" | b"%=" | b"&=" | b"|=" | b"^=" => 2,
-                b"<<=" | b">>=" => 3,
-                _ => 1,
-            },
-            None => 1,
+    let original_bytes_length = original_bytes.len();
+    let replacement_length = replacement.len();
+
+    match replacement_length {
+        1 => match replacement {
+            b">" | b"<" => {
+                original_bytes.splice(
+                    start_index..start_index + replacement_length,
+                    replacement.iter().cloned(),
+                );
+                original_bytes.remove(start_index + 1);
+            }
+            _ => {
+                original_bytes.splice(
+                    start_index..start_index + replacement_length,
+                    replacement.iter().cloned(),
+                );
+            }
+        },
+        2 => match replacement {
+            b">=" | b"<=" => {
+                original_bytes.insert(start_index, b' ');
+                original_bytes.splice(
+                    start_index..start_index + replacement_length,
+                    replacement.iter().cloned(),
+                );
+            }
+            _ => {
+                original_bytes.splice(
+                    start_index..start_index + replacement_length,
+                    replacement.iter().cloned(),
+                );
+            }
+        },
+        3 => {
+            original_bytes.splice(
+                start_index..start_index + replacement_length,
+                replacement.iter().cloned(),
+            );
         }
-    } else {
-        1
-    };
-
-    original_bytes.drain(start_index..start_index + original_operator_length);
-    for (i, &byte) in replacement.iter().enumerate() {
-        original_bytes.insert(start_index + i, byte);
+        _ => {}
     }
 
-    // If the original operator is ">" or "<", and the replacement is twice as long,
+    // If the original operator is ">" or "<", and the replacement is longer,
     // and there is an extra character after the replacement, remove it.
-    if original_operator_length == 1
-        && replacement.len() == 2
-        && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
-        && original_bytes.len() > start_index + 2
-    {
-        original_bytes.remove(start_index + 2);
-    }
+    // if original_bytes_length == 1
+    //     && replacement.len() > original_bytes_length
+    //     && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+    //     && original_bytes.len() > start_index + replacement.len()
+    // {
+    //     original_bytes.remove(start_index + replacement.len());
+    // }
 
-    // If the original operator is ">>=" or "<<=", and the replacement is shorter,
+    // If the original operator is ">>=" or "<<="
     // and there is an extra character after the replacement, remove it.
-    if original_operator_length == 3
-        && replacement.len() < 3
-        && original_bytes.len() > start_index + replacement.len()
-    {
-        original_bytes.remove(start_index + replacement.len());
-    }
+    // if original_bytes_length == 3 && original_bytes.len() > start_index + replacement.len() {
+    //     original_bytes.remove(start_index + replacement.len());
+    // }
 
     // If the previous character is not a space and the original operator is ">" or "<", insert a space before the replacement.
-    if start_index > 0
-        && original_operator_length == 1
-        && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
-        && original_bytes.get(start_index - 1) != Some(&b' ')
-    {
-        original_bytes.insert(start_index, b' ');
-    }
+    // if start_index > 0
+    //     && original_bytes_length == 1
+    //     && (original_bytes[start_index] == b'>' || original_bytes[start_index] == b'<')
+    //     && original_bytes.get(start_index - 1) != Some(&b' ')
+    // {
+    //     original_bytes.insert(start_index, b' ');
+    // }
 
     // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
-    // If the previous character is not a space and the original operator is ">>=" or "<<=", insert a space before the replacement.
-    if start_index > 0
-        && original_operator_length == 3
-        && original_bytes.get(start_index - 1) != Some(&b' ')
-    {
-        original_bytes.insert(start_index, b' ');
-    }
+    // if start_index > 0
+    //     && original_bytes_length == 3
+    //     && original_bytes.get(start_index - 1) != Some(&b' ')
+    // {
+    //     original_bytes.insert(start_index, b' ');
+    // }
 }
 
 #[cfg(test)]
@@ -396,8 +629,13 @@ mod tests {
     fn test_replace_bytes_greater_than_2() {
         let mut original_bytes = "assert(c as u64 > x as u64);".as_bytes().to_vec();
         let replacement = b"<=";
-        let start_index = 15;
+        let start_index = 16;
         replace_bytes(&mut original_bytes, start_index, replacement);
+        if let Ok(string) = std::str::from_utf8(&original_bytes) {
+            dbg!(string);
+        } else {
+            eprintln!("original_bytes contains invalid UTF-8");
+        }
         assert_eq!(original_bytes, b"assert(c as u64 <= x as u64);");
     }
 
@@ -423,8 +661,13 @@ mod tests {
     fn test_replace_bytes_less_than_2() {
         let mut original_bytes = "assert(c as u64 < x as u64);".as_bytes().to_vec();
         let replacement = b">=";
-        let start_index = 15;
+        let start_index = 16;
         replace_bytes(&mut original_bytes, start_index, replacement);
+        if let Ok(string) = std::str::from_utf8(&original_bytes) {
+            dbg!(string);
+        } else {
+            eprintln!("original_bytes contains invalid UTF-8");
+        }
         assert_eq!(original_bytes, b"assert(c as u64 >= x as u64);");
     }
 
@@ -618,20 +861,30 @@ mod tests {
     }
 
     #[test]
-    fn test_replace_bytes_left_shift_equal() {
+    fn test_replace_bytes_shift_left_equal() {
         let mut original_bytes = "<<=".as_bytes().to_vec();
         let replacement = b">>=";
         let start_index = 0;
         replace_bytes(&mut original_bytes, start_index, replacement);
+        if let Ok(string) = std::str::from_utf8(&original_bytes) {
+            dbg!(string);
+        } else {
+            eprintln!("original_bytes contains invalid UTF-8");
+        }
         assert_eq!(original_bytes, b">>=");
     }
 
     #[test]
-    fn test_replace_bytes_right_shift_equal() {
+    fn test_replace_bytes_shift_right_equal() {
         let mut original_bytes = ">>=".as_bytes().to_vec();
         let replacement = b"<<=";
         let start_index = 0;
         replace_bytes(&mut original_bytes, start_index, replacement);
+        if let Ok(string) = std::str::from_utf8(&original_bytes) {
+            dbg!(string);
+        } else {
+            eprintln!("original_bytes contains invalid UTF-8");
+        }
         assert_eq!(original_bytes, b"<<=");
     }
 }

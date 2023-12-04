@@ -182,36 +182,10 @@ impl Mutant {
     }
 }
 
-pub fn token_patterns() -> Vec<(&'static str, Token)> {
+pub fn token_patterns() -> Vec<&'static str> {
     vec![
-        ("==", Token::Equal),
-        ("!=", Token::NotEqual),
-        ("<", Token::Less),
-        ("<=", Token::LessEqual),
-        (">", Token::Greater),
-        (">=", Token::GreaterEqual),
-        ("&", Token::Ampersand),
-        ("|", Token::Pipe),
-        ("^", Token::Caret),
-        ("<<", Token::ShiftLeft),
-        (">>", Token::ShiftRight),
-        ("+", Token::Plus),
-        ("-", Token::Minus),
-        ("*", Token::Star),
-        ("/", Token::Slash),
-        ("%", Token::Percent),
-        ("++", Token::Increment),
-        ("--", Token::Decrement),
-        ("+=", Token::PlusEquals),
-        ("-=", Token::MinusEquals),
-        ("*=", Token::StarEquals),
-        ("/=", Token::SlashEquals),
-        ("%=", Token::PercentEquals),
-        ("&=", Token::AmpersandEquals),
-        ("|=", Token::PipeEquals),
-        ("^=", Token::CaretEquals),
-        ("<<=", Token::ShiftLeftEquals),
-        (">>=", Token::ShiftRightEquals),
+        "==", "!=", "<", "<=", ">", ">=", "&", "|", "^", "<<", ">>", "+", "-", "*", "/", "%", "++",
+        "--", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=",
     ]
 }
 
@@ -536,10 +510,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (
-                span.0,
-                span.1 + token_as_bytes(&Token::ShiftLeft).unwrap().len() as u32,
-            ),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -547,10 +518,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (
-                span.0,
-                span.1 + token_as_bytes(&Token::ShiftRight).unwrap().len() as u32,
-            ),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -1536,10 +1504,16 @@ mod tests {
         let token = Token::ShiftLeftEquals;
         let span = (0, 3);
         let id = 42;
-        let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
+        let mutant = mutant_builder(id, token.clone(), span, path.clone()).unwrap();
 
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 4);
+        assert_eq!(mutant.id(), id);
+        assert_eq!(mutant.token(), token_mutation(token.clone()).unwrap());
+        assert_eq!(
+            &mutant.bytes(),
+            token_as_bytes(&token_mutation(token).unwrap()).unwrap()
+        );
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1552,8 +1526,8 @@ mod tests {
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
 
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 4);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
