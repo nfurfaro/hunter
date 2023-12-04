@@ -5,16 +5,16 @@ use crate::reporter::ScanResult;
 use crate::token::{mutant_builder, Mutant};
 use crate::utils::{collect_tokens, count_tests};
 use colored::*;
+use std::io::{Error, ErrorKind, Result};
 
 use std::path::Path;
 
-pub fn analyze(_args: Args, config: &Config) -> ScanResult {
-    let paths = find_source_file_paths(Path::new("."), config).unwrap_or_else(|_| {
-        panic!(
-            "No {} files found... Are you in the right directory?",
-            config.language().name().red()
-        )
-    });
+pub fn analyze(_args: Args, config: &Config) -> Result<ScanResult> {
+    let paths = find_source_file_paths(Path::new("."), config).map_err(|_| {
+        let err_msg = format!("No {} files found... Are you in the right directory?",
+            config.language().name().red());
+        Error::new(ErrorKind::Other, err_msg)
+    })?;
 
     let test_count = count_tests(paths.clone(), config);
     let meta_tokens = collect_tokens(paths.clone(), config).expect("No tokens found");
@@ -29,5 +29,5 @@ pub fn analyze(_args: Args, config: &Config) -> ScanResult {
         }
     }
 
-    ScanResult::new(paths, meta_tokens, test_count, mutants)
+    Ok(ScanResult::new(paths, meta_tokens, test_count, mutants))
 }
