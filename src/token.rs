@@ -430,7 +430,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -438,7 +438,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -446,7 +446,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -454,7 +454,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -462,7 +462,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -470,7 +470,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -478,7 +478,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -486,7 +486,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -494,7 +494,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -502,7 +502,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (span.0, span.1 + 1),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -1374,8 +1374,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1387,8 +1387,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1400,8 +1400,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1413,8 +1413,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1426,8 +1426,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1439,8 +1439,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1452,8 +1452,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1465,8 +1465,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1478,8 +1478,8 @@ mod tests {
         let span = (0, 2);
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
@@ -1492,8 +1492,8 @@ mod tests {
         let id = 42;
         let mutant = mutant_builder(id, token, span, path.clone()).unwrap();
 
-        assert_eq!(mutant.span_start(), 0);
-        assert_eq!(mutant.span_end(), 3);
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
     }
