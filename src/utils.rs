@@ -289,6 +289,88 @@ mod tests {
         dir.close().unwrap();
     }
 
+
+    #[test]
+    fn test_get_test_pattern_rust() {
+        let pattern = get_test_pattern(&Language::Rust);
+        assert_eq!(pattern.as_str(), r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}");
+    }
+
+    #[test]
+    fn test_get_test_pattern_solidity() {
+        let pattern = get_test_pattern(&Language::Solidity);
+        assert_eq!(pattern.as_str(), r"function\s+(test|invariant)\w*\(");
+    }
+
+    #[test]
+    fn test_get_test_pattern_sway() {
+        let pattern = get_test_pattern(&Language::Sway);
+        assert_eq!(pattern.as_str(), r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}");
+    }
+
+    #[test]
+    fn test_get_test_pattern_noir() {
+        let pattern = get_test_pattern(&Language::Noir);
+        assert_eq!(pattern.as_str(), r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}");
+    }
+
+    #[test]
+    fn test_remove_comments_single_line_1() {
+        let content = "Hello, world! // This is a comment";
+        let expected = "Hello, world! ";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_single_line_2() {
+        let content = "Hello, world! /// This is a comment";
+        let expected = "Hello, world! ";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_single_line_3() {
+        let content = "Hello, world! /// This is a comment with a * in it";
+        let expected = "Hello, world! ";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_single_line_4() {
+        let content = "Hello, world! /// This is a comment with a * in it.\n/// this is another comment on the next line, describing an operation like`a = b / c`";
+        let expected = "Hello, world! \n";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_multi_line_1() {
+        let content = "Hello, world! /* This is a\nmulti-line comment */";
+        let expected = "Hello, world! ";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_multi_line_2() {
+        let content = "Hello, world! /** This is a\nmulti-line comment */";
+        let expected = "Hello, world! ";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_multi_line_3() {
+        let content = "Hello, world! /** This is a\nmulti-line comment.\n * Each line starts with a star and contains an operator like %.\n * Here is another one: ^, &, *, / */\n'pub fn main() -> usize {\n    let a = 42;\na\n}";
+        let expected = "Hello, world! \n'pub fn main() -> usize {\n    let a = 42;\na\n}";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+    #[test]
+    fn test_remove_comments_no_comments() {
+        let content = "Hello, world!";
+        let expected = "Hello, world!";
+        assert_eq!(remove_comments(content), expected);
+    }
+
+
     #[test]
     fn test_replace_bytes_equal() {
         let mut original_bytes = "==".as_bytes().to_vec();
