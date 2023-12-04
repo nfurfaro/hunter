@@ -1,6 +1,7 @@
 // #![allow(unused)]
 use anyhow::Result;
 pub mod config;
+pub mod file_manager;
 pub mod handlers;
 pub mod parallel;
 pub mod reporter;

@@ -1,8 +1,9 @@
 use crate::cli::Args;
 use crate::config::Config;
+use crate::file_manager::find_source_file_paths;
 use crate::reporter::ScanResult;
 use crate::token::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, count_tests, find_source_file_paths};
+use crate::utils::{collect_tokens, count_tests};
 use colored::*;
 
 use std::path::Path;
