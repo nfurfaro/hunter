@@ -69,6 +69,8 @@ pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
     println!("{}", "Collecting tokens from files".green());
 
     let num_mutants: usize = results.mutants.len();
+    dbg!(num_mutants);
+    dbg!(results.mutants);
     println!(
         "{}",
         format!("Mutable tokens found: {}", num_mutants).cyan()

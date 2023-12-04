@@ -27,7 +27,6 @@ pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
     };
 
     let test_count = count_tests(paths.clone(), test_regex(&config.language()), config);
-    dbg!(test_count);
     let meta_tokens = collect_tokens(paths.clone(), config).expect("No tokens found");
 
     let mut mutants: Vec<Mutant> = vec![];

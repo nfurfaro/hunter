@@ -96,10 +96,12 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
 mod tests {
     #[allow(unused_imports)]
     use super::*;
-    use crate::config::{config, Language};
-    use std::fs::File;
-    use std::io::Write;
     use tempfile::tempdir;
+    use crate::config::{config, Language};
+
+
+
+
 
     #[test]
     fn test_find_source_file_paths() {

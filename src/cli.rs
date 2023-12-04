@@ -75,7 +75,7 @@ pub async fn run_cli() -> Result<()> {
                 handlers::mutate::mutate(args.clone(), config.clone(), &mut results)
             } else {
                 eprintln!("{}", result.unwrap_err());
-                return Ok(());
+                Ok(())
             }
         }
         Some(Subcommand::Campaign) => {

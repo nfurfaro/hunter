@@ -23,16 +23,16 @@ fn filter_contents(content: &str, test_regex: Regex, comment_regex: Regex) -> St
         comment_regex.as_str(),
         test_regex.as_str()
     )).unwrap();
-    let filtered_content = filter_regex.replace_all(&content, "");
+    let filtered_content = filter_regex.replace_all(content, "");
     filtered_content.into_owned()
 }
 
 fn comment_regex() -> Regex {
-    let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
-    comment_pattern
+    
+    Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
 }
 
-pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, config: &Config) -> usize {
+pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, _config: &Config) -> usize {
     let mut test_count = 0;
 
     if paths.is_empty() {

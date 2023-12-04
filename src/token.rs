@@ -3,14 +3,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-fn do_nothing() {
-    let a = 42;
-    let b = 42;
-    let c = a + b;
-    let d = c == a;
-    println!("do nothing");
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     /// <
@@ -192,7 +184,7 @@ impl Mutant {
 
 pub fn token_patterns() -> Vec<&'static str> {
     vec![
-        r" (==) ", r" (!=) ", r" (<) ", r" (<=) ", r" (>) ", r" (>=) ", r" (&) ", r" (\|) ", r" (^) ", r" (<<) ", r" (>>) ", r" (\+) ", r" (-) ", r" (\*) ", r" (/) ", r" (%) ", r" (\++) ",
+        r" (==) ", r" (!=) ", r" (<) ", r" (<=) ", r" (>) ", r" (>=) ", r" (&) ", r" (\|) ", r" (^) ", r" (<<) ", r" (>>) ", r" (\+) ", r" (-) ", r" (\*) ", r" (/) ", r" (%) ", r" (\+\+) ",
         r" (--) ", r" (\+=) ", r" (-=) ", r" (\*=) ", r" (/=) ", r" (%=) ", r" (&=) ", r" (\|=) ", r" (^=) ", r" (<<=) ", r" (>>=) ",
     ]
 }
