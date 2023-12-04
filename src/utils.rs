@@ -308,11 +308,6 @@ mod tests {
         let replacement = b"<=";
         let start_index = 16;
         replace_bytes(&mut original_bytes, start_index, replacement);
-        if let Ok(string) = std::str::from_utf8(&original_bytes) {
-            dbg!(string);
-        } else {
-            eprintln!("original_bytes contains invalid UTF-8");
-        }
         assert_eq!(original_bytes, b"assert(c as u64 <= x as u64);");
     }
 
@@ -340,11 +335,6 @@ mod tests {
         let replacement = b">=";
         let start_index = 16;
         replace_bytes(&mut original_bytes, start_index, replacement);
-        if let Ok(string) = std::str::from_utf8(&original_bytes) {
-            dbg!(string);
-        } else {
-            eprintln!("original_bytes contains invalid UTF-8");
-        }
         assert_eq!(original_bytes, b"assert(c as u64 >= x as u64);");
     }
 
@@ -543,11 +533,6 @@ mod tests {
         let replacement = b">>=";
         let start_index = 0;
         replace_bytes(&mut original_bytes, start_index, replacement);
-        if let Ok(string) = std::str::from_utf8(&original_bytes) {
-            dbg!(string);
-        } else {
-            eprintln!("original_bytes contains invalid UTF-8");
-        }
         assert_eq!(original_bytes, b">>=");
     }
 
@@ -557,11 +542,6 @@ mod tests {
         let replacement = b"<<=";
         let start_index = 0;
         replace_bytes(&mut original_bytes, start_index, replacement);
-        if let Ok(string) = std::str::from_utf8(&original_bytes) {
-            dbg!(string);
-        } else {
-            eprintln!("original_bytes contains invalid UTF-8");
-        }
         assert_eq!(original_bytes, b"<<=");
     }
 }
