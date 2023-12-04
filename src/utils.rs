@@ -97,31 +97,6 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
     Ok(paths)
 }
 
-pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
-    let mut test_count = 0;
-
-    if paths.is_empty() {
-        0
-    } else {
-        for path in paths {
-            let file = File::open(path.clone()).expect("Unable to open file");
-            let mut buf_reader = BufReader::new(file);
-            let mut contents = String::new();
-            let _res = buf_reader.read_to_string(&mut contents);
-
-            // Define your patterns
-            let test_pattern = match config.language() {
-                Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
-                _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
-            };
-
-            let test_matches = test_pattern.find_iter(&contents).count();
-            test_count += test_matches;
-        }
-        test_count
-    }
-}
-
 fn get_test_pattern(language: &Language) -> Regex {
     match language {
         Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
@@ -133,6 +108,26 @@ fn remove_comments(content: &str) -> String {
     let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
     let filtered_content = comment_pattern.replace_all(content, "");
     filtered_content.into_owned()
+}
+
+pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
+    let mut test_count = 0;
+
+    if paths.is_empty() {
+        0
+    } else {
+        for path in paths {
+            let file = File::open(path.clone()).expect("Unable to open file");
+            let mut buf_reader = BufReader::new(file);
+            let mut contents = String::new();
+            let _res = buf_reader.read_to_string(&mut contents);
+            let test_pattern = get_test_pattern(&config.language());
+
+            let test_matches = test_pattern.find_iter(&contents).count();
+            test_count += test_matches;
+        }
+        test_count
+    }
 }
 
 // @review check that the id being used is unique and necessary !
