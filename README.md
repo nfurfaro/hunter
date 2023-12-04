@@ -147,6 +147,11 @@ sequenceDiagram
 
 ## todo
 
+- [ ] fix printed output for Number of test runs required, should be same as # of mutants created
+- [ ] fix printed output for Number of mutable tokens found
+- [ ] test that => is not counted as a token!
+- [ ] consider adding tokens and matchers for the ! operator
+
 - [ ] use tempdir create to manage temp dirs and files
 - [ ] create a mechanism to init and persist a `Campaign` object on the local filesystem.
   - the campaign must allow for:

@@ -11,20 +11,29 @@ use std::{
     path::PathBuf,
 };
 
-fn get_test_pattern(language: &Language) -> Regex {
+pub fn test_regex(language: &Language) -> Regex {
     match language {
         Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
         _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
     }
 }
 
-fn remove_comments(content: &str) -> String {
-    let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
-    let filtered_content = comment_pattern.replace_all(content, "");
+fn filter_contents(content: &str, test_regex: Regex, comment_regex: Regex) -> String {
+    let filter_regex = Regex::new(&format!(
+        "{}|{}",
+        comment_regex.as_str(),
+        test_regex.as_str()
+    )).unwrap();
+    let filtered_content = filter_regex.replace_all(&content, "");
     filtered_content.into_owned()
 }
 
-pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
+fn comment_regex() -> Regex {
+    let comment_pattern = Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap();
+    comment_pattern
+}
+
+pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, config: &Config) -> usize {
     let mut test_count = 0;
 
     if paths.is_empty() {
@@ -35,9 +44,8 @@ pub fn count_tests(paths: Vec<PathBuf>, config: &Config) -> usize {
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
-            let test_pattern = get_test_pattern(&config.language());
 
-            let test_matches = test_pattern.find_iter(&contents).count();
+            let test_matches = pattern.find_iter(&contents).count();
             test_count += test_matches;
         }
         test_count
@@ -85,9 +93,9 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
             }
 
             // Remove all tests & comments from the contents
-            let test_pattern = get_test_pattern(&config.language());
-            let test_free_content = test_pattern.replace_all(&contents, "");
-            let pure_content = remove_comments(&test_free_content);
+            let test_regex = test_regex(&config.language());
+            let comment_regex = comment_regex();
+            let pure_content = filter_contents(&contents, test_regex, comment_regex);
 
             // Find tokens in filtered content
             for pattern in token_patterns() {
@@ -167,10 +175,11 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::config;
 
     #[test]
-    fn test_get_test_pattern_rust() {
-        let pattern = get_test_pattern(&Language::Rust);
+    fn test_test_regex_rust() {
+        let pattern = test_regex(&Language::Rust);
         assert_eq!(
             pattern.as_str(),
             r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
@@ -178,14 +187,14 @@ mod tests {
     }
 
     #[test]
-    fn test_get_test_pattern_solidity() {
-        let pattern = get_test_pattern(&Language::Solidity);
+    fn test_test_regex_solidity() {
+        let pattern = test_regex(&Language::Solidity);
         assert_eq!(pattern.as_str(), r"function\s+(test|invariant)\w*\(");
     }
 
     #[test]
-    fn test_get_test_pattern_sway() {
-        let pattern = get_test_pattern(&Language::Sway);
+    fn test_test_regex_sway() {
+        let pattern = test_regex(&Language::Sway);
         assert_eq!(
             pattern.as_str(),
             r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
@@ -193,8 +202,8 @@ mod tests {
     }
 
     #[test]
-    fn test_get_test_pattern_noir() {
-        let pattern = get_test_pattern(&Language::Noir);
+    fn test_test_regex_noir() {
+        let pattern = test_regex(&Language::Noir);
         assert_eq!(
             pattern.as_str(),
             r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
@@ -202,59 +211,59 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_comments_single_line_1() {
+    fn test_filter_contents_single_line_1() {
         let content = "Hello, world! // This is a comment";
         let expected = "Hello, world! ";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_single_line_2() {
+    fn test_filter_contents_single_line_2() {
         let content = "Hello, world! /// This is a comment";
         let expected = "Hello, world! ";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_single_line_3() {
+    fn test_filter_contents_single_line_3() {
         let content = "Hello, world! /// This is a comment with a * in it";
         let expected = "Hello, world! ";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_single_line_4() {
+    fn test_filter_contents_single_line_4() {
         let content = "Hello, world! /// This is a comment with a * in it.\n/// this is another comment on the next line, describing an operation like`a = b / c`";
         let expected = "Hello, world! \n";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_multi_line_1() {
+    fn test_filter_contents_multi_line_1() {
         let content = "Hello, world! /* This is a\nmulti-line comment */";
         let expected = "Hello, world! ";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_multi_line_2() {
+    fn test_filter_contents_multi_line_2() {
         let content = "Hello, world! /** This is a\nmulti-line comment */";
         let expected = "Hello, world! ";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_multi_line_3() {
+    fn test_filter_contents_multi_line_3() {
         let content = "Hello, world! /** This is a\nmulti-line comment.\n * Each line starts with a star and contains an operator like %.\n * Here is another one: ^, &, *, / */\n'pub fn main() -> usize {\n    let a = 42;\na\n}";
         let expected = "Hello, world! \n'pub fn main() -> usize {\n    let a = 42;\na\n}";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]
-    fn test_remove_comments_no_comments() {
+    fn test_filter_contents_no_comments() {
         let content = "Hello, world!";
         let expected = "Hello, world!";
-        assert_eq!(remove_comments(content), expected);
+        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
     }
 
     #[test]

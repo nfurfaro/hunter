@@ -30,7 +30,7 @@ pub struct Args {
     manifest: Option<std::path::PathBuf>,
     /// The path to the source files directory, defaults to ./src
     #[clap(short, long)]
-    source_dir: Option<std::path::PathBuf>,
+    pub source_path: Option<std::path::PathBuf>,
     /// The path to the test directory, defaults to ./tests
     #[clap(short, long)]
     test_dir: Option<std::path::PathBuf>,
@@ -60,7 +60,7 @@ pub async fn run_cli() -> Result<()> {
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-            let results = handlers::scan::analyze(args.clone(), &config);
+            let results = handlers::scan::scan(args.clone(), &config);
             if let Ok(results) = results {
                 print_scan_results(results.clone(), &config)
             } else {
@@ -69,17 +69,17 @@ pub async fn run_cli() -> Result<()> {
             }
         }
         Some(Subcommand::Mutate) => {
-            let result = handlers::scan::analyze(args.clone(), &config);
+            let result = handlers::scan::scan(args.clone(), &config);
             if let Ok(mut results) = result {
                 let _ = print_scan_results(results.clone(), &config);
-                handlers::mutate::mutate(args, config.clone(), &mut results)
+                handlers::mutate::mutate(args.clone(), config.clone(), &mut results)
             } else {
                 eprintln!("{}", result.unwrap_err());
                 return Ok(());
             }
         }
         Some(Subcommand::Campaign) => {
-            let campaign_id = args.campaign_id.expect("No campaign ID specified");
+            let campaign_id = args.campaign_id.clone().expect("No campaign ID specified");
             // Open the sled database
             let db = sled::open("campaigns.db")?;
             handlers::campaign::start_or_resume(&db, campaign_id)
