@@ -10,13 +10,18 @@ use std::io::{Error, ErrorKind, Result};
 use std::path::Path;
 
 pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
-    let source_path = args.source_path.clone().unwrap_or(Path::new(".").to_path_buf());
+    let source_path = args
+        .source_path
+        .clone()
+        .unwrap_or(Path::new(".").to_path_buf());
     let paths = if source_path.is_file() {
         vec![source_path]
     } else {
         find_source_file_paths(source_path.as_path(), config).map_err(|_| {
-            let err_msg = format!("No {} files found... Are you in the right directory?",
-                config.language().name().red());
+            let err_msg = format!(
+                "No {} files found... Are you in the right directory?",
+                config.language().name().red()
+            );
             Error::new(ErrorKind::Other, err_msg)
         })?
     };

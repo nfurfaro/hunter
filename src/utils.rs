@@ -2,7 +2,6 @@ use crate::config::{Config, Language};
 use crate::token::{raw_string_as_token, token_patterns, MetaToken};
 use indicatif::{ProgressBar, ProgressStyle};
 
-// use core::slice::SlicePattern;
 use regex::Regex;
 use std::{
     cell::Cell,
@@ -80,7 +79,10 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
             let _res = buf_reader.read_to_string(&mut contents);
 
             for pattern in token_patterns() {
+                dbg!(pattern);
+                dbg!(raw_string_as_token(pattern).unwrap());
                 let regex = Regex::new(pattern).unwrap();
+                dbg!(regex.as_str());
                 for mat in regex.find_iter(&contents) {
                     tokens.push(MetaToken::new(
                         raw_string_as_token(pattern).unwrap(),
@@ -91,6 +93,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     i.set(i.get() + 1);
                 }
             }
+            dbg!(tokens.len());
 
             // Remove all tests & comments from the contents
             let test_regex = test_regex(&config.language());
@@ -110,6 +113,8 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     j.set(j.get() + 1);
                 }
             }
+            dbg!(pure_content.len());
+            dbg!(filtered_tokens.len());
 
             // compare tokens with filtered tokens by checking both token type and ID.
             // for all matches, copy token.span to filtered_token.span
@@ -124,6 +129,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
         }
 
         bar.finish();
+        dbg!(filtered_tokens.len());
         Some(filtered_tokens)
     }
 }
