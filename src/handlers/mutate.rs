@@ -3,7 +3,6 @@ use crate::config::Config;
 use crate::parallel::parallel_process_mutated_tokens;
 use crate::reporter::{print_line_in_span, ScanResult};
 use crate::token::MutationStatus;
-// use crate::utils::print_line_in_span;
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
@@ -23,11 +22,8 @@ fn mutants_table() -> Table {
 }
 
 pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
-    // add a [workspace] to the project manifest
-    // modify_toml(config);
-
-    println!("{}", "Running tests...".green());
     let mutants = results.mutants();
+    println!("{}", "Running tests...".green());
     parallel_process_mutated_tokens(mutants, config);
 
     if args.verbose {
