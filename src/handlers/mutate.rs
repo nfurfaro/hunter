@@ -11,7 +11,7 @@ use std::{io::Result, path::Path};
 fn mutants_table() -> Table {
     let mut table = Table::new();
     table.add_row(Row::new(vec![
-        Cell::new("Surviving Mutants").style_spec("Fmb"),
+        Cell::new("Surviving Mutants").style_spec("Fmb")
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Source file:").style_spec("Fcb"),
