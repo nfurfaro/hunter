@@ -188,8 +188,36 @@ impl Mutant {
 
 pub fn token_patterns() -> Vec<&'static str> {
     vec![
-        r" (==) ", r" (!=) ", r" (<) ", r" (<=) ", r" (>) ", r" (>=) ", r" (&) ", r" (\|) ", r" (^) ", r" (<<) ", r" (>>) ", r" (\+) ", r" (-) ", r" (\*) ", r" (/) ", r" (%) ", r" (\+\+) ",
-        r" (--) ", r" (\+=) ", r" (-=) ", r" (\*=) ", r" (/=) ", r" (%=) ", r" (&=) ", r" (\|=) ", r" (^=) ", r" (<<=) ", r" (>>=) ", r" (\|\|) ", r" (&&) ",
+        r" (==) ",
+        r" (!=) ",
+        r" (<) ",
+        r" (<=) ",
+        r" (>) ",
+        r" (>=) ",
+        r" (&) ",
+        r" (\|) ",
+        r" (^) ",
+        r" (<<) ",
+        r" (>>) ",
+        r" (\+) ",
+        r" (-) ",
+        r" (\*) ",
+        r" (/) ",
+        r" (%) ",
+        r" (\+\+) ",
+        r" (--) ",
+        r" (\+=) ",
+        r" (-=) ",
+        r" (\*=) ",
+        r" (/=) ",
+        r" (%=) ",
+        r" (&=) ",
+        r" (\|=) ",
+        r" (^=) ",
+        r" (<<=) ",
+        r" (>>=) ",
+        r" (\|\|) ",
+        r" (&&) ",
     ]
 }
 
@@ -306,7 +334,6 @@ pub fn mutant_builder(
     span: (u32, u32),
     src_path: PathBuf,
 ) -> Option<Mutant> {
-
     let mutation = token_mutation(token.clone()).unwrap();
     match token {
         Token::Equal => Some(Mutant {
@@ -1654,7 +1681,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_mutant_builder_ampersand_equals() {
+    fn test_mutant_builder_ampersand_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::AmpersandEquals;
         let span = (0, 2);
@@ -1667,7 +1694,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_vmutant_builder_pipe_equals() {
+    fn test_vmutant_builder_pipe_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::PipeEquals;
         let span = (0, 2);
@@ -1680,7 +1707,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_mutant_builder_caret_equals() {
+    fn test_mutant_builder_caret_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::CaretEquals;
         let span = (0, 2);
@@ -1694,7 +1721,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_mutant_builder_shift_left_equals() {
+    fn test_mutant_builder_shift_left_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::ShiftLeftEquals;
         let span = (0, 3);
@@ -1714,7 +1741,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_mutant_builder_shift_right_equals() {
+    fn test_mutant_builder_shift_right_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::ShiftRightEquals;
         let span = (0, 3);
@@ -1728,7 +1755,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_mutant_builder_double_pipe() {
+    fn test_mutant_builder_double_pipe() {
         let path = PathBuf::from("test.noir");
         let token = Token::DoublePipe;
         let span = (0, 2);
@@ -1748,7 +1775,7 @@ mod tests {
     }
 
     #[test]
-    fn  test_mutant_builder_double_ampersand() {
+    fn test_mutant_builder_double_ampersand() {
         let path = PathBuf::from("test.noir");
         let token = Token::DoubleAmpersand;
         let span = (0, 2);

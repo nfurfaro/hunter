@@ -22,13 +22,13 @@ fn filter_contents(content: &str, test_regex: Regex, comment_regex: Regex) -> St
         "{}|{}",
         comment_regex.as_str(),
         test_regex.as_str()
-    )).unwrap();
+    ))
+    .unwrap();
     let filtered_content = filter_regex.replace_all(content, "");
     filtered_content.into_owned()
 }
 
 fn comment_regex() -> Regex {
-    
     Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
 }
 
@@ -87,7 +87,10 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     let token_str = mat.get(1).unwrap().as_str();
                     tokens.push(MetaToken::new(
                         raw_string_as_token(token_str).unwrap(),
-                        (mat.get(0).unwrap().start() as u32, mat.get(0).unwrap().end() as u32),
+                        (
+                            mat.get(0).unwrap().start() as u32,
+                            mat.get(0).unwrap().end() as u32,
+                        ),
                         Box::new(path.clone()),
                         i.get(),
                     ));
@@ -110,7 +113,10 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     let token_str = mat.get(1).unwrap().as_str();
                     filtered_tokens.push(MetaToken::new(
                         raw_string_as_token(token_str).unwrap(),
-                        (mat.get(0).unwrap().start() as u32, mat.get(0).unwrap().end() as u32),
+                        (
+                            mat.get(0).unwrap().start() as u32,
+                            mat.get(0).unwrap().end() as u32,
+                        ),
                         Box::new(path.clone()),
                         j.get(),
                     ));
@@ -221,56 +227,80 @@ mod tests {
     fn test_filter_contents_single_line_1() {
         let content = "Hello, world! // This is a comment";
         let expected = "Hello, world! ";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_single_line_2() {
         let content = "Hello, world! /// This is a comment";
         let expected = "Hello, world! ";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_single_line_3() {
         let content = "Hello, world! /// This is a comment with a * in it";
         let expected = "Hello, world! ";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_single_line_4() {
         let content = "Hello, world! /// This is a comment with a * in it.\n/// this is another comment on the next line, describing an operation like`a = b / c`";
         let expected = "Hello, world! \n";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_multi_line_1() {
         let content = "Hello, world! /* This is a\nmulti-line comment */";
         let expected = "Hello, world! ";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_multi_line_2() {
         let content = "Hello, world! /** This is a\nmulti-line comment */";
         let expected = "Hello, world! ";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_multi_line_3() {
         let content = "Hello, world! /** This is a\nmulti-line comment.\n * Each line starts with a star and contains an operator like %.\n * Here is another one: ^, &, *, / */\n'pub fn main() -> usize {\n    let a = 42;\na\n}";
         let expected = "Hello, world! \n'pub fn main() -> usize {\n    let a = 42;\na\n}";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
     fn test_filter_contents_no_comments() {
         let content = "Hello, world!";
         let expected = "Hello, world!";
-        assert_eq!(filter_contents(content, test_regex(&Language::Rust), comment_regex()), expected);
+        assert_eq!(
+            filter_contents(content, test_regex(&Language::Rust), comment_regex()),
+            expected
+        );
     }
 
     #[test]
