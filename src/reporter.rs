@@ -56,17 +56,15 @@ pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
         format!("Searching for {} files", config.language().name()).green()
     );
 
-    println!("{}", "Files found:".cyan());
+    println!("{}", format!("Files found: {}", results.paths.len()).cyan());
+
     for path in results.paths {
         println!("{}", format!("{}", path.display()).red());
     }
 
-    println!(
-        "{}",
-        format!("Analysing {} tokens", results.meta_tokens.len()).green()
-    );
-
     println!("{}", "Collecting tokens from files".green());
+    println!("{}", "Analysing tokens".green());
+
 
     let num_mutants: usize = results.mutants.len();
     println!(
