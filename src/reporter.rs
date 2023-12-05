@@ -65,7 +65,6 @@ pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
     println!("{}", "Collecting tokens from files".green());
     println!("{}", "Analysing tokens".green());
 
-
     let num_mutants: usize = results.mutants.len();
     println!(
         "{}",

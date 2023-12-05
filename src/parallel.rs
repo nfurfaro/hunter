@@ -46,10 +46,14 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         let mut contents = String::new();
 
         let original_path = Path::new(m.path());
-        let parent_dir = Path::new("../src");
-        let file_name = original_path.file_name().expect("Failed to get file name");
-        let source_path = parent_dir.join(file_name);
+        dbg!(original_path);
+        let parent_dir = Path::new("./src");
+        let relative_path = original_path
+            .strip_prefix(&parent_dir)
+            .expect("Failed to get relative path");
+        let source_path = parent_dir.join(relative_path);
 
+        dbg!(source_path.clone());
         // Open the file at the given path in write mode
         let mut file = File::open(source_path.clone()).expect("File path doesn't seem to work...");
         // Read the file's contents into a String
