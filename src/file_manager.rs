@@ -97,8 +97,6 @@ mod tests {
     #[allow(unused_imports)]
     use super::*;
     use crate::config::{config, Language};
-    use std::fs::File;
-    use std::io::Write;
     use tempfile::tempdir;
 
     #[test]

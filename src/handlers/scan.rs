@@ -3,20 +3,30 @@ use crate::config::Config;
 use crate::file_manager::find_source_file_paths;
 use crate::reporter::ScanResult;
 use crate::token::{mutant_builder, Mutant};
-use crate::utils::{collect_tokens, count_tests};
+use crate::utils::{collect_tokens, count_tests, test_regex};
 use colored::*;
+use std::io::{Error, ErrorKind, Result};
 
 use std::path::Path;
 
-pub fn analyze(_args: Args, config: &Config) -> ScanResult {
-    let paths = find_source_file_paths(Path::new("."), config).unwrap_or_else(|_| {
-        panic!(
-            "No {} files found... Are you in the right directory?",
-            config.language().name().red()
-        )
-    });
+pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
+    let source_path = args
+        .source_path
+        .clone()
+        .unwrap_or(Path::new(".").to_path_buf());
+    let paths = if source_path.is_file() {
+        vec![source_path]
+    } else {
+        find_source_file_paths(source_path.as_path(), config).map_err(|_| {
+            let err_msg = format!(
+                "No {} files found... Are you in the right directory?",
+                config.language().name().red()
+            );
+            Error::new(ErrorKind::Other, err_msg)
+        })?
+    };
 
-    let test_count = count_tests(paths.clone(), config);
+    let test_count = count_tests(paths.clone(), test_regex(&config.language()), config);
     let meta_tokens = collect_tokens(paths.clone(), config).expect("No tokens found");
 
     let mut mutants: Vec<Mutant> = vec![];
@@ -29,5 +39,5 @@ pub fn analyze(_args: Args, config: &Config) -> ScanResult {
         }
     }
 
-    ScanResult::new(paths, meta_tokens, test_count, mutants)
+    Ok(ScanResult::new(paths, meta_tokens, test_count, mutants))
 }

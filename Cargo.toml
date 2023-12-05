@@ -17,6 +17,7 @@ tokio = { version = "1.8.0", features = ["macros", "rt-multi-thread"] }
 rayon = "1.5"
 tempfile = "3.8.1"
 tempdir = "0.3.7"
+sled = "0.34.7"
 
 # switch to git dependency
 # noirc_frontend = { path = "../../noir_dev/noir/compiler/noirc_frontend" }

@@ -11,6 +11,8 @@ pub enum Subcommand {
     Scan,
     /// Mutate and run tests
     Mutate,
+    /// Start or resume a test campaign
+    Campaign,
 }
 
 /// Mutate Noir code and run tests against each mutation.
@@ -20,12 +22,15 @@ pub struct Args {
     /// Supported languages: Noir, Sway
     #[clap(short, long)]
     language: Option<Language>,
+    /// The ID of the campaign to start or resume
+    #[clap(short, long)]
+    campaign_id: Option<String>,
     /// The location of the hunter config file, defaults to ./hunter.toml
     #[clap(short, long)]
     manifest: Option<std::path::PathBuf>,
     /// The path to the source files directory, defaults to ./src
     #[clap(short, long)]
-    source_dir: Option<std::path::PathBuf>,
+    pub source_path: Option<std::path::PathBuf>,
     /// The path to the test directory, defaults to ./tests
     #[clap(short, long)]
     test_dir: Option<std::path::PathBuf>,
@@ -55,13 +60,29 @@ pub async fn run_cli() -> Result<()> {
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-            let results = handlers::scan::analyze(args.clone(), &config);
-            print_scan_results(results, &config)
+            let results = handlers::scan::scan(args.clone(), &config);
+            if let Ok(results) = results {
+                print_scan_results(results.clone(), &config)
+            } else {
+                eprintln!("{}", results.unwrap_err());
+                Ok(())
+            }
         }
         Some(Subcommand::Mutate) => {
-            let mut results = handlers::scan::analyze(args.clone(), &config);
-            let _ = print_scan_results(results.clone(), &config);
-            handlers::mutate::mutate(args, config.clone(), &mut results)
+            let result = handlers::scan::scan(args.clone(), &config);
+            if let Ok(mut results) = result {
+                let _ = print_scan_results(results.clone(), &config);
+                handlers::mutate::mutate(args.clone(), config.clone(), &mut results)
+            } else {
+                eprintln!("{}", result.unwrap_err());
+                Ok(())
+            }
+        }
+        Some(Subcommand::Campaign) => {
+            let campaign_id = args.campaign_id.clone().expect("No campaign ID specified");
+            // Open the sled database
+            let db = sled::open("campaigns.db")?;
+            handlers::campaign::start_or_resume(&db, campaign_id)
         }
         None => {
             println!(
@@ -127,11 +148,12 @@ mod tests {
             .arg("--")
             .arg("--language")
             .arg("noir")
-            .arg("scan")
+            .arg("mutate")
             .output()
             .expect("Failed to execute command");
 
         let output_str = str::from_utf8(&output.stderr).unwrap();
+        println!("{}", output_str);
         assert!(output_str.contains("No Noir files found... Are you in the right directory?"));
     }
 }
