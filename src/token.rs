@@ -537,7 +537,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (0, 0),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -545,7 +545,7 @@ pub fn mutant_builder(
             id,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
-            span: (0, 0),
+            span,
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
@@ -1654,7 +1654,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_ampersand_equals() {
+    fn  test_mutant_builder_ampersand_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::AmpersandEquals;
         let span = (0, 2);
@@ -1667,7 +1667,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_pipe_equals() {
+    fn  test_vmutant_builder_pipe_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::PipeEquals;
         let span = (0, 2);
@@ -1680,7 +1680,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_caret_equals() {
+    fn  test_mutant_builder_caret_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::CaretEquals;
         let span = (0, 2);
@@ -1694,7 +1694,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_shift_left_equals() {
+    fn  test_mutant_builder_shift_left_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::ShiftLeftEquals;
         let span = (0, 3);
@@ -1714,7 +1714,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_shift_right_equals() {
+    fn  test_mutant_builder_shift_right_equals() {
         let path = PathBuf::from("test.noir");
         let token = Token::ShiftRightEquals;
         let span = (0, 3);
@@ -1728,7 +1728,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_double_pipe() {
+    fn  test_mutant_builder_double_pipe() {
         let path = PathBuf::from("test.noir");
         let token = Token::DoublePipe;
         let span = (0, 2);
@@ -1748,7 +1748,7 @@ mod tests {
     }
 
     #[test]
-    fn mutant_builder_double_ampersand() {
+    fn  test_mutant_builder_double_ampersand() {
         let path = PathBuf::from("test.noir");
         let token = Token::DoubleAmpersand;
         let span = (0, 2);
