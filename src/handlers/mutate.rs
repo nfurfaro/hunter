@@ -8,26 +8,28 @@ use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{io::Result, path::Path};
 
-pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
-    // add a [workspace] to the project manifest
-    // modify_toml(config);
+fn mutants_table() -> Table {
+    let mut table = Table::new();
+    table.add_row(Row::new(vec![
+        Cell::new("Surviving Mutants").style_spec("Fmb")
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Source file:").style_spec("Fcb"),
+        Cell::new("Line #:").style_spec("Fcb"),
+        Cell::new("Original context:").style_spec("Fcb"),
+        Cell::new("Mutation:").style_spec("Fmb"),
+    ]));
+    table
+}
 
-    println!("{}", "Running tests...".green());
+pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
+    println!("{}", "Running tests...".green());
     parallel_process_mutated_tokens(mutants, config);
 
     if args.verbose {
         // Create a new table
-        let mut table = Table::new();
-        table.add_row(Row::new(vec![
-            Cell::new("Surviving Mutants").style_spec("Fmb")
-        ]));
-        table.add_row(Row::new(vec![
-            Cell::new("Source file:").style_spec("Fcb"),
-            Cell::new("Line #:").style_spec("Fcb"),
-            Cell::new("Original context:").style_spec("Fcb"),
-            Cell::new("Mutation:").style_spec("Fmb"),
-        ]));
+        let mut table = mutants_table();
 
         for mutant in mutants.clone() {
             if mutant.status() == MutationStatus::Survived

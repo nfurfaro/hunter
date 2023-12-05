@@ -20,6 +20,28 @@ use rayon::prelude::*;
 use tempdir::TempDir;
 use tempfile::NamedTempFile;
 
+// Function to recursively copy a directory
+fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
+    for entry in std::fs::read_dir(from)? {
+        let entry = entry?;
+        let path = entry.path();
+        let file_name = path.file_name().ok_or(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            "Failed to get file name",
+        ))?;
+        let dest_path = to.as_ref().join(file_name);
+
+        if path.is_dir() {
+            std::fs::create_dir_all(&dest_path)?;
+            copy_dir_all(&path, &dest_path)?;
+        } else {
+            std::fs::copy(&path, &dest_path)?;
+        }
+    }
+
+    Ok(())
+}
+
 pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config) {
     let total_mutants = mutants.len();
     let destroyed = Arc::new(AtomicUsize::new(0));
@@ -36,42 +58,23 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
             .progress_chars("#>-"),
     );
 
-    // let temp_dir = PathBuf::from("./temp");
-    // if !temp_dir.exists() {
-    //     create_dir_all(&temp_dir).expect("Failed to create directory");
-    // }
-
-    // std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
-    let temp_dir = TempDir::new("temp").expect("Failed to create temporary directory");
-    std::env::set_current_dir(temp_dir.path()).expect("Failed to change directory");
-
     mutants.par_iter_mut().for_each(|m| {
-        let thread_index = rayon::current_thread_index().unwrap_or(0);
+        // Create a new temporary directory for this mutant
+        let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
+        // Copy the entire project into this temporary directory
+        copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
+        // Change the current directory to the temporary directory
+        std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
+        dbg!(temp_project.path());
+        // let thread_index = rayon::current_thread_index().unwrap_or(0);
         let mut contents = String::new();
 
         let original_path = Path::new(m.path());
         dbg!(original_path);
-        let parent_dir = Path::new("./src");
-        let relative_path = original_path
-            .strip_prefix(&parent_dir)
-            .expect("Failed to get relative path");
-        let source_path = parent_dir.join(relative_path);
-
-        dbg!(source_path.clone());
         // Open the file at the given path in write mode
-        let mut file = File::open(source_path.clone()).expect("File path doesn't seem to work...");
+        let mut file = File::open(original_path).expect("File path doesn't seem to work...");
         // Read the file's contents into a String
         file.read_to_string(&mut contents).unwrap();
-
-        // Include the thread's index in the file name
-        // let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language().ext());
-        let temp_file =
-            NamedTempFile::new_in(temp_dir.path()).expect("Failed to create temporary file");
-        let temp_file_path = temp_file.path().to_path_buf();
-        // @fix use a temp file path that is unique to the mutant
-        // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
-        // let temp_file_path = format!("./src/main.nr");
-        copy(source_path, &temp_file_path).expect("Failed to copy file");
 
         let mut original_bytes = contents.into_bytes();
         replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
@@ -81,7 +84,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         let mut file = OpenOptions::new()
             .write(true)
             .create(true) // Create the file if it doesn't exist
-            .open(temp_file_path)
+            .open(original_path)
             .unwrap();
 
         // modify string of contents, then write back to temp file
