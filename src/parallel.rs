@@ -17,6 +17,8 @@ use prettytable::{Cell, Row, Table};
 use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
+use tempdir::TempDir;
+use tempfile::NamedTempFile;
 
 pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config) {
     let total_mutants = mutants.len();
@@ -34,12 +36,14 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
             .progress_chars("#>-"),
     );
 
-    let temp_dir = PathBuf::from("./temp");
-    if !temp_dir.exists() {
-        create_dir_all(&temp_dir).expect("Failed to create directory");
-    }
+    // let temp_dir = PathBuf::from("./temp");
+    // if !temp_dir.exists() {
+    //     create_dir_all(&temp_dir).expect("Failed to create directory");
+    // }
 
-    std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
+    // std::env::set_current_dir(&temp_dir).expect("Failed to change directory");
+    let temp_dir = TempDir::new("temp").expect("Failed to create temporary directory");
+    std::env::set_current_dir(temp_dir.path()).expect("Failed to change directory");
 
     mutants.par_iter_mut().for_each(|m| {
         let thread_index = rayon::current_thread_index().unwrap_or(0);
@@ -60,7 +64,10 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         file.read_to_string(&mut contents).unwrap();
 
         // Include the thread's index in the file name
-        let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language().ext());
+        // let temp_file_path = format!("./src/main_{}.{}", thread_index, config.language().ext());
+        let temp_file =
+            NamedTempFile::new_in(temp_dir.path()).expect("Failed to create temporary file");
+        let temp_file_path = temp_file.path().to_path_buf();
         // @fix use a temp file path that is unique to the mutant
         // currently Nargo demands that there is a main.nr file or a lib.nr in the directory
         // let temp_file_path = format!("./src/main.nr");
@@ -74,7 +81,7 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         let mut file = OpenOptions::new()
             .write(true)
             .create(true) // Create the file if it doesn't exist
-            .open(temp_file_path.clone())
+            .open(temp_file_path)
             .unwrap();
 
         // modify string of contents, then write back to temp file
