@@ -42,120 +42,7 @@ fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Resu
     Ok(())
 }
 
-pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config) {
-    let total_mutants = mutants.len();
-    let destroyed = Arc::new(AtomicUsize::new(0));
-    let survived = Arc::new(AtomicUsize::new(0));
-    let pending = Arc::new(AtomicUsize::new(total_mutants));
-
-    let bar = ProgressBar::new(total_mutants as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-
-    // Create a new temporary directory for this mutant
-    let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
-    // Copy the entire project into this temporary directory
-    copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
-    // Change the current directory to the temporary directory
-    std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
-
-    mutants.par_iter_mut().for_each(|m| {
-        // // Create a new temporary directory for this mutant
-        // let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
-        // // Copy the entire project into this temporary directory
-        // copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
-        // // Change the current directory to the temporary directory
-        // std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
-        dbg!(temp_project.path());
-        // let thread_index = rayon::current_thread_index().unwrap_or(0);
-        let mut contents = String::new();
-
-        let original_path = Path::new(m.path());
-        dbg!(original_path);
-        // Open the file at the given path in write mode
-        let mut file = File::open(original_path).expect("File path doesn't seem to work...");
-        // Read the file's contents into a String
-        file.read_to_string(&mut contents).unwrap();
-
-        let mut original_bytes = contents.into_bytes();
-        replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
-        contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
-
-        // After modifying the contents, write it back to the file
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true) // Create the file if it doesn't exist
-            .open(original_path)
-            .unwrap();
-
-        // modify string of contents, then write back to temp file
-        file.write_all(contents.as_bytes()).unwrap();
-
-        // run_test_suite
-        let output = Command::new(config.test_runner())
-            .arg(config.test_command())
-            .output()
-            .expect("Failed to execute command");
-
-        // Check the output
-        if output.status.success() {
-            // tests passed indicating mutant survived !
-            m.set_status(MutationStatus::Survived);
-            survived.fetch_add(1, Ordering::SeqCst);
-            pending.fetch_sub(1, Ordering::SeqCst);
-        } else {
-            // test failed indicating mutant was killed !
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            // @fix this is a brittle hack to get around the fact that
-            // the compiler fails to compile the mutated tests because the
-            // mutated code contains contraints that are always false !
-            // let re = Regex::new(r"aborting due to \d+ previous errors").unwrap();
-            // if re.is_match(&stderr) {
-            //     panic!("test aborted due to previous errors");
-            // }
-
-            if (stderr.contains("test failed") || stderr.contains("FAILED"))
-                && !stderr.contains("aborting due to 1 previous errors")
-            {
-                println!("test failed and contains test failed");
-                eprint!("{}", stderr);
-                destroyed.fetch_add(1, Ordering::SeqCst);
-                pending.fetch_sub(1, Ordering::SeqCst);
-                m.set_status(MutationStatus::Killed);
-            }
-        }
-
-        // Clean up the temporary file
-        // std::fs::remove_file(&temp_file_path).expect("Failed to remove temporary file");
-
-        bar.inc(1);
-    });
-
-
-    let parent_dir = std::env::current_dir().unwrap();
-
-    match parent_dir.parent() {
-        Some(parent) => {
-            if let Err(e) = std::env::set_current_dir(parent) {
-                eprintln!("Failed to change directory: {}", e);
-            }
-        }
-        None => {
-            eprintln!("Failed to get parent directory of {:?}", parent_dir);
-        }
-    }
-
-    bar.finish_with_message("All mutants processed!");
-
-    let mutation_score = (destroyed.load(Ordering::SeqCst) as f64 / total_mutants as f64) * 100.0;
-    let mutation_score_string = format!("{:.2}%", mutation_score);
-
+fn mutation_test_table(total_mutants: usize, pending: Arc<AtomicUsize>, destroyed: Arc<AtomicUsize>, survived: Arc<AtomicUsize>, mutation_score_string: String) -> Table {
     let mut table = Table::new();
     table.add_row(Row::new(vec![
         Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
@@ -181,6 +68,110 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         Cell::new("Mutation score:").style_spec("Fcb"),
         Cell::new(&mutation_score_string).style_spec("Fcb"),
     ]));
+    table
+}
 
+fn progress_bar(total_mutants: usize) -> ProgressBar {
+    let bar = ProgressBar::new(total_mutants as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+    bar
+}
+
+fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) -> String {
+    let mutation_score = (destroyed.load(Ordering::SeqCst) as f64 / total_mutants as f64) * 100.0;
+    format!("{:.2}%", mutation_score)
+}
+
+pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
+    let total_mutants = mutants.len();
+    let bar = progress_bar(total_mutants);
+
+    let destroyed = Arc::new(AtomicUsize::new(0));
+    let survived = Arc::new(AtomicUsize::new(0));
+    let pending = Arc::new(AtomicUsize::new(total_mutants));
+
+    let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
+    copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
+    std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
+
+    mutants.par_iter_mut().for_each(|m| {
+
+        dbg!(temp_project.path());
+        let mut contents = String::new();
+
+        let original_path = Path::new(m.path());
+        dbg!(original_path);
+        let mut file = File::open(original_path).expect("File path doesn't seem to work...");
+        file.read_to_string(&mut contents).unwrap();
+
+        let mut original_bytes = contents.into_bytes();
+        replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
+        contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
+
+        // After modifying the contents, write it back to the file
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(original_path)
+            .unwrap();
+
+        // modify string of contents, then write back to temp file
+        file.write_all(contents.as_bytes()).unwrap();
+
+        // run_test_suite
+        let output = Command::new(config.test_runner())
+            .arg(config.test_command())
+            .output()
+            .expect("Failed to execute command");
+
+        // Check the output
+        if output.status.success() {
+            // tests passed indicating mutant survived !
+            m.set_status(MutationStatus::Survived);
+            survived.fetch_add(1, Ordering::SeqCst);
+            pending.fetch_sub(1, Ordering::SeqCst);
+        } else {
+            // test failed indicating mutant was killed !
+            let stderr = String::from_utf8_lossy(&output.stderr);
+
+            // @fix this is a brittle hack to get around the fact that
+            // the compiler fails to compile the mutated tests because the
+            // mutated code contains contraints that are always false !
+            if (stderr.contains("test failed") || stderr.contains("FAILED"))
+                && !stderr.contains("aborting due to 1 previous errors")
+            {
+                println!("test failed and contains test failed");
+                eprint!("{}", stderr);
+                destroyed.fetch_add(1, Ordering::SeqCst);
+                pending.fetch_sub(1, Ordering::SeqCst);
+                m.set_status(MutationStatus::Killed);
+            }
+        }
+
+        bar.inc(1);
+    });
+
+    let parent_dir = std::env::current_dir().unwrap();
+    match parent_dir.parent() {
+        Some(parent) => {
+            if let Err(e) = std::env::set_current_dir(parent) {
+                eprintln!("Failed to change directory: {}", e);
+            }
+        }
+        None => {
+            eprintln!("Failed to get parent directory of {:?}", parent_dir);
+        }
+    }
+
+    bar.finish_with_message("All mutants processed!");
+    let score = calculate_mutation_score(&destroyed, total_mutants);
+    let table = mutation_test_table(total_mutants, pending, destroyed, survived, score);
     table.printstd();
 }

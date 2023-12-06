@@ -1,6 +1,6 @@
 use crate::cli::Args;
 use crate::config::Config;
-use crate::parallel::parallel_process_mutated_tokens;
+use crate::parallel::process_mutants;
 use crate::reporter::{print_line_in_span, ScanResult};
 use crate::token::MutationStatus;
 use colored::*;
@@ -24,7 +24,7 @@ fn mutants_table() -> Table {
 pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
     println!("{}", "Running tests...".green());
-    parallel_process_mutated_tokens(mutants, config);
+    process_mutants(mutants, config);
 
     if args.verbose {
         // Create a new table
@@ -40,6 +40,7 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
 
                 print_line_in_span(
                     &mut table,
+                    // @fix path here is non existant
                     Path::new(mutant.path()),
                     span_usize,
                     &mutant.token(),
