@@ -147,6 +147,10 @@ sequenceDiagram
 
 ## todo
 
+issues:
+- running nargo test on hello_world, all tests pass.
+
+
 - [ ] fix printed output for Number of test runs required, should be same as # of mutants created
 - [ ] fix printed output for Number of mutable tokens found
 - [ ] test that => is not counted as a token!

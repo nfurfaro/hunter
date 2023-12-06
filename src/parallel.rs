@@ -97,21 +97,29 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
 
 use std::fs;
 
-// fn print_dir(path: &Path, prefix: &str) -> std::io::Result<()> {
-//     if path.is_dir() {
-//         for entry in fs::read_dir(path)? {
-//             let entry = entry?;
-//             let path = entry.path();
-//             if path.is_dir() {
-//                 println!("{}|-- {}", prefix, path.file_name().unwrap().to_string_lossy());
-//                 print_dir(&path, &format!("{}|   ", prefix))?;
-//             } else {
-//                 println!("{}|-- {}", prefix, path.file_name().unwrap().to_string_lossy());
-//             }
-//         }
-//     }
-//     Ok(())
-// }
+fn print_dir(path: &Path, prefix: &str) -> std::io::Result<()> {
+    if path.is_dir() {
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                println!(
+                    "{}|-- {}",
+                    prefix,
+                    path.file_name().unwrap().to_string_lossy()
+                );
+                print_dir(&path, &format!("{}|   ", prefix))?;
+            } else {
+                println!(
+                    "{}|-- {}",
+                    prefix,
+                    path.file_name().unwrap().to_string_lossy()
+                );
+            }
+        }
+    }
+    Ok(())
+}
 
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
@@ -123,36 +131,52 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
     // Create a shared Vec to store the TempDirs
-    let temp_dirs = Arc::new(Mutex::new(Vec::new()));
+    // let temp_dirs = Arc::new(Mutex::new(Vec::new()));
+    // println!(
+    //     "Current directory before loop: {}",
+    //     std::env::current_dir().unwrap().display()
+    // );
 
     mutants.par_iter_mut().for_each(|m| {
+        // println!(
+        //     "Current directory in loop: {}",
+        //     std::env::current_dir().unwrap().display()
+        // );
         let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
 
         let temp_project_arc = Arc::new(temp_project);
+
         copy_dir_all(".", &temp_project_arc.path()).expect("Failed to copy project");
-        temp_dirs
-            .lock()
-            .unwrap()
-            .push(Arc::new(temp_project_arc.clone()));
+        // print_dir(temp_project_arc.clone().path(), "").expect("Failed to print directory structure");
+        // temp_dirs
+        //     .lock()
+        //     .unwrap()
+        //     .push(Arc::new(temp_project_arc.clone()));
         std::env::set_current_dir(temp_project_arc.clone().path())
             .expect("Failed to change directory");
+        // println!(
+        //     "Current directory after set: {}",
+        //     std::env::current_dir().unwrap().display()
+        // );
 
         let mut contents = String::new();
 
-        let token_src = Path::new(m.path());
-        let mut file = File::open(token_src).expect("File path doesn't seem to work...");
+        let token_src = temp_project_arc.path().join(m.path());
+        let mut file = File::open(&token_src).expect("File path doesn't seem to work...");
         file.read_to_string(&mut contents).unwrap();
 
         let mut original_bytes = contents.into_bytes();
         replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
-        // After modifying the contents, write it back to the file
+        // After modifying the contents, write it back to the temp file
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .open(token_src)
             .unwrap();
+
+        println!("{:#?}", contents.clone());
 
         // modify string of contents, then write back to temp file
         file.write_all(contents.as_bytes()).unwrap();
@@ -163,46 +187,61 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             .output()
             .expect("Failed to execute build command");
 
-        // Check if the build was successful
-        if !build_output.status.success() {
-            destroyed.fetch_add(1, Ordering::SeqCst);
-            pending.fetch_sub(1, Ordering::SeqCst);
-            m.set_status(MutationStatus::Killed);
-        }
-
         // run_test_suite
         let output = Command::new(config.test_runner())
             .arg(config.test_command())
             .output()
             .expect("Failed to execute command");
 
-        // Check the output
-        if output.status.success() {
-            // tests passed indicating mutant survived !
-            m.set_status(MutationStatus::Survived);
-            survived.fetch_add(1, Ordering::SeqCst);
-            pending.fetch_sub(1, Ordering::SeqCst);
-        } else {
-            // test failed indicating mutant was killed !
-            let stderr = String::from_utf8_lossy(&output.stderr);
-
-            // @fix this is a brittle hack to get around the fact that
-            // the compiler fails to compile the mutated tests because the
-            // mutated code contains contraints that are always false !
-            if is_test_failed(&stderr, &config.language()) {
+        match build_output.status.success() {
+            false => {
+                println!("Build failed");
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
             }
+            true => match output.status.success() {
+                true => {
+                    println!("Build was successful");
+                    println!("Test suite passed");
+                    m.set_status(MutationStatus::Survived);
+                    survived.fetch_add(1, Ordering::SeqCst);
+                    pending.fetch_sub(1, Ordering::SeqCst);
+                }
+                false => {
+                    println!("Test suite failed");
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if is_test_failed(&stderr, &config.language()) {
+                        destroyed.fetch_add(1, Ordering::SeqCst);
+                        pending.fetch_sub(1, Ordering::SeqCst);
+                        m.set_status(MutationStatus::Killed);
+                    }
+                }
+            },
         }
+
+        // Change back to the original directory at the end
+        if let Err(e) = std::env::set_current_dir(&original_dir) {
+            eprintln!("Failed to change back to the original directory: {}", e);
+        }
+
+        // println!(
+        //     "Current directory at end of loop: {}",
+        //     std::env::current_dir().unwrap().display()
+        // );
 
         bar.inc(1);
     });
 
+    // println!(
+    //     "Current directory after loop: {}",
+    //     std::env::current_dir().unwrap().display()
+    // );
+
     // Change back to the original directory at the end
-    if let Err(e) = std::env::set_current_dir(&original_dir) {
-        eprintln!("Failed to change back to the original directory: {}", e);
-    }
+    // if let Err(e) = std::env::set_current_dir(&original_dir) {
+    //     eprintln!("Failed to change back to the original directory: {}", e);
+    // }
 
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(&destroyed, total_mutants);
