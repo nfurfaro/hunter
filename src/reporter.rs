@@ -84,7 +84,7 @@ pub fn print_line_in_span(
     span: (usize, usize),
     token: &Token,
 ) -> Result<()> {
-    let file = File::open(file_path)?;
+    let file = File::open(file_path).unwrap();
     let reader = BufReader::new(file);
     let mut byte_index = 0;
     let temp = String::from_utf8_lossy(token_as_bytes(&token.clone()).unwrap());

@@ -6,6 +6,7 @@ use std::{
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
+        Mutex,
     },
 };
 
@@ -89,7 +90,26 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
     format!("{:.2}%", mutation_score)
 }
 
+use std::fs;
+
+// fn print_dir(path: &Path, prefix: &str) -> std::io::Result<()> {
+//     if path.is_dir() {
+//         for entry in fs::read_dir(path)? {
+//             let entry = entry?;
+//             let path = entry.path();
+//             if path.is_dir() {
+//                 println!("{}|-- {}", prefix, path.file_name().unwrap().to_string_lossy());
+//                 print_dir(&path, &format!("{}|   ", prefix))?;
+//             } else {
+//                 println!("{}|-- {}", prefix, path.file_name().unwrap().to_string_lossy());
+//             }
+//         }
+//     }
+//     Ok(())
+// }
+
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
+    let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
     let bar = progress_bar(total_mutants);
 
@@ -97,18 +117,24 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
-    let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
-    copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
-    std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
+    // Create a shared Vec to store the TempDirs
+    let temp_dirs = Arc::new(Mutex::new(Vec::new()));
 
     mutants.par_iter_mut().for_each(|m| {
+        let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
+        // Wrap the TempDir in an Arc
+        let temp_project_arc = Arc::new(temp_project);
+        copy_dir_all(".", &temp_project_arc.path()).expect("Failed to copy project");
+        temp_dirs.lock().unwrap().push(Arc::new(temp_project_arc.clone()));
 
-        dbg!(temp_project.path());
+        std::env::set_current_dir(temp_project_arc.clone().path()).expect("Failed to change directory");
+        dbg!(temp_project_arc.clone().path());
+
         let mut contents = String::new();
 
-        let original_path = Path::new(m.path());
-        dbg!(original_path);
-        let mut file = File::open(original_path).expect("File path doesn't seem to work...");
+        let token_src = Path::new(m.path());
+        dbg!(token_src);
+        let mut file = File::open(token_src).expect("File path doesn't seem to work...");
         file.read_to_string(&mut contents).unwrap();
 
         let mut original_bytes = contents.into_bytes();
@@ -119,7 +145,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
-            .open(original_path)
+            .open(token_src)
             .unwrap();
 
         // modify string of contents, then write back to temp file
@@ -158,16 +184,9 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         bar.inc(1);
     });
 
-    let parent_dir = std::env::current_dir().unwrap();
-    match parent_dir.parent() {
-        Some(parent) => {
-            if let Err(e) = std::env::set_current_dir(parent) {
-                eprintln!("Failed to change directory: {}", e);
-            }
-        }
-        None => {
-            eprintln!("Failed to get parent directory of {:?}", parent_dir);
-        }
+     // Change back to the original directory at the end
+     if let Err(e) = std::env::set_current_dir(&original_dir) {
+        eprintln!("Failed to change back to the original directory: {}", e);
     }
 
     bar.finish_with_message("All mutants processed!");
