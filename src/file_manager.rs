@@ -17,7 +17,7 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
             let path_buf = entry.path();
             if path_buf.is_dir() {
                 // Skipped directories
-                let excluded_dirs = ["/temp", "./target", "./test", "./lib", "./script"];
+                let excluded_dirs = ["./temp", "./target", "./test", "./lib", "./script"];
 
                 if excluded_dirs
                     .iter()

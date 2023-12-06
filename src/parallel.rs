@@ -138,11 +138,12 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     // );
 
     mutants.par_iter_mut().for_each(|m| {
+
         // println!(
         //     "Current directory in loop: {}",
         //     std::env::current_dir().unwrap().display()
         // );
-        let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
+        let temp_project = TempDir::new("hunter_temp").expect("Failed to create temporary directory");
 
         let temp_project_arc = Arc::new(temp_project);
 
@@ -153,7 +154,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         //     .unwrap()
         //     .push(Arc::new(temp_project_arc.clone()));
         std::env::set_current_dir(temp_project_arc.clone().path())
-            .expect("Failed to change directory");
+        .expect("Failed to change directory");
         // println!(
         //     "Current directory after set: {}",
         //     std::env::current_dir().unwrap().display()
@@ -176,8 +177,6 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             .open(token_src)
             .unwrap();
 
-        println!("{:#?}", contents.clone());
-
         // modify string of contents, then write back to temp file
         file.write_all(contents.as_bytes()).unwrap();
 
@@ -193,31 +192,72 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             .output()
             .expect("Failed to execute command");
 
-        match build_output.status.success() {
-            false => {
+        // match build_output.status.success() {
+        //     false => {
+        //         // println!("Build failed");
+        //         destroyed.fetch_add(1, Ordering::SeqCst);
+        //         pending.fetch_sub(1, Ordering::SeqCst);
+        //         m.set_status(MutationStatus::Killed);
+        //     }
+        //     true => match output.status.success() {
+        //         true => {
+        //             println!("Build was successful");
+        //             println!("Test suite passed");
+        //             dbg!(&output.stdout);
+        //             m.set_status(MutationStatus::Survived);
+        //             survived.fetch_add(1, Ordering::SeqCst);
+        //             pending.fetch_sub(1, Ordering::SeqCst);
+        //         }
+        //         false => {
+        //             println!("Test suite failed");
+        //             let stderr = String::from_utf8_lossy(&output.stderr);
+        //             println!("stderr: {}", stderr);
+        //             if is_test_failed(&stderr, &config.language()) {
+        //                 destroyed.fetch_add(1, Ordering::SeqCst);
+        //                 pending.fetch_sub(1, Ordering::SeqCst);
+        //                 m.set_status(MutationStatus::Killed);
+        //             }
+        //         }
+        //     },
+        // }
+
+        match build_output.status.code() {
+            Some(0) => {
+                match output.status.code() {
+                    Some(0) => {
+                        println!("Build was successful");
+                        println!("Test suite passed");
+                        dbg!(&output.stdout);
+                        m.set_status(MutationStatus::Survived);
+                        survived.fetch_add(1, Ordering::SeqCst);
+                        pending.fetch_sub(1, Ordering::SeqCst);
+                    }
+                    Some(_) => {
+                        println!("Test suite failed");
+                        let stderr = String::from_utf8_lossy(&output.stderr);
+                        println!("stderr: {}", stderr);
+                        if is_test_failed(&stderr, &config.language()) {
+                            destroyed.fetch_add(1, Ordering::SeqCst);
+                            pending.fetch_sub(1, Ordering::SeqCst);
+                            m.set_status(MutationStatus::Killed);
+                        }
+                    }
+                    None => {
+                        println!("Test suite was killed by a signal or crashed");
+                        // Handle this case
+                    }
+                }
+            }
+            Some(_) => {
                 println!("Build failed");
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
             }
-            true => match output.status.success() {
-                true => {
-                    println!("Build was successful");
-                    println!("Test suite passed");
-                    m.set_status(MutationStatus::Survived);
-                    survived.fetch_add(1, Ordering::SeqCst);
-                    pending.fetch_sub(1, Ordering::SeqCst);
-                }
-                false => {
-                    println!("Test suite failed");
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    if is_test_failed(&stderr, &config.language()) {
-                        destroyed.fetch_add(1, Ordering::SeqCst);
-                        pending.fetch_sub(1, Ordering::SeqCst);
-                        m.set_status(MutationStatus::Killed);
-                    }
-                }
-            },
+            None => {
+                println!("Build was killed by a signal or crashed");
+                // Handle this case
+            }
         }
 
         // Change back to the original directory at the end
@@ -237,11 +277,6 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     //     "Current directory after loop: {}",
     //     std::env::current_dir().unwrap().display()
     // );
-
-    // Change back to the original directory at the end
-    // if let Err(e) = std::env::set_current_dir(&original_dir) {
-    //     eprintln!("Failed to change back to the original directory: {}", e);
-    // }
 
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(&destroyed, total_mutants);

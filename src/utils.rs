@@ -109,7 +109,6 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     let token_str = mat.get(1).unwrap().as_str();
                     let token_range =
                         mat.get(0).unwrap().start() as u32 + 1..mat.get(0).unwrap().end() as u32;
-                    dbg!(token_range.clone());
 
                     if comment_ranges.iter().any(|r| overlaps(r, &token_range))
                         || test_ranges.iter().any(|r| overlaps(r, &token_range))
@@ -117,8 +116,6 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     {
                         continue;
                     }
-
-                    // dbg!(mat.get(0).unwrap().start() as u32);
 
                     tokens.push(MetaToken::new(
                         raw_string_as_token(token_str).unwrap(),
@@ -142,12 +139,6 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
 
 pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
     let replacement_length = replacement.len();
-    // let replacement_str = std::str::from_utf8(replacement).unwrap_or("<invalid utf-8>");
-    // dbg!(replacement_str);
-    dbg!(replacement_length);
-    dbg!(start_index);
-
-    // let off_by_1_index = start_index + 1;
 
     match replacement_length {
         1 => match replacement {
