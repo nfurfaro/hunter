@@ -58,13 +58,20 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
             .progress_chars("#>-"),
     );
 
+    // Create a new temporary directory for this mutant
+    let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
+    // Copy the entire project into this temporary directory
+    copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
+    // Change the current directory to the temporary directory
+    std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
+
     mutants.par_iter_mut().for_each(|m| {
-        // Create a new temporary directory for this mutant
-        let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
-        // Copy the entire project into this temporary directory
-        copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
-        // Change the current directory to the temporary directory
-        std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
+        // // Create a new temporary directory for this mutant
+        // let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
+        // // Copy the entire project into this temporary directory
+        // copy_dir_all(".", temp_project.path()).expect("Failed to copy project");
+        // // Change the current directory to the temporary directory
+        // std::env::set_current_dir(temp_project.path()).expect("Failed to change directory");
         dbg!(temp_project.path());
         // let thread_index = rayon::current_thread_index().unwrap_or(0);
         let mut contents = String::new();
@@ -130,12 +137,19 @@ pub fn parallel_process_mutated_tokens(mutants: &mut Vec<Mutant>, config: Config
         bar.inc(1);
     });
 
-    let parent_dir = std::env::current_dir()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf();
-    std::env::set_current_dir(parent_dir).expect("Failed to change directory");
+
+    let parent_dir = std::env::current_dir().unwrap();
+
+    match parent_dir.parent() {
+        Some(parent) => {
+            if let Err(e) = std::env::set_current_dir(parent) {
+                eprintln!("Failed to change directory: {}", e);
+            }
+        }
+        None => {
+            eprintln!("Failed to get parent directory of {:?}", parent_dir);
+        }
+    }
 
     bar.finish_with_message("All mutants processed!");
 
