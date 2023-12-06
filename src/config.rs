@@ -5,6 +5,7 @@ pub struct Config {
     language: Language,
     test_runner: &'static str,
     test_command: &'static str,
+    build_command: &'static str,
     manifest_name: &'static str,
 }
 
@@ -19,6 +20,10 @@ impl Config {
 
     pub fn test_command(&self) -> &'static str {
         self.test_command
+    }
+
+    pub fn build_command(&self) -> &'static str {
+        self.build_command
     }
 
     pub fn manifest_name(&self) -> &'static str {
@@ -74,24 +79,28 @@ pub fn config(language: Language) -> Config {
             language: Language::Noir,
             test_runner: "nargo",
             test_command: "test",
+            build_command: "build",
             manifest_name: "Nargo.toml",
         },
         Language::Rust => Config {
             language: Language::Rust,
             test_runner: "cargo",
             test_command: "test",
+            build_command: "build",
             manifest_name: "Cargo.toml",
         },
         Language::Solidity => Config {
             language: Language::Solidity,
             test_runner: "forge",
             test_command: "test",
+            build_command: "build",
             manifest_name: "foundry.toml",
         },
         Language::Sway => Config {
             language: Language::Sway,
             test_runner: "forc",
             test_command: "test",
+            build_command: "build",
             manifest_name: "Forc.toml",
         },
     }

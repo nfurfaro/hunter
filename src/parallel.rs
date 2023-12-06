@@ -5,12 +5,11 @@ use std::{
     process::Command,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc,
-        Mutex,
+        Arc, Mutex,
     },
 };
 
-use crate::config::Config;
+use crate::config::{Config, Language};
 use crate::token::{Mutant, MutationStatus};
 use crate::utils::*;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -43,7 +42,13 @@ fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Resu
     Ok(())
 }
 
-fn mutation_test_table(total_mutants: usize, pending: Arc<AtomicUsize>, destroyed: Arc<AtomicUsize>, survived: Arc<AtomicUsize>, mutation_score_string: String) -> Table {
+fn mutation_test_table(
+    total_mutants: usize,
+    pending: Arc<AtomicUsize>,
+    destroyed: Arc<AtomicUsize>,
+    survived: Arc<AtomicUsize>,
+    mutation_score_string: String,
+) -> Table {
     let mut table = Table::new();
     table.add_row(Row::new(vec![
         Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
@@ -122,18 +127,19 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
 
     mutants.par_iter_mut().for_each(|m| {
         let temp_project = TempDir::new("temp").expect("Failed to create temporary directory");
-        // Wrap the TempDir in an Arc
+
         let temp_project_arc = Arc::new(temp_project);
         copy_dir_all(".", &temp_project_arc.path()).expect("Failed to copy project");
-        temp_dirs.lock().unwrap().push(Arc::new(temp_project_arc.clone()));
-
-        std::env::set_current_dir(temp_project_arc.clone().path()).expect("Failed to change directory");
-        dbg!(temp_project_arc.clone().path());
+        temp_dirs
+            .lock()
+            .unwrap()
+            .push(Arc::new(temp_project_arc.clone()));
+        std::env::set_current_dir(temp_project_arc.clone().path())
+            .expect("Failed to change directory");
 
         let mut contents = String::new();
 
         let token_src = Path::new(m.path());
-        dbg!(token_src);
         let mut file = File::open(token_src).expect("File path doesn't seem to work...");
         file.read_to_string(&mut contents).unwrap();
 
@@ -150,6 +156,19 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
 
         // modify string of contents, then write back to temp file
         file.write_all(contents.as_bytes()).unwrap();
+
+        // Build the project
+        let build_output = Command::new(config.test_runner())
+            .arg(config.build_command())
+            .output()
+            .expect("Failed to execute build command");
+
+        // Check if the build was successful
+        if !build_output.status.success() {
+            destroyed.fetch_add(1, Ordering::SeqCst);
+            pending.fetch_sub(1, Ordering::SeqCst);
+            m.set_status(MutationStatus::Killed);
+        }
 
         // run_test_suite
         let output = Command::new(config.test_runner())
@@ -170,11 +189,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             // @fix this is a brittle hack to get around the fact that
             // the compiler fails to compile the mutated tests because the
             // mutated code contains contraints that are always false !
-            if (stderr.contains("test failed") || stderr.contains("FAILED"))
-                && !stderr.contains("aborting due to 1 previous errors")
-            {
-                println!("test failed and contains test failed");
-                eprint!("{}", stderr);
+            if is_test_failed(&stderr, &config.language()) {
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
@@ -184,8 +199,8 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         bar.inc(1);
     });
 
-     // Change back to the original directory at the end
-     if let Err(e) = std::env::set_current_dir(&original_dir) {
+    // Change back to the original directory at the end
+    if let Err(e) = std::env::set_current_dir(&original_dir) {
         eprintln!("Failed to change back to the original directory: {}", e);
     }
 
@@ -193,4 +208,17 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let score = calculate_mutation_score(&destroyed, total_mutants);
     let table = mutation_test_table(total_mutants, pending, destroyed, survived, score);
     table.printstd();
+}
+
+fn is_test_failed(stderr: &str, language: &Language) -> bool {
+    match language {
+        Language::Noir => {
+            stderr.contains("test failed")
+                || stderr.contains("FAILED")
+                || stderr.contains("Failed constraint")
+        }
+        Language::Rust => stderr.contains("test failed") || stderr.contains("FAILED"),
+        Language::Solidity => stderr.contains("test failed") || stderr.contains("FAILED"),
+        Language::Sway => stderr.contains("test failed") || stderr.contains("FAILED"),
+    }
 }

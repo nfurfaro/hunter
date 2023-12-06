@@ -36,8 +36,6 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
             {
                 let span = mutant.span();
                 let span_usize = (span.0 as usize, span.1 as usize);
-                dbg!(mutant.path());
-
                 print_line_in_span(
                     &mut table,
                     // @fix path here is non existant

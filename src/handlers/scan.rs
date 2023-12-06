@@ -32,7 +32,6 @@ pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
     let mut mutants: Vec<Mutant> = vec![];
     for entry in &meta_tokens {
         let path = entry.src().clone();
-        dbg!(&path);
         let maybe_mutant = mutant_builder(entry.id(), entry.token().clone(), entry.span(), path);
         match maybe_mutant {
             None => continue,
