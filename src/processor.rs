@@ -176,7 +176,6 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
                     Some(0) => {
                         println!("Build was successful");
                         println!("Test suite passed");
-                        dbg!(&output.stdout);
                         m.set_status(MutationStatus::Survived);
                         survived.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
