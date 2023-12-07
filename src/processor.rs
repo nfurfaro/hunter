@@ -138,12 +138,12 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     // );
 
     mutants.par_iter_mut().for_each(|m| {
-
         // println!(
         //     "Current directory in loop: {}",
         //     std::env::current_dir().unwrap().display()
         // );
-        let temp_project = TempDir::new("hunter_temp").expect("Failed to create temporary directory");
+        let temp_project =
+            TempDir::new("hunter_temp").expect("Failed to create temporary directory");
 
         let temp_project_arc = Arc::new(temp_project);
 
@@ -154,7 +154,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         //     .unwrap()
         //     .push(Arc::new(temp_project_arc.clone()));
         std::env::set_current_dir(temp_project_arc.clone().path())
-        .expect("Failed to change directory");
+            .expect("Failed to change directory");
         // println!(
         //     "Current directory after set: {}",
         //     std::env::current_dir().unwrap().display()

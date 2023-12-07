@@ -1,6 +1,6 @@
 use crate::cli::Args;
 use crate::config::Config;
-use crate::parallel::process_mutants;
+use crate::processor::process_mutants;
 use crate::reporter::{print_line_in_span, ScanResult};
 use crate::token::MutationStatus;
 use colored::*;

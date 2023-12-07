@@ -3,7 +3,7 @@ use anyhow::Result;
 pub mod config;
 pub mod file_manager;
 pub mod handlers;
-pub mod parallel;
+pub mod processor;
 pub mod reporter;
 pub mod token;
 pub mod utils;
