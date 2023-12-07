@@ -1,3 +1,3 @@
 pub mod campaign;
-pub mod mutate;
+pub mod mutator;
 pub mod scanner;

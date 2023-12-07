@@ -72,7 +72,7 @@ pub async fn run_cli() -> Result<()> {
             let result = handlers::scanner::scan(args.clone(), &config);
             if let Ok(mut results) = result {
                 let _ = print_scan_results(&mut results.clone(), &config);
-                handlers::mutate::mutate(args.clone(), config.clone(), &mut results)
+                handlers::mutator::mutate(args.clone(), config.clone(), &mut results)
             } else {
                 eprintln!("{}", result.unwrap_err());
                 Ok(())
