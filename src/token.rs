@@ -1,6 +1,53 @@
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct MetaToken {
+    token: Token,
+    span: (u32, u32),
+    src: Box<PathBuf>,
+    id: u32,
+}
+
+impl MetaToken {
+    pub fn new(token: Token, span: (u32, u32), src: Box<PathBuf>, id: u32) -> Self {
+        Self {
+            token,
+            span,
+            src,
+            id,
+        }
+    }
+
+    pub fn token(&self) -> &Token {
+        &self.token
+    }
+
+    pub fn span(&self) -> (u32, u32) {
+        self.span
+    }
+
+    pub fn src(&self) -> &PathBuf {
+        &self.src
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn set_span(&mut self, new_span: (u32, u32)) {
+        self.span = new_span;
+    }
+
+    pub fn span_start(&self) -> u32 {
+        self.span.0
+    }
+
+    pub fn span_end(&self) -> u32 {
+        self.span.1
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     /// <
     Less,
@@ -63,53 +110,6 @@ pub enum Token {
     /// &&
     DoubleAmpersand,
     // Bang,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct MetaToken {
-    token: Token,
-    span: (u32, u32),
-    src: Box<PathBuf>,
-    id: u32,
-}
-
-impl MetaToken {
-    pub fn new(token: Token, span: (u32, u32), src: Box<PathBuf>, id: u32) -> Self {
-        Self {
-            token,
-            span,
-            src,
-            id,
-        }
-    }
-
-    pub fn token(&self) -> &Token {
-        &self.token
-    }
-
-    pub fn span(&self) -> (u32, u32) {
-        self.span
-    }
-
-    pub fn src(&self) -> &PathBuf {
-        &self.src
-    }
-
-    pub fn id(&self) -> u32 {
-        self.id
-    }
-
-    pub fn set_span(&mut self, new_span: (u32, u32)) {
-        self.span = new_span;
-    }
-
-    pub fn span_start(&self) -> u32 {
-        self.span.0
-    }
-
-    pub fn span_end(&self) -> u32 {
-        self.span.1
-    }
 }
 
 pub fn token_patterns() -> Vec<&'static str> {
