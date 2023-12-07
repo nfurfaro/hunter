@@ -1,11 +1,11 @@
 use std::{
-    fs::{copy, create_dir_all, File, OpenOptions},
+    fs::{File, OpenOptions},
     io::{Read, Write},
-    path::{Path, PathBuf},
+    path::Path,
     process::Command,
     sync::{
         atomic::{AtomicUsize, Ordering},
-        Arc, Mutex,
+        Arc,
     },
 };
 
@@ -18,7 +18,6 @@ use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
 use tempdir::TempDir;
-use tempfile::NamedTempFile;
 
 // Function to recursively copy a directory
 fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
@@ -95,31 +94,30 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
     format!("{:.2}%", mutation_score)
 }
 
-use std::fs;
-
-fn print_dir(path: &Path, prefix: &str) -> std::io::Result<()> {
-    if path.is_dir() {
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
-            let path = entry.path();
-            if path.is_dir() {
-                println!(
-                    "{}|-- {}",
-                    prefix,
-                    path.file_name().unwrap().to_string_lossy()
-                );
-                print_dir(&path, &format!("{}|   ", prefix))?;
-            } else {
-                println!(
-                    "{}|-- {}",
-                    prefix,
-                    path.file_name().unwrap().to_string_lossy()
-                );
-            }
-        }
-    }
-    Ok(())
-}
+// use std::fs;
+// fn print_dir(path: &Path, prefix: &str) -> std::io::Result<()> {
+//     if path.is_dir() {
+//         for entry in fs::read_dir(path)? {
+//             let entry = entry?;
+//             let path = entry.path();
+//             if path.is_dir() {
+//                 println!(
+//                     "{}|-- {}",
+//                     prefix,
+//                     path.file_name().unwrap().to_string_lossy()
+//                 );
+//                 print_dir(&path, &format!("{}|   ", prefix))?;
+//             } else {
+//                 println!(
+//                     "{}|-- {}",
+//                     prefix,
+//                     path.file_name().unwrap().to_string_lossy()
+//                 );
+//             }
+//         }
+//     }
+//     Ok(())
+// }
 
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
@@ -130,35 +128,15 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
-    // Create a shared Vec to store the TempDirs
-    // let temp_dirs = Arc::new(Mutex::new(Vec::new()));
-    // println!(
-    //     "Current directory before loop: {}",
-    //     std::env::current_dir().unwrap().display()
-    // );
-
     mutants.par_iter_mut().for_each(|m| {
-        // println!(
-        //     "Current directory in loop: {}",
-        //     std::env::current_dir().unwrap().display()
-        // );
         let temp_project =
             TempDir::new("hunter_temp").expect("Failed to create temporary directory");
 
         let temp_project_arc = Arc::new(temp_project);
 
-        copy_dir_all(".", &temp_project_arc.path()).expect("Failed to copy project");
-        // print_dir(temp_project_arc.clone().path(), "").expect("Failed to print directory structure");
-        // temp_dirs
-        //     .lock()
-        //     .unwrap()
-        //     .push(Arc::new(temp_project_arc.clone()));
+        copy_dir_all(".", temp_project_arc.path()).expect("Failed to copy project");
         std::env::set_current_dir(temp_project_arc.clone().path())
             .expect("Failed to change directory");
-        // println!(
-        //     "Current directory after set: {}",
-        //     std::env::current_dir().unwrap().display()
-        // );
 
         let mut contents = String::new();
 
@@ -191,35 +169,6 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             .arg(config.test_command())
             .output()
             .expect("Failed to execute command");
-
-        // match build_output.status.success() {
-        //     false => {
-        //         // println!("Build failed");
-        //         destroyed.fetch_add(1, Ordering::SeqCst);
-        //         pending.fetch_sub(1, Ordering::SeqCst);
-        //         m.set_status(MutationStatus::Killed);
-        //     }
-        //     true => match output.status.success() {
-        //         true => {
-        //             println!("Build was successful");
-        //             println!("Test suite passed");
-        //             dbg!(&output.stdout);
-        //             m.set_status(MutationStatus::Survived);
-        //             survived.fetch_add(1, Ordering::SeqCst);
-        //             pending.fetch_sub(1, Ordering::SeqCst);
-        //         }
-        //         false => {
-        //             println!("Test suite failed");
-        //             let stderr = String::from_utf8_lossy(&output.stderr);
-        //             println!("stderr: {}", stderr);
-        //             if is_test_failed(&stderr, &config.language()) {
-        //                 destroyed.fetch_add(1, Ordering::SeqCst);
-        //                 pending.fetch_sub(1, Ordering::SeqCst);
-        //                 m.set_status(MutationStatus::Killed);
-        //             }
-        //         }
-        //     },
-        // }
 
         match build_output.status.code() {
             Some(0) => {
@@ -265,18 +214,8 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             eprintln!("Failed to change back to the original directory: {}", e);
         }
 
-        // println!(
-        //     "Current directory at end of loop: {}",
-        //     std::env::current_dir().unwrap().display()
-        // );
-
         bar.inc(1);
     });
-
-    // println!(
-    //     "Current directory after loop: {}",
-    //     std::env::current_dir().unwrap().display()
-    // );
 
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(&destroyed, total_mutants);

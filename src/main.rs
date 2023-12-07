@@ -1,4 +1,3 @@
-// #![allow(unused)]
 use anyhow::Result;
 pub mod config;
 pub mod file_manager;

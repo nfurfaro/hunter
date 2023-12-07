@@ -1,10 +1,7 @@
 use crate::config::Config;
-
-use std::fs;
-use std::io::Write;
 use std::{
-    fs::{File, OpenOptions},
-    io::Result,
+    fs::File,
+    io::{Result, Write},
     path::{Path, PathBuf},
 };
 
