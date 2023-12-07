@@ -1,7 +1,8 @@
 use crate::cli::Args;
 use crate::config::Config;
+use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
-use crate::reporter::{print_line_in_span, ScanResult};
+use crate::reporter::print_line_in_span;
 use crate::token::MutationStatus;
 use colored::*;
 use prettytable::{Cell, Row, Table};

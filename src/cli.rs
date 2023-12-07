@@ -60,18 +60,18 @@ pub async fn run_cli() -> Result<()> {
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-            let results = handlers::scan::scan(args.clone(), &config);
+            let results = handlers::scanner::scan(args.clone(), &config);
             if let Ok(results) = results {
-                print_scan_results(results.clone(), &config)
+                print_scan_results(&mut results.clone(), &config)
             } else {
                 eprintln!("{}", results.unwrap_err());
                 Ok(())
             }
         }
         Some(Subcommand::Mutate) => {
-            let result = handlers::scan::scan(args.clone(), &config);
+            let result = handlers::scanner::scan(args.clone(), &config);
             if let Ok(mut results) = result {
-                let _ = print_scan_results(results.clone(), &config);
+                let _ = print_scan_results(&mut results.clone(), &config);
                 handlers::mutate::mutate(args.clone(), config.clone(), &mut results)
             } else {
                 eprintln!("{}", result.unwrap_err());

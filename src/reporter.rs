@@ -1,54 +1,15 @@
 use crate::config::Config;
+use crate::handlers::scanner::ScanResult;
 use crate::token::{token_as_bytes, MetaToken, Mutant, Token};
 use colored::*;
 use prettytable::{Cell as table_cell, Row, Table};
 use std::{
     fs::File,
     io::{BufRead, BufReader, Result},
-    path::{Path, PathBuf},
+    path::Path,
 };
 
-#[derive(Debug, Clone)]
-pub struct ScanResult {
-    paths: Vec<PathBuf>,
-    meta_tokens: Vec<MetaToken>,
-    test_count: usize,
-    mutants: Vec<Mutant>,
-}
-
-impl ScanResult {
-    pub fn new(
-        paths: Vec<PathBuf>,
-        meta_tokens: Vec<MetaToken>,
-        test_count: usize,
-        mutants: Vec<Mutant>,
-    ) -> ScanResult {
-        ScanResult {
-            paths,
-            meta_tokens,
-            test_count,
-            mutants,
-        }
-    }
-
-    pub fn paths(&self) -> &Vec<PathBuf> {
-        &self.paths
-    }
-
-    pub fn meta_tokens(&self) -> &Vec<MetaToken> {
-        &self.meta_tokens
-    }
-
-    pub fn test_count(&self) -> usize {
-        self.test_count
-    }
-
-    pub fn mutants(&mut self) -> &mut Vec<Mutant> {
-        &mut self.mutants
-    }
-}
-
-pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
+pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<()> {
     println!("{}", "Initiating source file analysis...".green());
 
     println!(
@@ -56,23 +17,26 @@ pub fn print_scan_results(results: ScanResult, config: &Config) -> Result<()> {
         format!("Searching for {} files", config.language().name()).green()
     );
 
-    println!("{}", format!("Files found: {}", results.paths.len()).cyan());
+    println!(
+        "{}",
+        format!("Files found: {}", results.paths().len()).cyan()
+    );
 
-    for path in results.paths {
+    for path in results.paths() {
         println!("{}", format!("{}", path.display()).red());
     }
 
     println!("{}", "Collecting tokens from files".green());
     println!("{}", "Analysing tokens".green());
 
-    let num_mutants: usize = results.mutants.len();
+    let num_mutants: usize = results.mutants().len();
     println!(
         "{}",
         format!("Mutable tokens found: {}", num_mutants).cyan()
     );
     println!(
         "{}",
-        format!("Test runs required: {}", num_mutants * results.test_count).magenta()
+        format!("Test runs required: {}", num_mutants * results.test_count()).magenta()
     );
 
     Ok(())
