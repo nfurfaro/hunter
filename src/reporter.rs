@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
-use crate::token::{token_as_bytes, MetaToken, Mutant, Token};
+use crate::token::{token_as_bytes, Token};
 use colored::*;
 use prettytable::{Cell as table_cell, Row, Table};
 use std::{

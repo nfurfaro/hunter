@@ -1,7 +1,6 @@
 use crate::config::Config;
 use std::{
-    fs::File,
-    io::{Result, Write},
+    io::Result,
     path::{Path, PathBuf},
 };
 
@@ -48,9 +47,11 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
 }
 
 mod tests {
-    #[allow(unused_imports)]
+    // #![allow(clippy::unused)]
+    #![allow(unused_imports)]
     use super::*;
     use crate::config::{config, Language};
+    use std::{fs::File, io::Write};
     use tempfile::tempdir;
 
     #[test]

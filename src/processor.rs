@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::config::{Config, Language};
-use crate::token::{Mutant, MutationStatus};
+use crate::handlers::mutator::{Mutant, MutationStatus};
 use crate::utils::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};

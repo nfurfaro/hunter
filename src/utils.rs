@@ -41,10 +41,8 @@ pub fn test_regex(language: &Language) -> Regex {
     }
 }
 
-fn comment_regex(language: &Language) -> Regex {
-    match language {
-        _ => Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap(),
-    }
+fn comment_regex(_language: &Language) -> Regex {
+    Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
 }
 
 fn literal_regex(language: &Language) -> Regex {
