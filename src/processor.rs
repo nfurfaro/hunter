@@ -94,31 +94,6 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
     format!("{:.2}%", mutation_score)
 }
 
-// use std::fs;
-// fn print_dir(path: &Path, prefix: &str) -> std::io::Result<()> {
-//     if path.is_dir() {
-//         for entry in fs::read_dir(path)? {
-//             let entry = entry?;
-//             let path = entry.path();
-//             if path.is_dir() {
-//                 println!(
-//                     "{}|-- {}",
-//                     prefix,
-//                     path.file_name().unwrap().to_string_lossy()
-//                 );
-//                 print_dir(&path, &format!("{}|   ", prefix))?;
-//             } else {
-//                 println!(
-//                     "{}|-- {}",
-//                     prefix,
-//                     path.file_name().unwrap().to_string_lossy()
-//                 );
-//             }
-//         }
-//     }
-//     Ok(())
-// }
-
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
@@ -157,6 +132,14 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
 
         // modify string of contents, then write back to temp file
         file.write_all(contents.as_bytes()).unwrap();
+
+        // Create a separate package cache for this test
+        let cargo_home = temp_project_arc.path().join("cargo_home");
+        std::env::set_var("CARGO_HOME", &cargo_home);
+
+        // Create a separate build directory for this test
+        let build_dir = temp_project_arc.path().join("target");
+        std::env::set_var("CARGO_TARGET_DIR", &build_dir);
 
         // Build the project
         let build_output = Command::new(config.test_runner())
