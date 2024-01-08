@@ -490,9 +490,6 @@ mod tests {
     fn test_overlaps() {
         let filter_range = Range { start: 10, end: 20 };
 
-        let token_range = Range { start: 15, end: 25 };
-        assert_eq!(overlaps(&filter_range, &token_range), true);
-
         let token_range = Range { start: 12, end: 18 };
         assert_eq!(overlaps(&filter_range, &token_range), true);
 

@@ -94,6 +94,16 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
     format!("{:.2}%", mutation_score)
 }
 
+fn setup_test_infra() -> Arc<TempDir> {
+    let temp_project = TempDir::new("hunter_temp").expect("Failed to create temporary directory");
+    let temp_project_arc = Arc::new(temp_project);
+
+    copy_dir_all(".", temp_project_arc.path()).expect("Failed to copy project");
+    std::env::set_current_dir(temp_project_arc.path()).expect("Failed to change directory");
+
+    temp_project_arc
+}
+
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
@@ -104,14 +114,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
     mutants.par_iter_mut().for_each(|m| {
-        let temp_project =
-            TempDir::new("hunter_temp").expect("Failed to create temporary directory");
-
-        let temp_project_arc = Arc::new(temp_project);
-
-        copy_dir_all(".", temp_project_arc.path()).expect("Failed to copy project");
-        std::env::set_current_dir(temp_project_arc.clone().path())
-            .expect("Failed to change directory");
+        let temp_project_arc = setup_test_infra();
 
         let mut contents = String::new();
 
@@ -180,7 +183,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
                 }
             }
             Some(_) => {
-                println!("Build failed");
+                // println!("Build failed");
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
