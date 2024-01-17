@@ -1,7 +1,10 @@
+use std::fs;
+use std::io;
+use std::path::PathBuf;
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Write},
-    path::Path,
+    // path::Path,
     process::Command,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -12,34 +15,35 @@ use std::{
 use crate::config::{Config, Language};
 use crate::handlers::mutator::{Mutant, MutationStatus};
 use crate::utils::*;
+use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
 use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
-use tempdir::TempDir;
+// use tempdir::TempDir;
 
 // Function to recursively copy a directory
-fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
-    for entry in std::fs::read_dir(from)? {
-        let entry = entry?;
-        let path = entry.path();
-        let file_name = path.file_name().ok_or(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "Failed to get file name",
-        ))?;
-        let dest_path = to.as_ref().join(file_name);
+// fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
+//     for entry in std::fs::read_dir(from)? {
+//         let entry = entry?;
+//         let path = entry.path();
+//         let file_name = path.file_name().ok_or(std::io::Error::new(
+//             std::io::ErrorKind::Other,
+//             "Failed to get file name",
+//         ))?;
+//         let dest_path = to.as_ref().join(file_name);
 
-        if path.is_dir() {
-            std::fs::create_dir_all(&dest_path)?;
-            copy_dir_all(&path, &dest_path)?;
-        } else {
-            std::fs::copy(&path, &dest_path)?;
-        }
-    }
+//         if path.is_dir() {
+//             std::fs::create_dir_all(&dest_path)?;
+//             copy_dir_all(&path, &dest_path)?;
+//         } else {
+//             std::fs::copy(&path, &dest_path)?;
+//         }
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 fn mutation_test_table(
     total_mutants: usize,
@@ -94,14 +98,57 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
     format!("{:.2}%", mutation_score)
 }
 
-fn setup_test_infra() -> Arc<TempDir> {
-    let temp_project = TempDir::new("hunter_temp").expect("Failed to create temporary directory");
-    let temp_project_arc = Arc::new(temp_project);
+fn create_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
+    // Create a ./temp directory
+    let temp_dir = PathBuf::from("./temp");
+    fs::create_dir_all(&temp_dir)?;
 
-    copy_dir_all(".", temp_project_arc.path()).expect("Failed to copy project");
-    std::env::set_current_dir(temp_project_arc.path()).expect("Failed to change directory");
+    // Inside /temp, create a src/ directory
+    let src_dir = temp_dir.join("src");
+    fs::create_dir_all(&src_dir)?;
 
-    temp_project_arc
+    let mut nargo_file = File::create(temp_dir.join("Nargo.toml"))?;
+    write!(
+        nargo_file,
+        r#"
+        [package]
+        name = "hunter_temp"
+        type = "lib"
+        authors = ["Hunter"]
+        compiler_version = "0.19.2"
+        "#
+    )?;
+
+    let _ = File::create(src_dir.join("lib.nr"))?;
+
+    Ok((temp_dir, src_dir))
+}
+
+fn write_mutation_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf> {
+    // Inside of src/, create a mutation_{}.nr file
+    let temp_file = src_dir.join(format!("mutation_{}.nr", mutant.id()));
+    fs::copy(&mutant.path(), &temp_file)?;
+
+    // Append `mod mutation_1;` to the src/lib.nr file
+    let mut lib_file = OpenOptions::new()
+        .append(true)
+        .open(src_dir.join("lib.nr"))?;
+    writeln!(lib_file, "mod mutation_{};", mutant.id())?;
+
+    Ok(temp_file)
+}
+
+struct Defer<T: FnOnce()>(Option<T>);
+
+// use the Drop trait to ensure that the cleanup function is called at the end of the function.
+// Defer takes a closure that is called when the Defer object is dropped.
+impl<T: FnOnce()> Drop for Defer<T> {
+    fn drop(&mut self) {
+        println!("{}", "Cleaning up...".cyan());
+        if let Some(f) = self.0.take() {
+            f();
+        }
+    }
 }
 
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
@@ -113,13 +160,17 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
+    let (temp_dir, temp_src_dir) = create_temp_dirs().unwrap();
+    let _cleanup = Defer(Some(|| {
+        let _ = fs::remove_dir_all(&temp_dir);
+    }));
+
     mutants.par_iter_mut().for_each(|m| {
-        let temp_project_arc = setup_test_infra();
+        let temp_file = write_mutation_file(m, temp_src_dir.clone())
+            .expect("Failed to setup test infrastructure");
 
         let mut contents = String::new();
-
-        let token_src = temp_project_arc.path().join(m.path());
-        let mut file = File::open(&token_src).expect("File path doesn't seem to work...");
+        let mut file = File::open(&temp_file).expect("File path doesn't seem to work...");
         file.read_to_string(&mut contents).unwrap();
 
         let mut original_bytes = contents.into_bytes();
@@ -127,22 +178,10 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
         // After modifying the contents, write it back to the temp file
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(token_src)
-            .unwrap();
+        let mut file = OpenOptions::new().write(true).open(&temp_file).unwrap();
 
         // modify string of contents, then write back to temp file
         file.write_all(contents.as_bytes()).unwrap();
-
-        // Create a separate package cache for this test
-        let cargo_home = temp_project_arc.path().join("cargo_home");
-        std::env::set_var("CARGO_HOME", &cargo_home);
-
-        // Create a separate build directory for this test
-        let build_dir = temp_project_arc.path().join("target");
-        std::env::set_var("CARGO_TARGET_DIR", &build_dir);
 
         // Build the project
         let build_output = Command::new(config.test_runner())

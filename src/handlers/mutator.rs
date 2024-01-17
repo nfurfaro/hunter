@@ -362,7 +362,6 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
         table.printstd();
     }
 
-    println!("{}", "Cleaning up temp files".cyan());
     let _current_dir = std::env::current_dir().unwrap();
 
     Ok(())
