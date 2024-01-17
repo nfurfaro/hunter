@@ -11,29 +11,17 @@ pub enum Subcommand {
     Scan,
     /// Mutate and run tests
     Mutate,
-    /// Start or resume a test campaign
-    Campaign,
 }
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
     /// The target language (defaults to Noir).
-    /// Supported languages: Noir, Sway
     #[clap(short, long)]
     language: Option<Language>,
-    /// The ID of the campaign to start or resume
-    #[clap(short, long)]
-    campaign_id: Option<String>,
-    /// The location of the hunter config file, defaults to ./hunter.toml
-    #[clap(short, long)]
-    manifest: Option<std::path::PathBuf>,
     /// The path to the source files directory, defaults to ./src
     #[clap(short, long)]
     pub source_path: Option<std::path::PathBuf>,
-    /// The path to the test directory, defaults to ./tests
-    #[clap(short, long)]
-    test_dir: Option<std::path::PathBuf>,
     // Display information about the program
     #[clap(short, long)]
     info: bool,
@@ -78,12 +66,6 @@ pub async fn run_cli() -> Result<()> {
                 Ok(())
             }
         }
-        Some(Subcommand::Campaign) => {
-            let campaign_id = args.campaign_id.clone().expect("No campaign ID specified");
-            // Open the sled database
-            let db = sled::open("campaigns.db")?;
-            handlers::campaign::start_or_resume(&db, campaign_id)
-        }
         None => {
             println!(
                 "{}",
@@ -99,18 +81,6 @@ pub async fn run_cli() -> Result<()> {
 mod tests {
     use std::process::Command;
     use std::str;
-
-    #[test]
-    fn test_run_cli() {
-        let output = Command::new("cargo")
-            .arg("run")
-            .output()
-            .expect("Failed to execute command");
-
-        assert!(str::from_utf8(&output.stderr)
-            .unwrap()
-            .contains("No language specified"));
-    }
 
     #[test]
     fn test_run_cli2() {
