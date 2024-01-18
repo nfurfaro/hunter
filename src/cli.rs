@@ -1,26 +1,28 @@
-use crate::config::{config, Language};
-use crate::handlers;
-use crate::reporter::print_scan_results;
+use crate::{
+    config::{config, Language},
+    handlers,
+    reporter::print_scan_results,
+};
 use clap::Parser;
 use colored::*;
 use std::io::Result;
 
 #[derive(Parser, PartialEq, Debug, Clone)]
 pub enum Subcommand {
-    /// Scan for mutants without running tests
+    /// Scan for mutants without running tests and print a summary of the results
     Scan,
-    /// Mutate and run tests
+    /// Apply mutations and run the test suite against each mutant
     Mutate,
 }
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
-    /// The target language (defaults to Noir).
+    /// The target language.
     #[clap(short, long, default_value = "Noir")]
     language: Option<Language>,
-    /// The path to the source files directory, defaults to ./src
-    #[clap(short, long)]
+    /// The path to the source files directory
+    #[clap(short, long, default_value = "./src")]
     pub source_path: Option<std::path::PathBuf>,
     /// The path to the output file, defaults to ./hunter_report.txt if not provided
     #[clap(short = 'o', long)]
@@ -28,7 +30,7 @@ pub struct Args {
     // Display information about the program
     #[clap(short, long)]
     info: bool,
-    // print table of surviving mutants
+    // Print a table of surviving mutants
     #[clap(short, long)]
     pub verbose: bool,
     // Collect info about number of mutants found without running tests
@@ -75,7 +77,7 @@ pub async fn run_cli() -> Result<()> {
         None => {
             println!(
                 "{}",
-                "Welcome to Hunter, a multi-language mutation-testing tool.".cyan()
+                "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
             );
 
             Ok(())

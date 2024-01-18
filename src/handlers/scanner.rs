@@ -1,12 +1,16 @@
-use crate::cli::Args;
-use crate::config::Config;
-use crate::file_manager::find_source_file_paths;
-use crate::handlers::mutator::{mutant_builder, Mutant};
-use crate::token::MetaToken;
-use crate::utils::{collect_tokens, count_tests, test_regex};
+use crate::{
+    cli::Args,
+    config::Config,
+    file_manager::find_source_file_paths,
+    handlers::mutator::{mutant_builder, Mutant},
+    token::MetaToken,
+    utils::{collect_tokens, count_tests, test_regex},
+};
 use colored::*;
-use std::io::{Error, ErrorKind, Result};
-use std::path::{Path, PathBuf};
+use std::{
+    io::{Error, ErrorKind, Result},
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, Clone)]
 pub struct ScanResult {

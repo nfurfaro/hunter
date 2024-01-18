@@ -8,7 +8,7 @@ use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{
     fmt,
-    fs::{File, OpenOptions},
+    fs::OpenOptions,
     io::Result,
     path::{Path, PathBuf},
 };
@@ -347,7 +347,7 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
             .any(|mutant| mutant.status() == MutationStatus::Survived)
         {
             // Create a new table
-            let mut table = surviving_mutants_table();
+            let mut surviving_table = surviving_mutants_table();
 
             for mutant in mutants.clone() {
                 if mutant.status() == MutationStatus::Survived
@@ -356,12 +356,11 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
                     let span = mutant.span();
                     let span_usize = (span.0 as usize, span.1 as usize);
                     add_cells_to_table(
-                        &mut table,
+                        &mut surviving_table,
                         // @fix path here is non existant
                         Path::new(mutant.path()),
                         span_usize,
                         &mutant.token(),
-                        &config,
                     )
                     .unwrap();
                 }
@@ -369,9 +368,9 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
             let output_path = config.output_path();
             if let Some(path) = output_path {
                 let mut file = OpenOptions::new().append(true).create(true).open(path)?;
-                table.print(&mut file)?;
+                surviving_table.print(&mut file)?;
             } else {
-                table.printstd();
+                surviving_table.printstd();
             }
         }
     }

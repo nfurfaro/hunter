@@ -2,7 +2,7 @@
 
 language=$1
 num_runs=$2
-command_to_run="/home/furnic/Dev/rust_projects/hunter/target/debug/hunter -l $language -v mutate"
+command_to_run="/home/furnic/Dev/rust_projects/hunter/target/debug/hunter -l $language -s ./src/utils.rs -v mutate"
 previous_output=""
 
 for ((i=1; i<=num_runs; i++))

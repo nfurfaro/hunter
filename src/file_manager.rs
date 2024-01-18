@@ -47,7 +47,6 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
 }
 
 mod tests {
-    // #![allow(clippy::unused)]
     #![allow(unused_imports)]
     use super::*;
     use crate::config::{config, Language};
@@ -56,10 +55,7 @@ mod tests {
 
     #[test]
     fn test_find_source_file_paths() {
-        // Create a temporary directory.
         let dir = tempdir().unwrap();
-
-        // Create files in the temporary directory.
         let mut file_paths = Vec::new();
         for i in 0..5 {
             let file_path = dir.path().join(format!("test{}.rs", i));
@@ -68,20 +64,12 @@ mod tests {
             file_paths.push(file_path);
         }
 
-        // Create a Config object.
         let config = config(Language::Rust, Some(PathBuf::from("./hunter_output.md")));
-
-        // Call find_source_file_paths with the temporary directory.
         let paths = find_source_file_paths(dir.path(), &config).unwrap();
-
-        // Sort paths because find_source_file_paths does not guarantee order
         let mut sorted_paths = paths.clone();
         sorted_paths.sort();
 
-        // Check that the returned paths contain the files we created.
         assert_eq!(sorted_paths, file_paths);
-
-        // Delete the temporary directory.
         dir.close().unwrap();
     }
 }

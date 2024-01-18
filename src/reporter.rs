@@ -1,4 +1,4 @@
-use crate::config::{self, Config};
+use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
 use crate::token::{token_as_bytes, Token};
 use colored::*;
@@ -47,7 +47,6 @@ pub fn add_cells_to_table(
     file_path: &Path,
     span: (usize, usize),
     token: &Token,
-    config: &Config,
 ) -> Result<()> {
     let file = File::open(file_path).unwrap();
     let reader = BufReader::new(file);
