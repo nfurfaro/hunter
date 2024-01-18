@@ -1,9 +1,0 @@
-[language]
-name = "Noir"
-ext = "nr"
-test_runner = "nargo"
-test_command = "test"
-
-[mutations]
-default = ["mutation1", "mutation2", "mutation3"]
-user = []

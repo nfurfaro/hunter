@@ -12,10 +12,10 @@ use std::{
     },
 };
 
-use chrono::prelude::*;
 use crate::config::{Config, Language};
 use crate::handlers::mutator::{Mutant, MutationStatus};
 use crate::utils::*;
+use chrono::prelude::*;
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
@@ -23,7 +23,7 @@ use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
 
-fn mutation_test_table(
+fn mutation_test_summary_table(
     total_mutants: usize,
     pending: Arc<AtomicUsize>,
     destroyed: Arc<AtomicUsize>,
@@ -220,20 +220,18 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
 
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(&destroyed, total_mutants);
-    let table = mutation_test_table(total_mutants, pending, destroyed, survived, score);
+    let summary_table =
+        mutation_test_summary_table(total_mutants, pending, destroyed, survived, score);
 
     println!("{}", "Cleaning up temp files".cyan());
 
     let output_path = config.output_path();
 
     if let Some(path) = output_path {
-        let current_date = Local::now().format("%Y-%m-%d").to_string();
         let mut file = File::create(path).unwrap();
-        writeln!(file, "Report generated on: {}", current_date).unwrap();
-        file.flush().unwrap();
-        table.print(&mut file).unwrap();
+        summary_table.print(&mut file).unwrap();
     } else {
-        table.printstd();
+        summary_table.printstd();
     }
 }
 

@@ -10,7 +10,6 @@ use std::{
 };
 
 pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<()> {
-
     println!("{}", "Initiating source file analysis...".green());
 
     println!(

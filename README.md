@@ -2,15 +2,27 @@
 
 A Rust CLI mutation-testing tool for Noir source code.
 
+## Disclaimer
+
+> !!! Note: Hunter is currently in its alpha stage of development. Although it's functional and can be utilized, it's still under active development. This means that there may be significant changes, potential bugs, and evolving methodologies. It's not recommended to use this tool in a production environment or for securing code that protects valuable assets. Hunter, like many mutation testing tools, is designed to assist in writing improved tests. It should not be considered a substitute for creating tests or conducting thorough code reviews.
+
 ## Overview
 
 At a high level, Hunter exposes a CLI with 2 primary commands, scan and mutate. The former is like a dry-run, giving quick feedback on which eligible files were found, the number of mutation candidates, the number of tests required, etc. The mutate command takes the result of the scan, applies the mutations, runs the tests, and generates a report.
 
 ## Installation
 
-## Disclaimer
+## Quickstart
 
-> !!! Note: Hunter is currently in its alpha stage of development. Although it's functional and can be utilized, it's still under active development. This means that there may be significant changes, potential bugs, and evolving methodologies. It's not recommended to use this tool in a production environment or for securing code that protects valuable assets. Hunter, like many mutation testing tools, is designed to assist in writing improved tests. It should not be considered a substitute for creating tests or conducting thorough code reviews.
+The simplest way to get started with Hunter is to `$ cd` into the root of the project you want to test. From there, it is reccommended to run the scan command:
+`$ hunter scan`. By default, this will scan the current directory and all subdirectories for Noir source files. It will then print a summary of the results to the terminal.
+
+The next step is to run the mutate command:
+`$ hunter mutate`. This will apply the mutations to the source code, run the tests, and generate a report. Pass the `--verbose`/`-v` flag to print a report to the terminal. If the scan command indicated that there is a high number of test runs required, you my want to refer to the [filtering options](#filtering-options) section to limit the scope of the source code analysed.
+
+## Help
+
+To see Hunter's help menu, run `hunter --help`.
 
 ## About Mutation Testing
 
@@ -69,9 +81,15 @@ Hunter currently supports the following mutations:
 
 Hunter currently takes the approach of using deterministic rules to determine which mutations to apply. This means that the same source code will always produce the same mutations. This is in contrast to probabilistic approaches, which randomly select mutations to apply. The advantage of deterministic rules is that it's easier to reason about the mutations that will be applied and limit the number of false positives(i.e: equivalent mutations) that are generated.
 
+To see how Hunter currently determines which mutations to apply, check out the `./src/token.rs::token_transformer()` function.
+
 ## Output & Reporting Options
 
-By default, Hunter will output all reports to the terminal. For a larger project it can be helpful to generate a report file. This can be achieved by passing the `--output-path` (`-o`) flag to the `mutate` command, and specifying a path to a file. For example, `hunter mutate --output-path ./hunter_report.md`. This will generate a markdown file with the report in table format mimicing the tables printed to stdout by default.
+By default, Hunter will output all reports to the terminal.
+
+![Alt text](image-1.png)
+
+For a larger project it can be helpful to generate a report file. This can be achieved by passing the `--output-path` (`-o`) flag to the `mutate` command, and specifying a path to a file. For example, `hunter mutate --output-path ./hunter_report.md`. This will generate a markdown file with the report in table format mimicing the tables printed to stdout by default.
 
 ## Filtering Options
 
