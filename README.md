@@ -1,171 +1,80 @@
 # Hunter
 
-A Rust CLI mutation-testing tool for Noir code.
+A Rust CLI mutation-testing tool for Noir source code.
 
 ## Overview
 
-## Sketch
+At a high level, Hunter exposes a CLI with 2 primary commands, scan and mutate. The former is like a dry-run, giving quick feedback on which eligible files were found, the number of mutation candidates, the number of tests required, etc. The mutate command takes the result of the scan, applies the mutations, runs the tests, and generates a report.
 
-The application will be composed of several distinct components:
-  - the CLI will handle IO, allowing the user to configure the tool, the input (source, files to exclude, etc), the output (location, verbosity),
-  - CLI needs optional positional args (src, tests, output?) & options, as well as a config.
+## Installation
 
-  - the noirc-frontend can be used as a dependency (this is whate noir_fmt uses!)
-  - the core will handle the actual mutations, ie: swapping individual tokens out, tracking number of mutants created, running the test suite against each mutant, etc...
-  - the utils will handle reporting (output data, graphs, tables, number of mutants killed, # of tests run, etc...).
+## Disclaimer
 
-- find a way to iterate through tokens
-- take note of specific types of tokens(=, !=, <, >, etc... depending on config. Start with a default set of tokens to search for, allow user to override.)
-- may need to assign id's to tokens that match. Would AST be helpful for this?
+> !!! Note: Hunter is currently in its alpha stage of development. Although it's functional and can be utilized, it's still under active development. This means that there may be significant changes, potential bugs, and evolving methodologies. It's not recommended to use this tool in a production environment or for securing code that protects valuable assets. Hunter, like many mutation testing tools, is designed to assist in writing improved tests. It should not be considered a substitute for creating tests or conducting thorough code reviews.
 
-@todo create rules for how each token is to be mutated
+## About Mutation Testing
 
-- mutate token matches 1 by 1, keeping track of:
-- total # of mutants (# of mutated tokens)
-- where we are in the list of mutatable tokens
-- how many mutants were killed
-- how many (& which) mutants survived
-- user's test suite must be run once for each mutant created! This can become huge and slow, need to optimize for performance.
-    - given n operators to mutate, we get n mutants.
-    - given t tests in the suite, we must run n * t tests.
-    - If n = 5, t = 10, total_test_runs = 50 ?
-
-## Pseudocode
-
-for t in tokens
-  Iterate through tokens in source.
-  If no mutable tokens are found
-    return.
-  else
-    mutate first token
-    increment mutants counter
-    run tests
-    if a test fails
-      the mutant has been destroyed
-      mutants_destroyed++
-    else
-      the mutant survived
-      surviving_mutant_count++
-      surviving_mutants.push(this mutant?)
+At a high level, mutation testing is a way to measure the quality of a test suite.
+It is possible to have %100 test coverage and still have a poor quality/incomplete tests. Mutation testing helps to identify these cases.
 
 
-## CLI struct:
-  // needs a "hunt" command and a "preview" command
-    // Files matching this regex will be excluded from testing
-    // exclude: // regex ?,
-    // Path to file defining custom mutation rules
-    // mutations: std::path::PathBuf,
-    // The percentage of mutations to run
-    // sample_ratio: uint,
-    // The optional path to the file for writing output. By default, output will by written to stdout
-    // output: std::path::PathBuf,
+Mutation testing involves modifying the source code of a program in small ways. Specifically, it modifies the program by replacing an operator with another operator. Each modification is called a mutant. For each mutant, we run the existing test suite against the mutated code. If at least one test fails, the mutant is "killed". If all tests pass, the mutant "survives". The mutation score is the percentage of mutants that are killed by the test suite, calculated as follows:
 
-## Noir Compiler Notes
-//! The noir compiler is separated into the following passes which are listed
-//! in order in square brackets. The inputs and outputs of each pass are also given:
-//!
-//! Source file -[Lexing]-> Tokens -[Parsing]-> Ast -[Name Resolution]-> Hir -[Type Checking]-> Hir -[Monomorphization]-> Monomorphized Ast
-//!
-//! After the monomorphized ast is created, it is passed to the noirc_evaluator crate to convert it to SSA form,
-//! perform optimizations, convert to ACIR and eventually prove/verify the program.
+```mutation_score = (killed_mutants / total_mutants) * 100```
 
-## Tracking & reporting
-- how many mutants were destroyed
-- how many mutants survived, and which ones (location in source code)
+The closer the score is to %100, the better the test suite is at detecting changes or errors in the source code.
 
-remember to copy noir source files first, and mutate those!
 
-to write to a file, use std::fs::OpenOptions:
-    use std::fs::OpenOptions;
-    let file = OpenOptions::new().read(true).open("foo.txt");
+To learn more about mutation testing, check out [this article](https://www.joranhonig.nl/introduction-into-mutation/).
 
-## Diagrams
 
-sequenceDiagram
-    actor User
-    User->>Cli: Mutate! (Args & Opts)
-    Cli->>Core: Run (with config)
-    Core->>Src: Find .nr files
-    Src-->Core: Here you go
-    Core->>Copies: Make copies
-    Core->>Mutator: Mutate Tokens
-    Mutator->>Copies: Fetch Copies
-    Copies-->Mutator: copies
+## Assumptions and Limitations
+
+Hunter assumes the following:
+  - the user has Nargo installed in their PATH.
+  - the test suite for the project you want to mutate is currently all passing. If there are failing tests, you're not ready to perform mutation testing yet!
+
+The larger the project and test suites are, the longer the mutation testing run will take. By default, Hunter will run your entire test suite for each mutant generated (in parallel). See the [filtering options](#filtering-options) section for ways to limit the number of tests run per mutant.
+
+Hunter currently only targets unit tests written in Noir, in the same file as the source they test.
+
+
+## Mutations
+
+Hunter currently supports the following mutations:
+
+### Arithmetic  operators:
+
+`+`, `-`, `*`, `/`, and `%`.
+
+### Bitwise operators:
+
+`!`, `&`, `|`, `^`, `<<`, and `>>`.
+
+### Predicate/Comparison operators:
+
+`==`, `!=`, `>`, `>=`, `<`, and `<=`.
+
+
+### Logical operators:
+
+`&` and `|`.
+
+
+### Shorthand operators
+
+`+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, and `>>=`.
 
 ## Mutation rules
 
-    ==  -->   !=
-    !=  -->   ==
-    >   -->   <=
-    >=  -->   <
-    <   -->   >=
-    <=  -->   >
-    &   -->   |
-    |   -->   &
-    ^   -->   &
-    <<  -->   >>
-    >>  -->   <<
-    +   -->   -
-    -   -->   +
-    *   -->   /
-    /   -->   *
-    %   -->   *
+Hunter currently takes the approach of using deterministic rules to determine which mutations to apply. This means that the same source code will always produce the same mutations. This is in contrast to probabilistic approaches, which randomly select mutations to apply. The advantage of deterministic rules is that it's easier to reason about the mutations that will be applied and limit the number of false positives(i.e: equivalent mutations) that are generated.
 
-### Noir shorthand operators:
-    +=   -->  -=
-    -=   -->  +=
-    *=   -->  /=
-    /=   -->  *=
-    %=   -->  *=
-    &=   -->  |=
-    |=   -->  &=
-    ^=   -->  &=
-    <<=  -->  >>=
-    >>=  -->  <<=
+## Output & Reporting Options
 
-## nargo notes
+By default, Hunter will output all reports to the terminal. For a larger project it can be helpful to generate a report file. This can be achieved by passing the `--output-path` (`-o`) flag to the `mutate` command, and specifying a path to a file. For example, `hunter mutate --output-path ./hunter_report.md`. This will generate a markdown file with the report in table format mimicing the tables printed to stdout by default.
 
-### Crates
-- crate is smallest unit of compileable code
-- crates can contain modules
-- crate types: binary, library, contract
-  - binary must have func main
-  - libs do not have a func main
-- crate root(root module): for Nargo, root must be called lib.nr or main.nr for library or binary crates respectively.
+## Filtering Options
 
-### Packages
-- a package is a collection of crates, must have a Nargo.toml file
-- a package must contain either a lib or bin crate (but not both)
-- Nargo currently only allows a package to contain a single crate.
-
-### Workspaces
-- let you manage multiple packages in a singe repo
-- a group of related projects that share common build output directories and configurations.
-- Each Noir project (with it's own Nargo.toml file) can be thought of as a package.
-- Each package is expected to contain exactly one "named circuit", being the "name" defined in Nargo.toml with the program logic defined in ./src/main.nr.
-
-
-## todo
-
-issues:
-- running nargo test on hello_world, all tests pass.
-
-
-- [ ] fix printed output for Number of test runs required, should be same as # of mutants created
-- [ ] fix printed output for Number of mutable tokens found
-- [ ] test that => is not counted as a token!
-- [ ] consider adding tokens and matchers for the ! operator
-- [ ] don't mutate tokens that are part of a string literal by default
-- [ ] make collect_tokens() multithreaded
-
-- [ ] use tempdir create to manage temp dirs and files
-- [ ] create a mechanism to init and persist a `Campaign` object on the local filesystem.
-  - the campaign must allow for:
-    - incremental testing, ie: run the tool, kill some mutants, then run the tool again and only the surviving mutants will be tested.
-    - persisting the campaign to disk, so that it can be resumed at a later time.
-    - after an initial run of the tool, resuming the campaign at a later time should only test new source code added since the last run.
-    - consider mechanisms to allow for comparing source diffs between runs, ie:
-      - git commit hashes
-      - sled DB snapshots
-      - other?
-
+Hunter currently provides an option to filter the number of mutants generated by limiting the scope of source code analysed. This can be useful for larger projects with a large number of tests. Using the `--source-path`(`-s`) flag, you can specify a path to a directory containing the source code you want to mutate. For example, `hunter mutate --source-path ./src/main.nr`will limit the scope of the source code analysed to the `./src/main.nr` file.
+By using this targeted approach methodically, you can incrementally test your codebase and improve your test suite.
+> Note: This is in contrast to the approach taken by some other mutation testing tools which is to optionally set the sample size, which then (non-deterministially) limits the number of mutants generated to cut down the run time.

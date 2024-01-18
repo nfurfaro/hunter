@@ -17,11 +17,14 @@ pub enum Subcommand {
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
     /// The target language (defaults to Noir).
-    #[clap(short, long)]
+    #[clap(short, long, default_value = "Noir")]
     language: Option<Language>,
     /// The path to the source files directory, defaults to ./src
     #[clap(short, long)]
     pub source_path: Option<std::path::PathBuf>,
+    /// The path to the output file, defaults to ./hunter_report.txt if not provided
+    #[clap(short = 'o', long)]
+    pub output_path: Option<std::path::PathBuf>,
     // Display information about the program
     #[clap(short, long)]
     info: bool,
@@ -44,7 +47,10 @@ pub async fn run_cli() -> Result<()> {
         return Ok(());
     }
 
-    let config = config(args.language.clone().expect("No language specified"));
+    let config = config(
+        args.language.clone().expect("No language specified"),
+        args.output_path.clone(),
+    );
 
     match args.subcommand {
         Some(Subcommand::Scan) => {

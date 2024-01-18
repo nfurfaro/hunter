@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Config {
@@ -7,6 +7,7 @@ pub struct Config {
     test_command: &'static str,
     build_command: &'static str,
     manifest_name: &'static str,
+    output_path: Option<PathBuf>,
 }
 
 impl Config {
@@ -28,6 +29,10 @@ impl Config {
 
     pub fn manifest_name(&self) -> &'static str {
         self.manifest_name
+    }
+
+    pub fn output_path(&self) -> Option<PathBuf> {
+        self.output_path.clone()
     }
 }
 
@@ -73,7 +78,7 @@ impl Language {
     }
 }
 
-pub fn config(language: Language) -> Config {
+pub fn config(language: Language, output_path: Option<PathBuf>) -> Config {
     match language {
         Language::Noir => Config {
             language: Language::Noir,
@@ -81,6 +86,7 @@ pub fn config(language: Language) -> Config {
             test_command: "test",
             build_command: "build",
             manifest_name: "Nargo.toml",
+            output_path,
         },
         Language::Rust => Config {
             language: Language::Rust,
@@ -88,6 +94,7 @@ pub fn config(language: Language) -> Config {
             test_command: "test",
             build_command: "build",
             manifest_name: "Cargo.toml",
+            output_path,
         },
         Language::Solidity => Config {
             language: Language::Solidity,
@@ -95,6 +102,7 @@ pub fn config(language: Language) -> Config {
             test_command: "test",
             build_command: "build",
             manifest_name: "foundry.toml",
+            output_path,
         },
         Language::Sway => Config {
             language: Language::Sway,
@@ -102,6 +110,7 @@ pub fn config(language: Language) -> Config {
             test_command: "test",
             build_command: "build",
             manifest_name: "Forc.toml",
+            output_path,
         },
     }
 }

@@ -69,7 +69,7 @@ mod tests {
         }
 
         // Create a Config object.
-        let config = config(Language::Rust);
+        let config = config(Language::Rust, Some(PathBuf::from("./hunter_output.md")));
 
         // Call find_source_file_paths with the temporary directory.
         let paths = find_source_file_paths(dir.path(), &config).unwrap();

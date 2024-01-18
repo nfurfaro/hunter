@@ -12,6 +12,7 @@ use std::{
     },
 };
 
+use chrono::prelude::*;
 use crate::config::{Config, Language};
 use crate::handlers::mutator::{Mutant, MutationStatus};
 use crate::utils::*;
@@ -21,29 +22,6 @@ use prettytable::{Cell, Row, Table};
 use rayon::iter::ParallelIterator;
 extern crate rayon;
 use rayon::prelude::*;
-// use tempdir::TempDir;
-
-// Function to recursively copy a directory
-// fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
-//     for entry in std::fs::read_dir(from)? {
-//         let entry = entry?;
-//         let path = entry.path();
-//         let file_name = path.file_name().ok_or(std::io::Error::new(
-//             std::io::ErrorKind::Other,
-//             "Failed to get file name",
-//         ))?;
-//         let dest_path = to.as_ref().join(file_name);
-
-//         if path.is_dir() {
-//             std::fs::create_dir_all(&dest_path)?;
-//             copy_dir_all(&path, &dest_path)?;
-//         } else {
-//             std::fs::copy(&path, &dest_path)?;
-//         }
-//     }
-
-//     Ok(())
-// }
 
 fn mutation_test_table(
     total_mutants: usize,
@@ -115,7 +93,7 @@ fn create_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
         name = "hunter_temp"
         type = "lib"
         authors = ["Hunter"]
-        compiler_version = "0.19.2"
+        compiler_version = "0.22.2"
         "#
     )?;
 
@@ -144,7 +122,6 @@ struct Defer<T: FnOnce()>(Option<T>);
 // Defer takes a closure that is called when the Defer object is dropped.
 impl<T: FnOnce()> Drop for Defer<T> {
     fn drop(&mut self) {
-        println!("{}", "Cleaning up...".cyan());
         if let Some(f) = self.0.take() {
             f();
         }
@@ -244,7 +221,20 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(&destroyed, total_mutants);
     let table = mutation_test_table(total_mutants, pending, destroyed, survived, score);
-    table.printstd();
+
+    println!("{}", "Cleaning up temp files".cyan());
+
+    let output_path = config.output_path();
+
+    if let Some(path) = output_path {
+        let current_date = Local::now().format("%Y-%m-%d").to_string();
+        let mut file = File::create(path).unwrap();
+        writeln!(file, "Report generated on: {}", current_date).unwrap();
+        file.flush().unwrap();
+        table.print(&mut file).unwrap();
+    } else {
+        table.printstd();
+    }
 }
 
 fn is_test_failed(stderr: &str, language: &Language) -> bool {

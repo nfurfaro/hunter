@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{self, Config};
 use crate::handlers::scanner::ScanResult;
 use crate::token::{token_as_bytes, Token};
 use colored::*;
@@ -10,6 +10,7 @@ use std::{
 };
 
 pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<()> {
+
     println!("{}", "Initiating source file analysis...".green());
 
     println!(
@@ -42,11 +43,12 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
     Ok(())
 }
 
-pub fn print_line_in_span(
+pub fn add_cells_to_table(
     table: &mut Table,
     file_path: &Path,
     span: (usize, usize),
     token: &Token,
+    config: &Config,
 ) -> Result<()> {
     let file = File::open(file_path).unwrap();
     let reader = BufReader::new(file);

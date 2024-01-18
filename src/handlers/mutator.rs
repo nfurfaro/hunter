@@ -2,12 +2,13 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
-use crate::reporter::print_line_in_span;
+use crate::reporter::add_cells_to_table;
 use crate::token::{token_as_bytes, token_transformer, Token};
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{
     fmt,
+    fs::File,
     io::Result,
     path::{Path, PathBuf},
 };
@@ -337,29 +338,42 @@ pub fn mutant_builder(
 pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
     println!("{}", "Running tests...".green());
-    process_mutants(mutants, config);
+    process_mutants(mutants, config.clone());
 
     if args.verbose {
-        // Create a new table
-        let mut table = mutants_table();
+        // Check if there is at least one mutant with the status MutationStatus::Survived
+        if mutants
+            .iter()
+            .any(|mutant| mutant.status() == MutationStatus::Survived)
+        {
+            // Create a new table
+            let mut table = mutants_table();
 
-        for mutant in mutants.clone() {
-            if mutant.status() == MutationStatus::Survived
-                || mutant.status() == MutationStatus::Pending
-            {
-                let span = mutant.span();
-                let span_usize = (span.0 as usize, span.1 as usize);
-                print_line_in_span(
-                    &mut table,
-                    // @fix path here is non existant
-                    Path::new(mutant.path()),
-                    span_usize,
-                    &mutant.token(),
-                )
-                .unwrap();
+            for mutant in mutants.clone() {
+                if mutant.status() == MutationStatus::Survived
+                    || mutant.status() == MutationStatus::Pending
+                {
+                    let span = mutant.span();
+                    let span_usize = (span.0 as usize, span.1 as usize);
+                    add_cells_to_table(
+                        &mut table,
+                        // @fix path here is non existant
+                        Path::new(mutant.path()),
+                        span_usize,
+                        &mutant.token(),
+                        &config,
+                    )
+                    .unwrap();
+                }
+            }
+            let output_path = config.output_path();
+            if let Some(path) = output_path {
+                let mut file = File::create(path)?;
+                table.print(&mut file)?;
+            } else {
+                table.printstd();
             }
         }
-        table.printstd();
     }
 
     let _current_dir = std::env::current_dir().unwrap();
