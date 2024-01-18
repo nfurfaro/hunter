@@ -114,3 +114,17 @@ pub fn config(language: Language, output_path: Option<PathBuf>) -> Config {
         },
     }
 }
+
+pub fn is_test_failed(stderr: &str, language: &Language) -> bool {
+    match language {
+        Language::Noir => {
+            stderr.contains("test failed")
+                || stderr.contains("FAILED")
+                || stderr.contains("Failed constraint")
+        }
+        _ => {
+            eprintln!("The language {:?} you passed is not supported yet.", language);
+            std::process::exit(1);
+        }
+    }
+}

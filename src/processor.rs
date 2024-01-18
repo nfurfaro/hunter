@@ -1,9 +1,7 @@
-use std::fs;
-use std::io;
-use std::path::PathBuf;
 use std::{
-    fs::{File, OpenOptions},
-    io::{Read, Write},
+    fs::{self, File, OpenOptions},
+    io::{self, Read, Write},
+    path::PathBuf,
     process::Command,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -11,14 +9,15 @@ use std::{
     },
 };
 
-use crate::config::{Config, Language};
-use crate::handlers::mutator::{Mutant, MutationStatus};
-use crate::utils::*;
+use crate::{
+    config::{is_test_failed, Config},
+    handlers::mutator::{Mutant, MutationStatus},
+    utils::*,
+};
+
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
-
-extern crate rayon;
 use rayon::prelude::*;
 
 struct Defer<T: FnOnce()>(Option<T>);
@@ -215,7 +214,9 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             eprintln!("Failed to change back to the original directory: {}", e);
         }
 
-        // Delete the temporary file
+        // Note: the /temp dir and its contents will be deleted automatically,
+        // so this might seem redundant. However, Hunter deletes the file
+        // as soon as possible to help prevent running out of space when testing very large projects.
         if let Err(e) = std::fs::remove_file(&temp_file) {
             eprintln!("Failed to delete temporary file: {}", e);
         }
@@ -239,18 +240,5 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
         summary_table.print(&mut file).unwrap();
     } else {
         summary_table.printstd();
-    }
-}
-
-fn is_test_failed(stderr: &str, language: &Language) -> bool {
-    match language {
-        Language::Noir => {
-            stderr.contains("test failed")
-                || stderr.contains("FAILED")
-                || stderr.contains("Failed constraint")
-        }
-        Language::Rust => stderr.contains("test failed") || stderr.contains("FAILED"),
-        Language::Solidity => stderr.contains("test failed") || stderr.contains("FAILED"),
-        Language::Sway => stderr.contains("test failed") || stderr.contains("FAILED"),
     }
 }
