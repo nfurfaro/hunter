@@ -345,8 +345,6 @@ pub fn mutant_builder(
 
 pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
-
-    println!("mutants: {:#?}", mutants);
     println!("{}", "Running tests...".green());
 
     process_mutants(mutants, args.clone(), config.clone());

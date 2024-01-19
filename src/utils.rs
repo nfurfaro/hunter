@@ -1,6 +1,5 @@
 use crate::{
     config::{Config, Language},
-    reporter::paths_progress_bar,
     token::{raw_string_as_token, token_patterns, MetaToken},
 };
 
@@ -43,7 +42,6 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
         None
     } else {
         let i = Cell::new(0);
-        let bar = paths_progress_bar(&paths);
 
         for path in paths {
             let file = File::open(path.clone()).expect("Unable to open file");
@@ -77,23 +75,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                         continue;
                     }
 
-                    // let full_match = mat.get(0).unwrap().as_str();
-                    // let token_str;
-                    // if full_match.starts_with("!") && full_match != "!=" {
-                    //     token_str = mat.get(0).unwrap().as_str();
-                    // } else {
-                    //     token_str = mat.get(1).unwrap().as_str();
-                    // }
-                    // let full_match = mat.get(0).unwrap().as_str();
-                    // let token_str;
-
-                    // if full_match.starts_with("!") && full_match != "!=" {
-                    //     token_str = "!=";
-                    // } else {
-
-                    // }
                     let token_str = mat.get(1).unwrap().as_str();
-
                     let token_range =
                         mat.get(0).unwrap().start() as u32 + 1..mat.get(0).unwrap().end() as u32;
 
@@ -116,11 +98,8 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     i.set(i.get() + 1);
                 }
             }
-            bar.inc(1);
         }
 
-        bar.finish();
-        println!("metatokens: {:#?}", tokens);
         Some(tokens)
     }
 }
@@ -130,7 +109,6 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 
     match replacement_length {
         0 => {
-            println!("Removing byte at index {}", start_index);
             if start_index < original_bytes.len() {
                 original_bytes.remove(start_index);
             }

@@ -171,18 +171,18 @@ pub fn mutants_progress_bar(total_mutants: usize) -> ProgressBar {
     bar
 }
 
-pub fn paths_progress_bar(paths: &Vec<PathBuf>) -> ProgressBar {
-    let bar = ProgressBar::new(paths.len() as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-    bar
-}
+// pub fn paths_progress_bar(paths: &Vec<PathBuf>) -> ProgressBar {
+//     let bar = ProgressBar::new(paths.len() as u64);
+//     bar.set_style(
+//         ProgressStyle::default_bar()
+//             .template(
+//                 "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+//             )
+//             .unwrap()
+//             .progress_chars("#>-"),
+//     );
+//     bar
+// }
 
 pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, _config: &Config) -> usize {
     let mut test_count = 0;

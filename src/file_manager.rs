@@ -1,4 +1,7 @@
-use crate::{config::Config, handlers::mutator::Mutant};
+use crate::{
+    config::{Config, Language},
+    handlers::mutator::Mutant,
+};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Result, Write},
@@ -59,7 +62,7 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
     Ok(paths)
 }
 
-pub fn setup_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
+pub fn setup_temp_dirs(language: Language) -> io::Result<(PathBuf, PathBuf)> {
     // Create a ./temp directory
     let temp_dir = PathBuf::from("./temp");
     fs::create_dir_all(&temp_dir)?;
@@ -68,33 +71,45 @@ pub fn setup_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
     let src_dir = temp_dir.join("src");
     fs::create_dir_all(&src_dir)?;
 
-    let mut nargo_file = File::create(temp_dir.join("Nargo.toml"))?;
-    write!(
-        nargo_file,
-        r#"
-        [package]
-        name = "hunter_temp"
-        type = "lib"
-        authors = ["Hunter"]
-        compiler_version = "0.22.2"
-        "#
-    )?;
+    let mut manifest = match language {
+        Language::Noir => File::create(temp_dir.join("Nargo.toml"))?,
+    };
 
-    let _ = File::create(src_dir.join("lib.nr"))?;
+    match language {
+        Language::Noir => {
+            write!(
+                manifest,
+                r#"
+                [package]
+                name = "hunter_temp"
+                type = "lib"
+                authors = ["Hunter"]
+                compiler_version = "0.22.2"
+                "#
+            )?;
+            let _ = File::create(src_dir.join("lib.nr"))?;
+        }
+    }
 
     Ok((temp_dir, src_dir))
 }
 
-// @todo: add config to args and use it here.
-pub fn write_mutation_to_temp_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf> {
-    // Inside of src/, create a mutation_{}.nr file
-    let temp_file = src_dir.join(format!("mutation_{}.nr", mutant.id()));
+pub fn write_mutation_to_temp_file(
+    mutant: &Mutant,
+    src_dir: PathBuf,
+    config: Config,
+) -> io::Result<PathBuf> {
+    let temp_file = src_dir.join(format!(
+        "mutation_{}.{}",
+        mutant.id(),
+        config.language().ext()
+    ));
     fs::copy(mutant.path(), &temp_file)?;
 
     // Append `mod mutation_1;` to the src/lib.nr file
     let mut lib_file = OpenOptions::new()
         .append(true)
-        .open(src_dir.join("lib.nr"))?;
+        .open(src_dir.join(format!("lib.{}", config.language().ext())))?;
     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
     Ok(temp_file)
