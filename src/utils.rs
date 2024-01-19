@@ -36,21 +36,19 @@ fn overlaps(filter: &Range<usize>, token: &Range<u32>) -> bool {
 
 pub fn test_regex(language: &Language) -> Regex {
     match language {
-        Language::Solidity => Regex::new(r"function\s+(test|invariant)\w*\(").unwrap(),
-        _ => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
+        Language::Noir => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
     }
 }
 
-fn comment_regex(_language: &Language) -> Regex {
-    Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
+fn comment_regex(language: &Language) -> Regex {
+    match language {
+        Language::Noir => Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap(),
+    }
 }
 
 fn literal_regex(language: &Language) -> Regex {
     match language {
-        Language::Rust => Regex::new(r##""([^"\\]|\\.)*"|r#".*?"#|'([^'\\]|\\.)*'"##).unwrap(),
         Language::Noir => Regex::new(r#""([^"\\]|\\.)*""#).unwrap(),
-        Language::Sway => Regex::new(r#""([^"\\]|\\.)*"|'([^'\\]|\\.)*'"#).unwrap(),
-        Language::Solidity => Regex::new(r#""([^"\\]|\\.)*"|'([^'\\]|\\.)*'"#).unwrap(),
     }
 }
 
@@ -182,30 +180,6 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_test_regex_rust() {
-        let pattern = test_regex(&Language::Rust);
-        assert_eq!(
-            pattern.as_str(),
-            r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
-        );
-    }
-
-    #[test]
-    fn test_test_regex_solidity() {
-        let pattern = test_regex(&Language::Solidity);
-        assert_eq!(pattern.as_str(), r"function\s+(test|invariant)\w*\(");
-    }
-
-    #[test]
-    fn test_test_regex_sway() {
-        let pattern = test_regex(&Language::Sway);
-        assert_eq!(
-            pattern.as_str(),
-            r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
-        );
-    }
 
     #[test]
     fn test_test_regex_noir() {

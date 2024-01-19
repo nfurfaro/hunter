@@ -45,31 +45,3 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
 
     Ok(paths)
 }
-
-mod tests {
-    #![allow(unused_imports)]
-    use super::*;
-    use crate::config::{config, Language};
-    use std::{fs::File, io::Write};
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_find_source_file_paths() {
-        let dir = tempdir().unwrap();
-        let mut file_paths = Vec::new();
-        for i in 0..5 {
-            let file_path = dir.path().join(format!("test{}.rs", i));
-            let mut file = File::create(&file_path).unwrap();
-            writeln!(file, "fn main() {{ println!(\"Hello, world!\"); }}").unwrap();
-            file_paths.push(file_path);
-        }
-
-        let config = config(Language::Rust, Some(PathBuf::from("./hunter_output.md")));
-        let paths = find_source_file_paths(dir.path(), &config).unwrap();
-        let mut sorted_paths = paths.clone();
-        sorted_paths.sort();
-
-        assert_eq!(sorted_paths, file_paths);
-        dir.close().unwrap();
-    }
-}

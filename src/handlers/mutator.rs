@@ -332,6 +332,15 @@ pub fn mutant_builder(
             src_path: Box::new(src_path),
             status: MutationStatus::Pending,
         }),
+        Token::Bang => Some(Mutant {
+            id,
+            mutation: mutation.clone(),
+            bytes: token_as_bytes(&mutation).unwrap().to_vec(),
+            span,
+            src_path: Box::new(src_path.clone()),
+            status: MutationStatus::Pending,
+        }),
+        _ => None,
     }
 }
 

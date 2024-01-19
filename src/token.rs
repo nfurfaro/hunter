@@ -109,7 +109,10 @@ pub enum Token {
     DoublePipe,
     /// &&
     DoubleAmpersand,
-    // Bang,
+    /// !
+    Bang,
+    /// empty
+    Void,
 }
 
 pub fn token_patterns() -> Vec<&'static str> {
@@ -144,6 +147,7 @@ pub fn token_patterns() -> Vec<&'static str> {
         r" (>>=) ",
         r" (\|\|) ",
         r" (&&) ",
+        r" (!) ",
     ]
 }
 
@@ -179,6 +183,7 @@ pub fn raw_string_as_token(raw: &str) -> Option<Token> {
         r">>=" => Some(Token::ShiftRightEquals),
         r"||" => Some(Token::DoublePipe),
         r"&&" => Some(Token::DoubleAmpersand),
+        r"!" => Some(Token::Bang),
         _ => None,
     }
 }
@@ -215,6 +220,8 @@ pub fn token_transformer(token: Token) -> Option<Token> {
         Token::ShiftRightEquals => Some(Token::ShiftLeftEquals),
         Token::DoublePipe => Some(Token::DoubleAmpersand),
         Token::DoubleAmpersand => Some(Token::DoublePipe),
+        Token::Bang => Some(Token::Void),
+        _ => None,
     }
 }
 
@@ -250,6 +257,8 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
         Token::ShiftRightEquals => Some(b">>="),
         Token::DoublePipe => Some(b"||"),
         Token::DoubleAmpersand => Some(b"&&"),
+        Token::Bang => Some(b"!"),
+        Token::Void => Some(b""),
     }
 }
 
@@ -467,6 +476,13 @@ mod tests {
         let bytes = "&&";
         let token = raw_string_as_token(bytes).unwrap();
         assert_eq!(token, Token::DoubleAmpersand);
+    }
+
+    #[test]
+    fn test_raw_string_as_token_bang() {
+        let bytes = "!";
+        let token = raw_string_as_token(bytes).unwrap();
+        assert_eq!(token, Token::Bang);
     }
 
     #[test]
@@ -701,6 +717,13 @@ mod tests {
     }
 
     #[test]
+    fn test_token_transformer_bang() {
+        let token = Token::Bang;
+        let mutation = token_transformer(token);
+        assert_eq!(mutation, Some(Token::Void));
+    }
+
+    #[test]
     fn test_token_as_bytes_equal() {
         let token = Token::Equal;
         let bytes = token_as_bytes(&token).unwrap();
@@ -908,6 +931,13 @@ mod tests {
         let token = Token::DoubleAmpersand;
         let bytes = token_as_bytes(&token).unwrap();
         assert_eq!(bytes, b"&&");
+    }
+
+    #[test]
+    fn test_token_as_bytes_bang() {
+        let token = Token::Bang;
+        let bytes = token_as_bytes(&token).unwrap();
+        assert_eq!(bytes, b"!");
     }
 
     #[test]
@@ -1350,5 +1380,24 @@ mod tests {
         assert_eq!(mutant.span_end(), span.1);
         assert_eq!(mutant.path(), path);
         assert_eq!(mutant.status(), MutationStatus::Pending);
+    }
+
+    #[test]
+    fn test_mutant_builder_bang() {
+        let path = PathBuf::from("test.noir");
+        let token = Token::Bang;
+        let span = (0, 1);
+        let id = 42;
+        let mutant = mutant_builder(id, token.clone(), span, path.clone()).unwrap();
+
+        assert_eq!(mutant.id(), id);
+        assert_eq!(mutant.token(), token_transformer(token.clone()).unwrap());
+        assert_eq!(
+            &mutant.bytes(),
+            token_as_bytes(&token_transformer(token).unwrap()).unwrap()
+        );
+        assert_eq!(mutant.span_start(), span.0);
+        assert_eq!(mutant.span_end(), span.1);
+        assert_eq!(mutant.path(), path);
     }
 }
