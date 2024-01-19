@@ -1,10 +1,7 @@
-use std::fs;
-use std::io;
-use std::path::PathBuf;
 use std::{
-    fs::{File, OpenOptions},
-    io::{Read, Write},
-    // path::Path,
+    fs::{self, File, OpenOptions},
+    io::{self, Read, Write},
+    path::PathBuf,
     process::Command,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -12,40 +9,30 @@ use std::{
     },
 };
 
-use crate::config::{Config, Language};
-use crate::handlers::mutator::{Mutant, MutationStatus};
-use crate::utils::*;
+use crate::{
+    config::{is_test_failed, Config},
+    handlers::mutator::{Mutant, MutationStatus},
+    utils::*,
+};
+
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
-use rayon::iter::ParallelIterator;
-extern crate rayon;
 use rayon::prelude::*;
-// use tempdir::TempDir;
 
-// Function to recursively copy a directory
-// fn copy_dir_all<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> std::io::Result<()> {
-//     for entry in std::fs::read_dir(from)? {
-//         let entry = entry?;
-//         let path = entry.path();
-//         let file_name = path.file_name().ok_or(std::io::Error::new(
-//             std::io::ErrorKind::Other,
-//             "Failed to get file name",
-//         ))?;
-//         let dest_path = to.as_ref().join(file_name);
+struct Defer<T: FnOnce()>(Option<T>);
 
-//         if path.is_dir() {
-//             std::fs::create_dir_all(&dest_path)?;
-//             copy_dir_all(&path, &dest_path)?;
-//         } else {
-//             std::fs::copy(&path, &dest_path)?;
-//         }
-//     }
+// use the Drop trait to ensure that the cleanup function is called at the end of the function.
+// Defer takes a closure that is called when the Defer object is dropped.
+impl<T: FnOnce()> Drop for Defer<T> {
+    fn drop(&mut self) {
+        if let Some(f) = self.0.take() {
+            f();
+        }
+    }
+}
 
-//     Ok(())
-// }
-
-fn mutation_test_table(
+fn mutation_test_summary_table(
     total_mutants: usize,
     pending: Arc<AtomicUsize>,
     destroyed: Arc<AtomicUsize>,
@@ -98,7 +85,7 @@ fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) 
     format!("{:.2}%", mutation_score)
 }
 
-fn create_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
+fn setup_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
     // Create a ./temp directory
     let temp_dir = PathBuf::from("./temp");
     fs::create_dir_all(&temp_dir)?;
@@ -115,7 +102,7 @@ fn create_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
         name = "hunter_temp"
         type = "lib"
         authors = ["Hunter"]
-        compiler_version = "0.19.2"
+        compiler_version = "0.22.2"
         "#
     )?;
 
@@ -124,10 +111,10 @@ fn create_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
     Ok((temp_dir, src_dir))
 }
 
-fn write_mutation_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf> {
+fn write_mutation_to_temp_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf> {
     // Inside of src/, create a mutation_{}.nr file
     let temp_file = src_dir.join(format!("mutation_{}.nr", mutant.id()));
-    fs::copy(&mutant.path(), &temp_file)?;
+    fs::copy(mutant.path(), &temp_file)?;
 
     // Append `mod mutation_1;` to the src/lib.nr file
     let mut lib_file = OpenOptions::new()
@@ -136,19 +123,6 @@ fn write_mutation_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf>
     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
     Ok(temp_file)
-}
-
-struct Defer<T: FnOnce()>(Option<T>);
-
-// use the Drop trait to ensure that the cleanup function is called at the end of the function.
-// Defer takes a closure that is called when the Defer object is dropped.
-impl<T: FnOnce()> Drop for Defer<T> {
-    fn drop(&mut self) {
-        println!("{}", "Cleaning up...".cyan());
-        if let Some(f) = self.0.take() {
-            f();
-        }
-    }
 }
 
 pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
@@ -160,13 +134,15 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
-    let (temp_dir, temp_src_dir) = create_temp_dirs().unwrap();
+    let (temp_dir, temp_src_dir) = setup_temp_dirs().unwrap();
+
+    // this handles cleanup of the temp directorys after this function returns.
     let _cleanup = Defer(Some(|| {
         let _ = fs::remove_dir_all(&temp_dir);
     }));
 
     mutants.par_iter_mut().for_each(|m| {
-        let temp_file = write_mutation_file(m, temp_src_dir.clone())
+        let temp_file = write_mutation_to_temp_file(m, temp_src_dir.clone())
             .expect("Failed to setup test infrastructure");
 
         let mut contents = String::new();
@@ -238,24 +214,31 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
             eprintln!("Failed to change back to the original directory: {}", e);
         }
 
+        // Note: the /temp dir and its contents will be deleted automatically,
+        // so this might seem redundant. However, Hunter deletes the file
+        // as soon as possible to help prevent running out of space when testing very large projects.
+        if let Err(e) = std::fs::remove_file(&temp_file) {
+            eprintln!("Failed to delete temporary file: {}", e);
+        }
+
         bar.inc(1);
     });
 
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(&destroyed, total_mutants);
-    let table = mutation_test_table(total_mutants, pending, destroyed, survived, score);
-    table.printstd();
-}
+    let summary_table =
+        mutation_test_summary_table(total_mutants, pending, destroyed, survived, score);
 
-fn is_test_failed(stderr: &str, language: &Language) -> bool {
-    match language {
-        Language::Noir => {
-            stderr.contains("test failed")
-                || stderr.contains("FAILED")
-                || stderr.contains("Failed constraint")
-        }
-        Language::Rust => stderr.contains("test failed") || stderr.contains("FAILED"),
-        Language::Solidity => stderr.contains("test failed") || stderr.contains("FAILED"),
-        Language::Sway => stderr.contains("test failed") || stderr.contains("FAILED"),
+    // Note: cleanup is handled automatically when this function
+    // returns & the Defer object is dropped.
+    println!("{}", "Cleaning up temp files".cyan());
+
+    let output_path = config.output_path();
+
+    if let Some(path) = output_path {
+        let mut file = File::create(path).unwrap();
+        summary_table.print(&mut file).unwrap();
+    } else {
+        summary_table.printstd();
     }
 }

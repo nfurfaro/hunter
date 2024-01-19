@@ -24,6 +24,7 @@ sled = "0.34.7"
 # noirc_errors = { path = "../../noir_dev/noir/compiler/noirc_errors"}
 regex = "1.10.2"
 toml = "0.8.8"
+chrono = "0.4.31"
 
 # noirc_frontend = { path = "../../../../../..//Users/furnic/dev/noir_dev/noir/compiler/noirc_frontend" }
 # noirc_errors = { path = "../../../../../..//Users/furnic/dev/noir_dev/noir/compiler/noirc_errors"}

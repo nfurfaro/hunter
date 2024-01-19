@@ -42,7 +42,7 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
     Ok(())
 }
 
-pub fn print_line_in_span(
+pub fn add_cells_to_table(
     table: &mut Table,
     file_path: &Path,
     span: (usize, usize),
