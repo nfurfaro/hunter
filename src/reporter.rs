@@ -1,12 +1,18 @@
-use crate::config::Config;
-use crate::handlers::scanner::ScanResult;
-use crate::token::{token_as_bytes, Token};
+use crate::{
+    config::Config,
+    handlers::{
+        mutator::{Mutant, MutationStatus},
+        scanner::ScanResult,
+    },
+    token::{token_as_bytes, Token},
+};
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
+use regex::Regex;
 use std::{
     fs::{File, OpenOptions},
-    io::{BufRead, BufReader, Result},
+    io::{BufRead, BufReader, Read, Result},
     path::{Path, PathBuf},
 };
 
@@ -78,7 +84,7 @@ pub fn mutation_test_summary_table(
     table
 }
 
-pub fn surviving_mutants_table() -> Table {
+pub fn surviving_mutants_table(mutants: &mut [Mutant]) -> Table {
     let mut table = Table::new();
     table.add_row(Row::new(vec![
         Cell::new("Surviving Mutants").style_spec("Fmb")
@@ -89,6 +95,22 @@ pub fn surviving_mutants_table() -> Table {
         Cell::new("Original context:").style_spec("Fcb"),
         Cell::new("Mutation:").style_spec("Fmb"),
     ]));
+
+    for mutant in mutants {
+        if mutant.status() == MutationStatus::Survived || mutant.status() == MutationStatus::Pending
+        {
+            let span = mutant.span();
+            let span_usize = (span.0 as usize, span.1 as usize);
+            add_cells_to_table(
+                &mut table,
+                Path::new(mutant.path()),
+                span_usize,
+                &mutant.token(),
+            )
+            .unwrap();
+        }
+    }
+
     table
 }
 
@@ -136,7 +158,7 @@ pub fn print_table(output_path: Option<PathBuf>, surviving_table: Table) -> Resu
     Ok(())
 }
 
-pub fn progress_bar(total_mutants: usize) -> ProgressBar {
+pub fn mutants_progress_bar(total_mutants: usize) -> ProgressBar {
     let bar = ProgressBar::new(total_mutants as u64);
     bar.set_style(
         ProgressStyle::default_bar()
@@ -147,4 +169,36 @@ pub fn progress_bar(total_mutants: usize) -> ProgressBar {
             .progress_chars("#>-"),
     );
     bar
+}
+
+pub fn paths_progress_bar(paths: &Vec<PathBuf>) -> ProgressBar {
+    let bar = ProgressBar::new(paths.len() as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+    bar
+}
+
+pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, _config: &Config) -> usize {
+    let mut test_count = 0;
+
+    if paths.is_empty() {
+        0
+    } else {
+        for path in paths {
+            let file = File::open(path.clone()).expect("Unable to open file");
+            let mut buf_reader = BufReader::new(file);
+            let mut contents = String::new();
+            let _res = buf_reader.read_to_string(&mut contents);
+
+            let test_matches = pattern.find_iter(&contents).count();
+            test_count += test_matches;
+        }
+        test_count
+    }
 }

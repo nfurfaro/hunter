@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, File, OpenOptions},
+    fs::{File, OpenOptions},
     io::{Read, Write},
     process::Command,
     sync::{
@@ -13,7 +13,7 @@ use crate::{
     config::{is_test_failed, Config},
     file_manager::{setup_temp_dirs, write_mutation_to_temp_file, Defer},
     handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
-    reporter::{mutation_test_summary_table, print_table, progress_bar},
+    reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
     utils::*,
 };
 
@@ -23,7 +23,7 @@ use rayon::prelude::*;
 pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
-    let bar = progress_bar(total_mutants);
+    let bar = mutants_progress_bar(total_mutants);
 
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
@@ -32,9 +32,9 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     let (temp_dir, temp_src_dir) = setup_temp_dirs().unwrap();
 
     // this handles cleanup of the temp directorys after this function returns.
-    let _cleanup = Defer(Some(|| {
-        let _ = fs::remove_dir_all(&temp_dir);
-    }));
+    // let _cleanup = Defer(Some(|| {
+    //     let _ = fs::remove_dir_all(&temp_dir);
+    // }));
 
     mutants.par_iter_mut().for_each(|m| {
         let temp_file = write_mutation_to_temp_file(m, temp_src_dir.clone())
@@ -112,9 +112,9 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
         // Note: the /temp dir and its contents will be deleted automatically,
         // so this might seem redundant. However, Hunter deletes the file
         // as soon as possible to help prevent running out of space when testing very large projects.
-        if let Err(e) = std::fs::remove_file(&temp_file) {
-            eprintln!("Failed to delete temporary file: {}", e);
-        }
+        // if let Err(e) = std::fs::remove_file(&temp_file) {
+        //     eprintln!("Failed to delete temporary file: {}", e);
+        // }
 
         bar.inc(1);
     });

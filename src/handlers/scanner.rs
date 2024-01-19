@@ -3,8 +3,9 @@ use crate::{
     config::Config,
     file_manager::find_source_file_paths,
     handlers::mutator::{mutant_builder, Mutant},
+    reporter::count_tests,
     token::MetaToken,
-    utils::{collect_tokens, count_tests, test_regex},
+    utils::{collect_tokens, test_regex},
 };
 use colored::*;
 use std::{

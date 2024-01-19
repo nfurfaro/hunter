@@ -1,34 +1,17 @@
-use crate::config::{Config, Language};
-use crate::token::{raw_string_as_token, token_patterns, MetaToken};
-use indicatif::{ProgressBar, ProgressStyle};
+use crate::{
+    config::{Config, Language},
+    reporter::paths_progress_bar,
+    token::{raw_string_as_token, token_patterns, MetaToken},
+};
 
 use regex::Regex;
-use std::ops::Range;
 use std::{
     cell::Cell,
     fs::File,
     io::{BufReader, Read},
+    ops::Range,
     path::PathBuf,
 };
-
-pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, _config: &Config) -> usize {
-    let mut test_count = 0;
-
-    if paths.is_empty() {
-        0
-    } else {
-        for path in paths {
-            let file = File::open(path.clone()).expect("Unable to open file");
-            let mut buf_reader = BufReader::new(file);
-            let mut contents = String::new();
-            let _res = buf_reader.read_to_string(&mut contents);
-
-            let test_matches = pattern.find_iter(&contents).count();
-            test_count += test_matches;
-        }
-        test_count
-    }
-}
 
 fn overlaps(filter: &Range<usize>, token: &Range<u32>) -> bool {
     (token.start as usize) > filter.start && (token.end as usize) < filter.end
@@ -60,16 +43,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
         None
     } else {
         let i = Cell::new(0);
-
-        let bar = ProgressBar::new(paths.len() as u64);
-        bar.set_style(
-            ProgressStyle::default_bar()
-                .template(
-                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-                )
-                .unwrap()
-                .progress_chars("#>-"),
-        );
+        let bar = paths_progress_bar(&paths);
 
         for path in paths {
             let file = File::open(path.clone()).expect("Unable to open file");
@@ -102,7 +76,24 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                     if mat.get(1).is_none() {
                         continue;
                     }
+
+                    // let full_match = mat.get(0).unwrap().as_str();
+                    // let token_str;
+                    // if full_match.starts_with("!") && full_match != "!=" {
+                    //     token_str = mat.get(0).unwrap().as_str();
+                    // } else {
+                    //     token_str = mat.get(1).unwrap().as_str();
+                    // }
+                    // let full_match = mat.get(0).unwrap().as_str();
+                    // let token_str;
+
+                    // if full_match.starts_with("!") && full_match != "!=" {
+                    //     token_str = "!=";
+                    // } else {
+
+                    // }
                     let token_str = mat.get(1).unwrap().as_str();
+
                     let token_range =
                         mat.get(0).unwrap().start() as u32 + 1..mat.get(0).unwrap().end() as u32;
 
@@ -129,6 +120,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
         }
 
         bar.finish();
+        println!("metatokens: {:#?}", tokens);
         Some(tokens)
     }
 }
@@ -137,6 +129,12 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
     let replacement_length = replacement.len();
 
     match replacement_length {
+        0 => {
+            println!("Removing byte at index {}", start_index);
+            if start_index < original_bytes.len() {
+                original_bytes.remove(start_index);
+            }
+        }
         1 => match replacement {
             b">" | b"<" => {
                 original_bytes.splice(

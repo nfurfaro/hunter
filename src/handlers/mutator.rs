@@ -2,7 +2,7 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
-use crate::reporter::{add_cells_to_table, print_table, surviving_mutants_table};
+use crate::reporter::{print_table, surviving_mutants_table};
 use crate::token::{token_as_bytes, token_transformer, Token};
 use colored::*;
 use std::{
@@ -338,49 +338,25 @@ pub fn mutant_builder(
             src_path: Box::new(src_path.clone()),
             status: MutationStatus::Pending,
         }),
+        // this is to catch Token::Void, for which there is no mutation.
         _ => None,
     }
 }
 
 pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
+
+    println!("mutants: {:#?}", mutants);
     println!("{}", "Running tests...".green());
+
     process_mutants(mutants, args.clone(), config.clone());
 
-    // @todo do we need verbose arg at all? most people will want to see the table
-    // consider print to file instead of stdout by default?
-    // @todo should this whole block be extrated to a function generate_report() in crate::reporter?
-    if args.verbose {
-        // Check if there is at least one mutant with the status MutationStatus::Survived
-        if mutants
-            .iter()
-            .any(|mutant| mutant.status() == MutationStatus::Survived)
-        {
-            // Create a new table
-            let mut surviving_table = surviving_mutants_table();
-
-            for mutant in mutants.clone() {
-                if mutant.status() == MutationStatus::Survived
-                    || mutant.status() == MutationStatus::Pending
-                {
-                    let span = mutant.span();
-                    let span_usize = (span.0 as usize, span.1 as usize);
-                    add_cells_to_table(
-                        &mut surviving_table,
-                        // @fix path here is non existant
-                        Path::new(mutant.path()),
-                        span_usize,
-                        &mutant.token(),
-                    )
-                    .unwrap();
-                }
-            }
-
-            print_table(args.output_path, surviving_table)?;
-        }
+    if mutants
+        .iter()
+        .any(|mutant| mutant.status() == MutationStatus::Survived)
+    {
+        print_table(args.output_path, surviving_mutants_table(mutants))?;
     }
-
-    let _current_dir = std::env::current_dir().unwrap();
 
     Ok(())
 }

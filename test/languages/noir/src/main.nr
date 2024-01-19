@@ -8,7 +8,7 @@ fn main(x: Field, y: pub Field) {
     assert(c as u64 >= x as u64);
     assert(x as u64 < c as u64);
     assert(x as u64 <= c as u64);
-    assert(!1 == 0);
+    let not = !true;
     let string1 = "hello world + - * / % ^ & | < > = ! : , . ;";
     let string2 = " z / 3 == 4 ^ 1";
 }

@@ -148,7 +148,7 @@ pub fn token_patterns() -> Vec<&'static str> {
         r" (>>=) ",
         r" (\|\|) ",
         r" (&&) ",
-        r" (!) ",
+        r" (!)",
     ]
 }
 

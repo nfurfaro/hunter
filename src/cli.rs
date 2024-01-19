@@ -30,9 +30,6 @@ pub struct Args {
     // Display information about the program
     #[clap(short, long)]
     info: bool,
-    // Print a table of surviving mutants
-    #[clap(short, long)]
-    pub verbose: bool,
     // Collect info about number of mutants found without running tests
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,
