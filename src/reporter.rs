@@ -77,10 +77,11 @@ pub fn add_cells_to_table(
 }
 
 pub fn print_table(output_path: Option<PathBuf>, surviving_table: Table) -> Result<()> {
-    Ok(if let Some(path) = output_path {
+    if let Some(path) = output_path {
         let mut file = OpenOptions::new().append(true).create(true).open(path)?;
         surviving_table.print(&mut file)?;
     } else {
         surviving_table.printstd();
-    })
+    };
+    Ok(())
 }
