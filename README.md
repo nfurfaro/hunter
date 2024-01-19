@@ -104,3 +104,9 @@ Hunter ignores the following directories by default:
 `./temp`, `./target`, `./test`, `./lib`, `./script`
 
 If you want to test source files in any of these directories, simply cd into the directory and run the `hunter scan` command from there.
+
+## Extending Hunter to support other languages
+
+It should be relatively straightforward to add support for a new language to Hunter.
+The primary place you'll need to make modifications is in `src/config.rs`. Search for the `@extendable` tag in the comments to see where you'll need to make changes.
+The Rust compiler should guide you to any other places you need to modify.

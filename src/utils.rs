@@ -1,9 +1,9 @@
 use crate::{
-    config::{Config, Language},
-    token::{raw_string_as_token, token_patterns, MetaToken},
+    config::Config,
+    filters::{comment_regex, literal_regex, test_regex},
+    token::{raw_string_as_token, token_regexes, MetaToken},
 };
 
-use regex::Regex;
 use std::{
     cell::Cell,
     fs::File,
@@ -14,24 +14,6 @@ use std::{
 
 fn overlaps(filter: &Range<usize>, token: &Range<u32>) -> bool {
     (token.start as usize) > filter.start && (token.end as usize) < filter.end
-}
-
-pub fn test_regex(language: &Language) -> Regex {
-    match language {
-        Language::Noir => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
-    }
-}
-
-fn comment_regex(language: &Language) -> Regex {
-    match language {
-        Language::Noir => Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap(),
-    }
-}
-
-fn literal_regex(language: &Language) -> Regex {
-    match language {
-        Language::Noir => Regex::new(r#""([^"\\]|\\.)*""#).unwrap(),
-    }
 }
 
 pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaToken>> {
@@ -68,8 +50,7 @@ pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaTo
                 .map(|m| m.start()..m.end())
                 .collect();
 
-            for pattern in token_patterns() {
-                let regex = Regex::new(pattern).unwrap();
+            for regex in token_regexes() {
                 for mat in regex.captures_iter(&contents) {
                     if mat.get(1).is_none() {
                         continue;
@@ -156,6 +137,7 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::Language;
 
     #[test]
     fn test_test_regex_noir() {

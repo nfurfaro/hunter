@@ -24,14 +24,11 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
     let bar = mutants_progress_bar(total_mutants);
-
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
-
     let (temp_dir, temp_src_dir) = setup_temp_dirs(config.language()).unwrap();
-
-    // this handles cleanup of the temp directorys after this function returns.
+    // handles cleanup of the temp directories after this function returns.
     let _cleanup = Defer(Some(|| {
         let _ = fs::remove_dir_all(&temp_dir);
     }));
@@ -88,19 +85,18 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
                     }
                     None => {
                         println!("Test suite was killed by a signal or crashed");
-                        // Handle this case
+                        // @todo Handle this case
                     }
                 }
             }
             Some(_) => {
-                // println!("Build failed");
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
             }
             None => {
                 println!("Build was killed by a signal or crashed");
-                // Handle this case
+                // @todo Handle this case
             }
         }
 
@@ -133,8 +129,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     );
 
     // Note: cleanup is handled automatically when this function
-    // returns & the Defer object is dropped.
+    // returns & the Defer object from the top of the function is dropped.
     println!("{}", "Cleaning up temp files".cyan());
-
     print_table(args.output_path, summary_table).unwrap();
 }

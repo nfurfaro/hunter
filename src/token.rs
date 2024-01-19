@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -110,13 +111,12 @@ pub enum Token {
     /// &&
     DoubleAmpersand,
     /// !
-    // @todo finish this ! need to work on replacing bytes in utils
     Bang,
     /// empty
     Void,
 }
 
-pub fn token_patterns() -> Vec<&'static str> {
+pub fn token_regexes() -> Vec<Regex> {
     vec![
         r" (==) ",
         r" (!=) ",
@@ -150,6 +150,9 @@ pub fn token_patterns() -> Vec<&'static str> {
         r" (&&) ",
         r" (!)",
     ]
+    .into_iter()
+    .map(|pattern| Regex::new(pattern).unwrap())
+    .collect()
 }
 
 pub fn raw_string_as_token(raw: &str) -> Option<Token> {

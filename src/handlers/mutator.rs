@@ -338,8 +338,7 @@ pub fn mutant_builder(
             src_path: Box::new(src_path.clone()),
             status: MutationStatus::Pending,
         }),
-        // this is to catch Token::Void, for which there is no mutation.
-        _ => None,
+        Token::Void => None,
     }
 }
 

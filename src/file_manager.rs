@@ -9,9 +9,7 @@ use std::{
 };
 
 pub struct Defer<T: FnOnce()>(pub Option<T>);
-
-// use the Drop trait to ensure that the cleanup function is called at the end of the function.
-// Defer takes a closure that is called when the Defer object is dropped.
+// a wrapper around a closure that is called when the Defer object is dropped.
 impl<T: FnOnce()> Drop for Defer<T> {
     fn drop(&mut self) {
         if let Some(f) = self.0.take() {
@@ -106,7 +104,6 @@ pub fn write_mutation_to_temp_file(
     ));
     fs::copy(mutant.path(), &temp_file)?;
 
-    // Append `mod mutation_1;` to the src/lib.nr file
     let mut lib_file = OpenOptions::new()
         .append(true)
         .open(src_dir.join(format!("lib.{}", config.language().ext())))?;

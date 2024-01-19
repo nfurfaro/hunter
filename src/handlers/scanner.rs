@@ -2,10 +2,11 @@ use crate::{
     cli::Args,
     config::Config,
     file_manager::find_source_file_paths,
+    filters::test_regex,
     handlers::mutator::{mutant_builder, Mutant},
     reporter::count_tests,
     token::MetaToken,
-    utils::{collect_tokens, test_regex},
+    utils::collect_tokens,
 };
 use colored::*;
 use std::{

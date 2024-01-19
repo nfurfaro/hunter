@@ -6,6 +6,7 @@ pub mod processor;
 pub mod reporter;
 pub mod token;
 pub mod utils;
+pub mod filters;
 
 mod cli;
 
