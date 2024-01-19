@@ -4,9 +4,9 @@ use crate::token::{token_as_bytes, Token};
 use colored::*;
 use prettytable::{Cell as table_cell, Row, Table};
 use std::{
-    fs::File,
+    fs::{File, OpenOptions},
     io::{BufRead, BufReader, Result},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<()> {
@@ -74,4 +74,13 @@ pub fn add_cells_to_table(
     }
 
     Ok(())
+}
+
+pub fn print_table(output_path: Option<PathBuf>, surviving_table: Table) -> Result<()> {
+    Ok(if let Some(path) = output_path {
+        let mut file = OpenOptions::new().append(true).create(true).open(path)?;
+        surviving_table.print(&mut file)?;
+    } else {
+        surviving_table.printstd();
+    })
 }

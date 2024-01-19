@@ -49,10 +49,9 @@ pub async fn run_cli() -> Result<()> {
         return Ok(());
     }
 
-    let config = config(
-        args.language.clone().expect("No language specified"),
-        args.output_path.clone(),
-    );
+    let language = args.language.clone().unwrap();
+
+    let config = config(language);
 
     match args.subcommand {
         Some(Subcommand::Scan) => {

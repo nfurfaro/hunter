@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr};
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Config {
@@ -7,7 +7,6 @@ pub struct Config {
     test_command: &'static str,
     build_command: &'static str,
     manifest_name: &'static str,
-    output_path: Option<PathBuf>,
 }
 
 impl Config {
@@ -30,10 +29,6 @@ impl Config {
     pub fn manifest_name(&self) -> &'static str {
         self.manifest_name
     }
-
-    pub fn output_path(&self) -> Option<PathBuf> {
-        self.output_path.clone()
-    }
 }
 
 // this is used to specify the supported languages
@@ -51,7 +46,7 @@ impl FromStr for Language {
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "noir" => Ok(Language::Noir),
-            _ => Err("no matching languages supported"),
+            _ => Err("no matching languages supported (yet)."),
         }
     }
 }
@@ -76,7 +71,7 @@ impl Language {
 
 // used to specify the configuration for each supported language (e.g. test runner, build command, etc.)
 // @extendable: add a new match arm here to support a new language
-pub fn config(language: Language, output_path: Option<PathBuf>) -> Config {
+pub fn config(language: Language) -> Config {
     match language {
         Language::Noir => Config {
             language: Language::Noir,
@@ -84,7 +79,6 @@ pub fn config(language: Language, output_path: Option<PathBuf>) -> Config {
             test_command: "test",
             build_command: "build",
             manifest_name: "Nargo.toml",
-            output_path,
         },
     }
 }

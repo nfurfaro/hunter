@@ -10,8 +10,10 @@ use std::{
 };
 
 use crate::{
+    cli::Args,
     config::{is_test_failed, Config},
     handlers::mutator::{Mutant, MutationStatus},
+    reporter::print_table,
     utils::*,
 };
 
@@ -125,7 +127,7 @@ fn write_mutation_to_temp_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<
     Ok(temp_file)
 }
 
-pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
+pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
     let bar = progress_bar(total_mutants);
@@ -233,12 +235,5 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, config: Config) {
     // returns & the Defer object is dropped.
     println!("{}", "Cleaning up temp files".cyan());
 
-    let output_path = config.output_path();
-
-    if let Some(path) = output_path {
-        let mut file = File::create(path).unwrap();
-        summary_table.print(&mut file).unwrap();
-    } else {
-        summary_table.printstd();
-    }
+    print_table(args.output_path, summary_table).unwrap();
 }

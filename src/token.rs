@@ -110,6 +110,7 @@ pub enum Token {
     /// &&
     DoubleAmpersand,
     /// !
+    // @todo finish this ! need to work on replacing bytes in utils
     Bang,
     /// empty
     Void,

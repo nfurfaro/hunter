@@ -2,13 +2,12 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
-use crate::reporter::add_cells_to_table;
+use crate::reporter::{add_cells_to_table, print_table};
 use crate::token::{token_as_bytes, token_transformer, Token};
 use colored::*;
 use prettytable::{Cell, Row, Table};
 use std::{
     fmt,
-    fs::OpenOptions,
     io::Result,
     path::{Path, PathBuf},
 };
@@ -347,7 +346,7 @@ pub fn mutant_builder(
 pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
     println!("{}", "Running tests...".green());
-    process_mutants(mutants, config.clone());
+    process_mutants(mutants, args.clone(), config.clone());
 
     if args.verbose {
         // Check if there is at least one mutant with the status MutationStatus::Survived
@@ -374,13 +373,8 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
                     .unwrap();
                 }
             }
-            let output_path = config.output_path();
-            if let Some(path) = output_path {
-                let mut file = OpenOptions::new().append(true).create(true).open(path)?;
-                surviving_table.print(&mut file)?;
-            } else {
-                surviving_table.printstd();
-            }
+
+            print_table(args.output_path, surviving_table)?;
         }
     }
 
