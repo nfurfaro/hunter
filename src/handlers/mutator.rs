@@ -2,10 +2,9 @@ use crate::cli::Args;
 use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
-use crate::reporter::{add_cells_to_table, print_table};
+use crate::reporter::{add_cells_to_table, print_table, surviving_mutants_table};
 use crate::token::{token_as_bytes, token_transformer, Token};
 use colored::*;
-use prettytable::{Cell, Row, Table};
 use std::{
     fmt,
     io::Result,
@@ -348,6 +347,9 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
     println!("{}", "Running tests...".green());
     process_mutants(mutants, args.clone(), config.clone());
 
+    // @todo do we need verbose arg at all? most people will want to see the table
+    // consider print to file instead of stdout by default?
+    // @todo should this whole block be extrated to a function generate_report() in crate::reporter?
     if args.verbose {
         // Check if there is at least one mutant with the status MutationStatus::Survived
         if mutants
@@ -383,18 +385,9 @@ pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()
     Ok(())
 }
 
-fn surviving_mutants_table() -> Table {
-    let mut table = Table::new();
-    table.add_row(Row::new(vec![
-        Cell::new("Surviving Mutants").style_spec("Fmb")
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Source file:").style_spec("Fcb"),
-        Cell::new("Line #:").style_spec("Fcb"),
-        Cell::new("Original context:").style_spec("Fcb"),
-        Cell::new("Mutation:").style_spec("Fmb"),
-    ]));
-    table
+pub fn calculate_mutation_score(destroyed: f64, total_mutants: f64) -> String {
+    let mutation_score = (destroyed / total_mutants) * 100.0;
+    format!("{:.2}%", mutation_score)
 }
 
 #[cfg(test)]

@@ -1,13 +1,14 @@
 
 // a comment *bold*
 /// a doc comment w/chars: +, -, *, /, %, ^, &, |, <, >, =, !, :, ,, ., ;,
-fn main(x : Field, y : pub Field) {
+fn main(x: Field, y: pub Field) {
     assert(x != y);
     let c = x + y;
     assert(c as u64 > x as u64);
     assert(c as u64 >= x as u64);
     assert(x as u64 < c as u64);
     assert(x as u64 <= c as u64);
+    assert(!1 == 0);
     let string1 = "hello world + - * / % ^ & | < > = ! : , . ;";
     let string2 = " z / 3 == 4 ^ 1";
 }
@@ -31,11 +32,4 @@ fn test_main2() {
 fn test_main3() {
     main(6, 1);
 }
-
-
-
-
-
-
-
 

@@ -1,7 +1,6 @@
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Read, Write},
-    path::PathBuf,
+    io::{Read, Write},
     process::Command,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -12,120 +11,14 @@ use std::{
 use crate::{
     cli::Args,
     config::{is_test_failed, Config},
-    handlers::mutator::{Mutant, MutationStatus},
-    reporter::print_table,
+    file_manager::{setup_temp_dirs, write_mutation_to_temp_file, Defer},
+    handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
+    reporter::{mutation_test_summary_table, print_table, progress_bar},
     utils::*,
 };
 
 use colored::*;
-use indicatif::{ProgressBar, ProgressStyle};
-use prettytable::{Cell, Row, Table};
 use rayon::prelude::*;
-
-struct Defer<T: FnOnce()>(Option<T>);
-
-// use the Drop trait to ensure that the cleanup function is called at the end of the function.
-// Defer takes a closure that is called when the Defer object is dropped.
-impl<T: FnOnce()> Drop for Defer<T> {
-    fn drop(&mut self) {
-        if let Some(f) = self.0.take() {
-            f();
-        }
-    }
-}
-
-fn mutation_test_summary_table(
-    total_mutants: usize,
-    pending: Arc<AtomicUsize>,
-    destroyed: Arc<AtomicUsize>,
-    survived: Arc<AtomicUsize>,
-    mutation_score_string: String,
-) -> Table {
-    let mut table = Table::new();
-    table.add_row(Row::new(vec![
-        Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
-        Cell::new("Value").style_spec("Fyb"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutants Total:").style_spec("Fbb"),
-        Cell::new(&total_mutants.to_string()).style_spec("Fbb"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutants Pending...").style_spec("Fyb"),
-        Cell::new(&pending.load(Ordering::SeqCst).to_string()).style_spec("Fyb"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutants Destroyed:").style_spec("Fgb"),
-        Cell::new(&destroyed.load(Ordering::SeqCst).to_string()).style_spec("Fgb"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutants Survived:").style_spec("Fmb"),
-        Cell::new(&survived.load(Ordering::SeqCst).to_string()).style_spec("Fmb"),
-    ]));
-    table.add_row(Row::new(vec![
-        Cell::new("Mutation score:").style_spec("Fcb"),
-        Cell::new(&mutation_score_string).style_spec("Fcb"),
-    ]));
-    table
-}
-
-fn progress_bar(total_mutants: usize) -> ProgressBar {
-    let bar = ProgressBar::new(total_mutants as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
-    bar
-}
-
-fn calculate_mutation_score(destroyed: &Arc<AtomicUsize>, total_mutants: usize) -> String {
-    let mutation_score = (destroyed.load(Ordering::SeqCst) as f64 / total_mutants as f64) * 100.0;
-    format!("{:.2}%", mutation_score)
-}
-
-fn setup_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
-    // Create a ./temp directory
-    let temp_dir = PathBuf::from("./temp");
-    fs::create_dir_all(&temp_dir)?;
-
-    // Inside /temp, create a src/ directory
-    let src_dir = temp_dir.join("src");
-    fs::create_dir_all(&src_dir)?;
-
-    let mut nargo_file = File::create(temp_dir.join("Nargo.toml"))?;
-    write!(
-        nargo_file,
-        r#"
-        [package]
-        name = "hunter_temp"
-        type = "lib"
-        authors = ["Hunter"]
-        compiler_version = "0.22.2"
-        "#
-    )?;
-
-    let _ = File::create(src_dir.join("lib.nr"))?;
-
-    Ok((temp_dir, src_dir))
-}
-
-fn write_mutation_to_temp_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf> {
-    // Inside of src/, create a mutation_{}.nr file
-    let temp_file = src_dir.join(format!("mutation_{}.nr", mutant.id()));
-    fs::copy(mutant.path(), &temp_file)?;
-
-    // Append `mod mutation_1;` to the src/lib.nr file
-    let mut lib_file = OpenOptions::new()
-        .append(true)
-        .open(src_dir.join("lib.nr"))?;
-    writeln!(lib_file, "mod mutation_{};", mutant.id())?;
-
-    Ok(temp_file)
-}
 
 pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     let original_dir = std::env::current_dir().unwrap();
@@ -227,9 +120,17 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     });
 
     bar.finish_with_message("All mutants processed!");
-    let score = calculate_mutation_score(&destroyed, total_mutants);
-    let summary_table =
-        mutation_test_summary_table(total_mutants, pending, destroyed, survived, score);
+    let score = calculate_mutation_score(
+        destroyed.load(Ordering::SeqCst) as f64,
+        total_mutants as f64,
+    );
+    let summary_table = mutation_test_summary_table(
+        total_mutants,
+        pending.load(Ordering::SeqCst).to_string(),
+        destroyed.load(Ordering::SeqCst).to_string(),
+        survived.load(Ordering::SeqCst).to_string(),
+        score,
+    );
 
     // Note: cleanup is handled automatically when this function
     // returns & the Defer object is dropped.

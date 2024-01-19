@@ -1,8 +1,21 @@
-use crate::config::Config;
+use crate::{config::Config, handlers::mutator::Mutant};
 use std::{
-    io::Result,
+    fs::{self, File, OpenOptions},
+    io::{self, Result, Write},
     path::{Path, PathBuf},
 };
+
+pub struct Defer<T: FnOnce()>(pub Option<T>);
+
+// use the Drop trait to ensure that the cleanup function is called at the end of the function.
+// Defer takes a closure that is called when the Defer object is dropped.
+impl<T: FnOnce()> Drop for Defer<T> {
+    fn drop(&mut self) {
+        if let Some(f) = self.0.take() {
+            f();
+        }
+    }
+}
 
 pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Result<Vec<PathBuf>> {
     let mut paths: Vec<PathBuf> = vec![];
@@ -44,4 +57,45 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
     }
 
     Ok(paths)
+}
+
+pub fn setup_temp_dirs() -> io::Result<(PathBuf, PathBuf)> {
+    // Create a ./temp directory
+    let temp_dir = PathBuf::from("./temp");
+    fs::create_dir_all(&temp_dir)?;
+
+    // Inside /temp, create a src/ directory
+    let src_dir = temp_dir.join("src");
+    fs::create_dir_all(&src_dir)?;
+
+    let mut nargo_file = File::create(temp_dir.join("Nargo.toml"))?;
+    write!(
+        nargo_file,
+        r#"
+        [package]
+        name = "hunter_temp"
+        type = "lib"
+        authors = ["Hunter"]
+        compiler_version = "0.22.2"
+        "#
+    )?;
+
+    let _ = File::create(src_dir.join("lib.nr"))?;
+
+    Ok((temp_dir, src_dir))
+}
+
+// @todo: add config to args and use it here.
+pub fn write_mutation_to_temp_file(mutant: &Mutant, src_dir: PathBuf) -> io::Result<PathBuf> {
+    // Inside of src/, create a mutation_{}.nr file
+    let temp_file = src_dir.join(format!("mutation_{}.nr", mutant.id()));
+    fs::copy(mutant.path(), &temp_file)?;
+
+    // Append `mod mutation_1;` to the src/lib.nr file
+    let mut lib_file = OpenOptions::new()
+        .append(true)
+        .open(src_dir.join("lib.nr"))?;
+    writeln!(lib_file, "mod mutation_{};", mutant.id())?;
+
+    Ok(temp_file)
 }

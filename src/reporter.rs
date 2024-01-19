@@ -2,7 +2,8 @@ use crate::config::Config;
 use crate::handlers::scanner::ScanResult;
 use crate::token::{token_as_bytes, Token};
 use colored::*;
-use prettytable::{Cell as table_cell, Row, Table};
+use indicatif::{ProgressBar, ProgressStyle};
+use prettytable::{Cell, Row, Table};
 use std::{
     fs::{File, OpenOptions},
     io::{BufRead, BufReader, Result},
@@ -42,6 +43,55 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
     Ok(())
 }
 
+pub fn mutation_test_summary_table(
+    total_mutants: usize,
+    pending: String,
+    destroyed: String,
+    survived: String,
+    mutation_score_string: String,
+) -> Table {
+    let mut table = Table::new();
+    table.add_row(Row::new(vec![
+        Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
+        Cell::new("Value").style_spec("Fyb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Total:").style_spec("Fbb"),
+        Cell::new(&total_mutants.to_string()).style_spec("Fbb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Pending...").style_spec("Fyb"),
+        Cell::new(&pending).style_spec("Fyb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Destroyed:").style_spec("Fgb"),
+        Cell::new(&destroyed).style_spec("Fgb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Survived:").style_spec("Fmb"),
+        Cell::new(&survived).style_spec("Fmb"),
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutation score:").style_spec("Fcb"),
+        Cell::new(&mutation_score_string).style_spec("Fcb"),
+    ]));
+    table
+}
+
+pub fn surviving_mutants_table() -> Table {
+    let mut table = Table::new();
+    table.add_row(Row::new(vec![
+        Cell::new("Surviving Mutants").style_spec("Fmb")
+    ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Source file:").style_spec("Fcb"),
+        Cell::new("Line #:").style_spec("Fcb"),
+        Cell::new("Original context:").style_spec("Fcb"),
+        Cell::new("Mutation:").style_spec("Fmb"),
+    ]));
+    table
+}
+
 pub fn add_cells_to_table(
     table: &mut Table,
     file_path: &Path,
@@ -62,10 +112,10 @@ pub fn add_cells_to_table(
             let short_line: String = line.chars().take(40).collect();
 
             table.add_row(Row::new(vec![
-                table_cell::new(file_path.to_str().unwrap()).style_spec("Fb"),
-                table_cell::new(&(index + 1).to_string()).style_spec("Fb"),
-                table_cell::new(&short_line).style_spec("Fcb"),
-                table_cell::new(token_representation).style_spec("Fyb"),
+                Cell::new(file_path.to_str().unwrap()).style_spec("Fb"),
+                Cell::new(&(index + 1).to_string()).style_spec("Fb"),
+                Cell::new(&short_line).style_spec("Fcb"),
+                Cell::new(token_representation).style_spec("Fyb"),
             ]));
             break;
         }
@@ -84,4 +134,17 @@ pub fn print_table(output_path: Option<PathBuf>, surviving_table: Table) -> Resu
         surviving_table.printstd();
     };
     Ok(())
+}
+
+pub fn progress_bar(total_mutants: usize) -> ProgressBar {
+    let bar = ProgressBar::new(total_mutants as u64);
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+            )
+            .unwrap()
+            .progress_chars("#>-"),
+    );
+    bar
 }

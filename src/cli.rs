@@ -22,7 +22,7 @@ pub struct Args {
     #[clap(short, long, default_value = "Noir")]
     language: Option<Language>,
     /// The path to the source files directory
-    #[clap(short, long, default_value = "./src")]
+    #[clap(short, long, default_value = ".")]
     pub source_path: Option<std::path::PathBuf>,
     /// The path to the output file, defaults to ./hunter_report.txt if not provided
     #[clap(short = 'o', long)]
