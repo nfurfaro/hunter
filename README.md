@@ -4,7 +4,7 @@ A Rust CLI mutation-testing tool for Noir source code.
 
 ## Disclaimer
 
-> !!! Note: Hunter is currently in its alpha stage of development. Although it's functional and can be utilized, it's still under active development. This means that there may be significant changes, potential bugs, and evolving methodologies. It's not recommended to use this tool in a production environment or for securing code that protects valuable assets. Hunter, like many mutation testing tools, is designed to assist in writing improved tests. It should not be considered a substitute for creating tests or conducting thorough code reviews.
+> !!! Note: Hunter is currently in its alpha stage of development. While functional, it is still under active development. This means that there may be bugs and/or significant changes. It is not recommended to use this tool in a production environment or for securing code that protects valuable assets. Hunter, like many mutation testing tools, is designed to assist in writing improved tests. It is NOT a substitute for creating tests or conducting thorough code reviews.
 
 ## Overview
 
@@ -18,7 +18,7 @@ The simplest way to get started with Hunter is to `$ cd` into the root of the pr
 `$ hunter scan`. By default, this will scan the current directory and all subdirectories for Noir source files. It will then print a summary of the results to the terminal.
 
 The next step is to run the mutate command:
-`$ hunter mutate`. This will apply the mutations to the source code, run the tests, and generate a report. Pass the `--verbose`/`-v` flag to print a report to the terminal. If the scan command indicated that there is a high number of test runs required, you my want to refer to the [filtering options](#filtering-options) section to limit the scope of the source code analysed.
+`$ hunter mutate`. This will apply the mutations to the source code, run the tests, and generate a report. Pass the `--verbose`/`-v` flag to print a report to the terminal. If the scan command indicated that there is a high number of test runs required, you may want to refer to the [filtering options](#filtering-options) section to limit the scope of the source code analysed.
 
 ## Help
 
@@ -34,44 +34,40 @@ Mutation testing involves modifying the source code of a program in small ways. 
 
 ```mutation_score = (killed_mutants / total_mutants) * 100```
 
-The closer the score is to %100, the better the test suite is at detecting changes or errors in the source code.
-
+The closer the score is to 100%, the better the test suite is at detecting changes or errors in the source code.
 
 To learn more about mutation testing, check out [this article](https://www.joranhonig.nl/introduction-into-mutation/).
-
 
 ## Assumptions and Limitations
 
 Hunter assumes the following:
-  - the user has Nargo installed in their PATH.
-  - the test suite for the project you want to mutate is currently all passing. If there are failing tests, you're not ready to perform mutation testing yet!
+
+- the user has Nargo installed in their PATH.
+- the test suite for the project you want to mutate is currently all passing. If there are failing tests, you're not ready to perform mutation testing yet!
 
 The larger the project and test suites are, the longer the mutation testing run will take. By default, Hunter will run your entire test suite for each mutant generated (in parallel). See the [filtering options](#filtering-options) section for ways to limit the number of tests run per mutant.
 
 Hunter currently only targets unit tests written in Noir, in the same file as the source they test.
 
-
 ## Mutations
 
 Hunter currently supports the following mutations:
 
-### Arithmetic  operators:
+### Arithmetic operators
 
 `+`, `-`, `*`, `/`, and `%`.
 
-### Bitwise operators:
+### Bitwise operators
 
 `!`, `&`, `|`, `^`, `<<`, and `>>`.
 
-### Predicate/Comparison operators:
+### Predicate/Comparison operators
 
 `==`, `!=`, `>`, `>=`, `<`, and `<=`.
 
-
-### Logical operators:
+### Logical operators
 
 `&` and `|`.
-
 
 ### Shorthand operators
 
