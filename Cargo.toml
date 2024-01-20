@@ -1,7 +1,8 @@
 [package]
 name = "hunter"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
+authors = ["Nick Furfaro <furnic@skiff.com>"]
 
 [[bin]]
 name = "hunter"
@@ -9,22 +10,15 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
+chrono = "0.4.31"
 clap = { version = "4.4.7", features = ["derive"] }
 colored = "2.0.4"
 indicatif = {version = "*", features = ["rayon"]}
 prettytable-rs = "^0.10"
-tokio = { version = "1.8.0", features = ["macros", "rt-multi-thread"] }
 rayon = "1.5"
-tempfile = "3.8.1"
-tempdir = "0.3.7"
-sled = "0.34.7"
-
-# switch to git dependency
-# noirc_frontend = { path = "../../noir_dev/noir/compiler/noirc_frontend" }
-# noirc_errors = { path = "../../noir_dev/noir/compiler/noirc_errors"}
 regex = "1.10.2"
+sled = "0.34.7"
+tempdir = "0.3.7"
+tempfile = "3.8.1"
+tokio = { version = "1.8.0", features = ["macros", "rt-multi-thread"] }
 toml = "0.8.8"
-chrono = "0.4.31"
-
-# noirc_frontend = { path = "../../../../../..//Users/furnic/dev/noir_dev/noir/compiler/noirc_frontend" }
-# noirc_errors = { path = "../../../../../..//Users/furnic/dev/noir_dev/noir/compiler/noirc_errors"}
