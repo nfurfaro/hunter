@@ -17,6 +17,7 @@ use std::{
 #[derive(Debug, Clone)]
 pub struct ScanResult {
     paths: Vec<PathBuf>,
+    contains_unit_tests: Vec<PathBuf>,
     meta_tokens: Vec<MetaToken>,
     test_count: usize,
     mutants: Vec<Mutant>,
@@ -25,12 +26,14 @@ pub struct ScanResult {
 impl ScanResult {
     pub fn new(
         paths: Vec<PathBuf>,
+        contains_unit_tests: Vec<PathBuf>,
         meta_tokens: Vec<MetaToken>,
         test_count: usize,
         mutants: Vec<Mutant>,
     ) -> ScanResult {
         ScanResult {
             paths,
+            contains_unit_tests,
             meta_tokens,
             test_count,
             mutants,
@@ -39,6 +42,10 @@ impl ScanResult {
 
     pub fn paths(&self) -> &Vec<PathBuf> {
         &self.paths
+    }
+
+    pub fn contains_unit_tests(&self) -> &Vec<PathBuf> {
+        &self.contains_unit_tests
     }
 
     pub fn meta_tokens(&self) -> &Vec<MetaToken> {
@@ -71,8 +78,19 @@ pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
         })?
     };
 
-    let test_count = count_tests(paths.clone(), test_regex(&config.language()), config);
-    let meta_tokens = collect_tokens(paths.clone(), config).expect("No tokens found");
+    let mut test_count = 0;
+    let mut contains_unit_tests: Vec<PathBuf> = vec![];
+
+    for path in &paths {
+        let num_tests = count_tests(path, test_regex(&config.language()));
+        if num_tests > 0 {
+            contains_unit_tests.push(path.clone());
+            test_count += num_tests;
+        }
+    }
+
+    // @todo consider adding a switch here to mutate all tokens in source files, or only those in files with unit tests
+    let meta_tokens = collect_tokens(contains_unit_tests.clone(), config).expect("No tokens found");
 
     let mut mutants: Vec<Mutant> = vec![];
     for entry in &meta_tokens {
@@ -84,5 +102,11 @@ pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
         }
     }
 
-    Ok(ScanResult::new(paths, meta_tokens, test_count, mutants))
+    Ok(ScanResult::new(
+        paths,
+        contains_unit_tests,
+        meta_tokens,
+        test_count,
+        mutants,
+    ))
 }

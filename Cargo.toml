@@ -15,6 +15,7 @@ clap = { version = "4.4.7", features = ["derive"] }
 colored = "2.0.4"
 indicatif = {version = "*", features = ["rayon"]}
 prettytable-rs = "^0.10"
+rand = "0.8.5"
 rayon = "1.5"
 regex = "1.10.2"
 sled = "0.34.7"
