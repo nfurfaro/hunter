@@ -1,5 +1,5 @@
 use crate::{
-    config::Config,
+    config::LanguageConfig,
     handlers::{
         mutator::{Mutant, MutationStatus},
         scanner::ScanResult,
@@ -16,12 +16,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<()> {
+pub fn print_scan_results(results: &mut ScanResult, config: Box<dyn LanguageConfig>) -> Result<()> {
     println!("{}", "Initiating source file analysis...".green());
 
     println!(
         "{}",
-        format!("Searching for {} files", config.language().name()).green()
+        format!("Searching for {} files", config.name()).green()
     );
 
     println!(
@@ -29,7 +29,35 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
         format!("Files found: {}", results.paths().len()).cyan()
     );
 
-    for path in results.paths() {
+    // for path in results.paths() {
+    //     println!("{}", format!("{}", path.display()).red());
+    // }
+
+    let noir_files_without_unit_tests = results.paths().len() - results.contains_unit_tests().len();
+
+    println!("Hunter currently only mutates files containing unit tests.");
+
+    println!(
+        "{}",
+        format!(
+            "Skipping {} {} files.",
+            noir_files_without_unit_tests,
+            config.name(),
+        )
+        .magenta()
+    );
+
+    println!(
+        "{}",
+        format!(
+            "{} files containing unit tests: {}",
+            config.name(),
+            results.contains_unit_tests().len()
+        )
+        .cyan()
+    );
+
+    for path in results.contains_unit_tests() {
         println!("{}", format!("{}", path.display()).red());
     }
 
@@ -43,7 +71,7 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
     );
     println!(
         "{}",
-        format!("Test runs required: {}", num_mutants * results.test_count()).magenta()
+        format!("tests to run: {}", num_mutants * results.test_count()).magenta()
     );
 
     Ok(())
@@ -171,21 +199,13 @@ pub fn mutants_progress_bar(total_mutants: usize) -> ProgressBar {
     bar
 }
 
-pub fn count_tests(paths: Vec<PathBuf>, pattern: Regex, _config: &Config) -> usize {
+pub fn count_tests(path: &Path, pattern: Regex) -> usize {
     let mut test_count = 0;
-
-    if paths.is_empty() {
-        0
-    } else {
-        for path in paths {
-            let file = File::open(path.clone()).expect("Unable to open file");
-            let mut buf_reader = BufReader::new(file);
-            let mut contents = String::new();
-            let _res = buf_reader.read_to_string(&mut contents);
-
-            let test_matches = pattern.find_iter(&contents).count();
-            test_count += test_matches;
-        }
-        test_count
-    }
+    let file = File::open(path).expect("Unable to open file");
+    let mut buf_reader = BufReader::new(file);
+    let mut contents = String::new();
+    let _res = buf_reader.read_to_string(&mut contents);
+    let test_matches = pattern.find_iter(&contents).count();
+    test_count += test_matches;
+    test_count
 }

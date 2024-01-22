@@ -1,9 +1,9 @@
 use crate::cli::Args;
-use crate::config::Config;
+use crate::config::LanguageConfig;
 use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
 use crate::reporter::{print_table, surviving_mutants_table};
-use crate::token::{token_as_bytes, token_transformer, Token};
+use crate::token::{random_token, token_as_bytes, token_transformer, MetaToken, Token};
 use colored::*;
 use std::{
     fmt,
@@ -82,13 +82,36 @@ impl Mutant {
     }
 }
 
+pub fn mutants(meta_tokens: &Vec<MetaToken>, random: bool) -> Vec<Mutant> {
+    let mut mutants: Vec<Mutant> = vec![];
+    for entry in meta_tokens {
+        let path = entry.src().clone();
+        let maybe_mutant = mutant_builder(
+            entry.id(),
+            entry.token().clone(),
+            entry.span(),
+            path,
+            random,
+        );
+        match maybe_mutant {
+            None => continue,
+            Some(m) => mutants.push(m),
+        }
+    }
+    mutants
+}
+
 pub fn mutant_builder(
     id: u32,
     token: Token,
     span: (u32, u32),
     src_path: PathBuf,
+    random: bool,
 ) -> Option<Mutant> {
-    let mutation = token_transformer(token.clone()).unwrap();
+    let mutation = match random {
+        true => random_token(),
+        false => token_transformer(token.clone()).unwrap(),
+    };
     match token {
         Token::Equal => Some(Mutant {
             id,
@@ -342,11 +365,11 @@ pub fn mutant_builder(
     }
 }
 
-pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
+pub fn mutate(args: Args, config: Box<dyn LanguageConfig>, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
     println!("{}", "Running tests...".green());
 
-    process_mutants(mutants, args.clone(), config.clone());
+    process_mutants(mutants, args.clone(), config.clone_box());
 
     if mutants
         .iter()

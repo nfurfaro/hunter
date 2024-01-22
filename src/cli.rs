@@ -1,8 +1,4 @@
-use crate::{
-    config::{config, Language},
-    handlers,
-    reporter::print_scan_results,
-};
+use crate::{config::config, handlers, languages::common::Language, reporter::print_scan_results};
 use clap::Parser;
 use colored::*;
 use std::io::Result;
@@ -18,19 +14,19 @@ pub enum Subcommand {
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
-    /// The target language.
+    /// The target language
     #[clap(short, long, default_value = "Noir")]
     language: Option<Language>,
     /// The path to the source files directory
     #[clap(short, long, default_value = ".")]
     pub source_path: Option<std::path::PathBuf>,
-    /// The path to the output file, defaults to ./hunter_report.txt if not provided
+    /// The path to the output file (.md extension recommended)
     #[clap(short = 'o', long)]
     pub output_path: Option<std::path::PathBuf>,
     // Display information about the program
     #[clap(short, long)]
     info: bool,
-    // Collect info about number of mutants found without running tests
+    // Choose between running the scan or mutate subcommands
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,
 }
@@ -41,33 +37,29 @@ pub async fn run_cli() -> Result<()> {
     if args.info {
         println!(
             "{}",
-            "Welcome to Hunter, a multi-language mutation-testing tool.".cyan()
+            "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
         );
         return Ok(());
     }
 
-    let language = args.language.clone().unwrap();
-
-    let config = config(language);
+    let config = config(args.language.clone().unwrap());
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-            let results = handlers::scanner::scan(args.clone(), &config);
-            if let Ok(results) = results {
-                print_scan_results(&mut results.clone(), &config)
+            let result = handlers::scanner::scan(args.clone(), config.clone_box());
+            if let Ok(result) = result {
+                print_scan_results(&mut result.clone(), config)
             } else {
-                eprintln!("{}", results.unwrap_err());
-                Ok(())
+                Err(result.unwrap_err())
             }
         }
         Some(Subcommand::Mutate) => {
-            let result = handlers::scanner::scan(args.clone(), &config);
-            if let Ok(mut results) = result {
-                let _ = print_scan_results(&mut results.clone(), &config);
-                handlers::mutator::mutate(args.clone(), config.clone(), &mut results)
+            let result = handlers::scanner::scan(args.clone(), config.clone_box());
+            if let Ok(mut result) = result {
+                let _ = print_scan_results(&mut result.clone(), config.clone_box());
+                handlers::mutator::mutate(args.clone(), config.clone_box(), &mut result)
             } else {
-                eprintln!("{}", result.unwrap_err());
-                Ok(())
+                Err(result.unwrap_err())
             }
         }
         None => {
