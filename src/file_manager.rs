@@ -1,7 +1,4 @@
-use crate::{
-    config::{Config, Language},
-    handlers::mutator::Mutant,
-};
+use crate::{config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Result, Write},
@@ -18,7 +15,10 @@ impl<T: FnOnce()> Drop for Defer<T> {
     }
 }
 
-pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Result<Vec<PathBuf>> {
+pub fn find_source_file_paths<'a>(
+    dir_path: &'a Path,
+    config: &'a dyn LanguageConfig,
+) -> Result<Vec<PathBuf>> {
     let mut paths: Vec<PathBuf> = vec![];
 
     if dir_path.is_dir() {
@@ -26,12 +26,9 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
             let entry = entry?;
             let path_buf = entry.path();
             if path_buf.is_dir() {
-                // Skipped directories
-                let excluded_dirs = [
-                    "./temp", "./target", "./test", "./tests", "./lib", "./script",
-                ];
-
-                if excluded_dirs
+                // Skipped directories are not included in the results
+                if config
+                    .excluded_dirs()
                     .iter()
                     .any(|&dir| path_buf.ends_with(dir) || path_buf.starts_with(dir))
                 {
@@ -46,7 +43,7 @@ pub fn find_source_file_paths<'a>(dir_path: &'a Path, config: &'a Config) -> Res
                 }
             } else if path_buf
                 .extension()
-                .map_or(false, |extension| extension == config.language().ext())
+                .map_or(false, |extension| extension == config.ext())
             {
                 paths.push(path_buf);
             }
@@ -97,18 +94,14 @@ pub fn setup_temp_dirs(language: Language) -> io::Result<(PathBuf, PathBuf)> {
 pub fn write_mutation_to_temp_file(
     mutant: &Mutant,
     src_dir: PathBuf,
-    config: Config,
+    lang_ext: &'static str,
 ) -> io::Result<PathBuf> {
-    let temp_file = src_dir.join(format!(
-        "mutation_{}.{}",
-        mutant.id(),
-        config.language().ext()
-    ));
+    let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
     fs::copy(mutant.path(), &temp_file)?;
 
     let mut lib_file = OpenOptions::new()
         .append(true)
-        .open(src_dir.join(format!("lib.{}", config.language().ext())))?;
+        .open(src_dir.join(format!("lib.{}", lang_ext)))?;
     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
     Ok(temp_file)

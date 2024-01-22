@@ -1,5 +1,5 @@
 use crate::cli::Args;
-use crate::config::Config;
+use crate::config::LanguageConfig;
 use crate::handlers::scanner::ScanResult;
 use crate::processor::process_mutants;
 use crate::reporter::{print_table, surviving_mutants_table};
@@ -365,11 +365,11 @@ pub fn mutant_builder(
     }
 }
 
-pub fn mutate(args: Args, config: Config, results: &mut ScanResult) -> Result<()> {
+pub fn mutate(args: Args, config: Box<dyn LanguageConfig>, results: &mut ScanResult) -> Result<()> {
     let mutants = results.mutants();
     println!("{}", "Running tests...".green());
 
-    process_mutants(mutants, args.clone(), config.clone());
+    process_mutants(mutants, args.clone(), config.clone_box());
 
     if mutants
         .iter()

@@ -13,8 +13,8 @@ use std::process;
 
 use crate::{
     cli::Args,
-    config::{is_test_failed, Config},
-    file_manager::{setup_temp_dirs, write_mutation_to_temp_file, Defer},
+    config::LanguageConfig,
+    file_manager::{write_mutation_to_temp_file, Defer},
     handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
     utils::*,
@@ -23,22 +23,31 @@ use crate::{
 use colored::*;
 use rayon::prelude::*;
 
-pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
+pub fn process_mutants(
+    mutants: &mut Vec<Mutant>,
+    args: Args,
+    config: Box<dyn LanguageConfig + Send + Sync>,
+) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
     let bar = mutants_progress_bar(total_mutants);
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
-    let (temp_dir, temp_src_dir) = setup_temp_dirs(config.language()).unwrap();
+    let (temp_dir, temp_src_dir) = config.setup_temp_dirs().unwrap();
 
     // @note handles cleanup of the temp directories after this function returns.
     let _cleanup = Defer(Some(|| {
         let _ = fs::remove_dir_all(&temp_dir);
     }));
 
+    let extension = config.ext();
+    let test_runner = config.test_runner();
+    let build_command = config.build_command();
+    let test_command = config.test_command();
+
     mutants.par_iter_mut().for_each(|m| {
-        let temp_file = write_mutation_to_temp_file(m, temp_src_dir.clone(), config.clone())
+        let temp_file = write_mutation_to_temp_file(m, temp_src_dir.clone(), extension)
             .expect("Failed to setup test infrastructure");
 
         let mut contents = String::new();
@@ -56,14 +65,14 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
         file.write_all(contents.as_bytes()).unwrap();
 
         // Build the project
-        let build_output = Command::new(config.test_runner())
-            .arg(config.build_command())
+        let build_output = Command::new(test_runner)
+            .arg(build_command)
             .output()
             .expect("Failed to execute build command");
 
         // run_test_suite
-        let output = Command::new(config.test_runner())
-            .arg(config.test_command())
+        let output = Command::new(test_runner)
+            .arg(test_command)
             .output()
             .expect("Failed to execute command");
 
@@ -80,7 +89,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
                     println!("Test suite failed");
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     println!("stderr: {}", stderr);
-                    if is_test_failed(&stderr, &config.language()) {
+                    if config.is_test_failed(&stderr) {
                         destroyed.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
                         m.set_status(MutationStatus::Killed);

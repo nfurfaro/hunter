@@ -1,5 +1,5 @@
 use crate::{
-    config::Config,
+    config::LanguageConfig,
     handlers::{
         mutator::{Mutant, MutationStatus},
         scanner::ScanResult,
@@ -16,12 +16,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<()> {
+pub fn print_scan_results(results: &mut ScanResult, config: Box<dyn LanguageConfig>) -> Result<()> {
     println!("{}", "Initiating source file analysis...".green());
 
     println!(
         "{}",
-        format!("Searching for {} files", config.language().name()).green()
+        format!("Searching for {} files", config.name()).green()
     );
 
     println!(
@@ -42,7 +42,7 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
         format!(
             "Skipping {} {} files.",
             noir_files_without_unit_tests,
-            config.language().name(),
+            config.name(),
         )
         .magenta()
     );
@@ -51,7 +51,7 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
         "{}",
         format!(
             "{} files containing unit tests: {}",
-            config.language().name(),
+            config.name(),
             results.contains_unit_tests().len()
         )
         .cyan()

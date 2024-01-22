@@ -1,5 +1,5 @@
 use crate::{
-    config::Config,
+    config::LanguageConfig,
     filters::{comment_regex, literal_regex, test_regex},
     token::{raw_string_as_token, token_regexes, MetaToken},
 };
@@ -16,7 +16,10 @@ fn overlaps(filter: &Range<usize>, token: &Range<u32>) -> bool {
     (token.start as usize) > filter.start && (token.end as usize) < filter.end
 }
 
-pub fn collect_tokens(paths: Vec<PathBuf>, config: &Config) -> Option<Vec<MetaToken>> {
+pub fn collect_tokens(
+    paths: Vec<PathBuf>,
+    config: Box<dyn LanguageConfig>,
+) -> Option<Vec<MetaToken>> {
     let mut tokens: Vec<MetaToken> = Vec::new();
     let language = config.language();
 
@@ -137,7 +140,7 @@ pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replaceme
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::Language;
+    use crate::languages::common::Language;
 
     #[test]
     fn test_test_regex_noir() {

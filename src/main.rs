@@ -4,6 +4,7 @@ pub mod config;
 pub mod file_manager;
 pub mod filters;
 pub mod handlers;
+pub mod languages;
 pub mod processor;
 pub mod reporter;
 pub mod token;

@@ -1,6 +1,6 @@
 use crate::{
     cli::Args,
-    config::Config,
+    config::LanguageConfig,
     file_manager::find_source_file_paths,
     filters::test_regex,
     handlers::mutator::{mutants, Mutant},
@@ -61,7 +61,7 @@ impl ScanResult {
     }
 }
 
-pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
+pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
     let source_path = args
         .source_path
         .clone()
@@ -69,10 +69,10 @@ pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
     let paths = if source_path.is_file() {
         vec![source_path]
     } else {
-        find_source_file_paths(source_path.as_path(), config).map_err(|_| {
+        find_source_file_paths(source_path.as_path(), &*config).map_err(|_| {
             let err_msg = format!(
                 "No {} files found... Are you in the right directory?",
-                config.language().name().red()
+                config.name().red()
             );
             Error::new(ErrorKind::Other, err_msg)
         })?

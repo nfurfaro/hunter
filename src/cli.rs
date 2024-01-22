@@ -1,8 +1,4 @@
-use crate::{
-    config::{config, Language},
-    handlers,
-    reporter::print_scan_results,
-};
+use crate::{config::config, handlers, languages::common::Language, reporter::print_scan_results};
 use clap::Parser;
 use colored::*;
 use std::io::Result;
@@ -46,24 +42,22 @@ pub async fn run_cli() -> Result<()> {
         return Ok(());
     }
 
-    let language = args.language.clone().unwrap();
-
-    let config = config(language);
+    let config = config(args.language.clone().unwrap());
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-            let result = handlers::scanner::scan(args.clone(), &config);
+            let result = handlers::scanner::scan(args.clone(), config.clone_box());
             if let Ok(result) = result {
-                print_scan_results(&mut result.clone(), &config)
+                print_scan_results(&mut result.clone(), config)
             } else {
                 Err(result.unwrap_err())
             }
         }
         Some(Subcommand::Mutate) => {
-            let result = handlers::scanner::scan(args.clone(), &config);
+            let result = handlers::scanner::scan(args.clone(), config.clone_box());
             if let Ok(mut result) = result {
-                let _ = print_scan_results(&mut result.clone(), &config);
-                handlers::mutator::mutate(args.clone(), config.clone(), &mut result)
+                let _ = print_scan_results(&mut result.clone(), config.clone_box());
+                handlers::mutator::mutate(args.clone(), config.clone_box(), &mut result)
             } else {
                 Err(result.unwrap_err())
             }

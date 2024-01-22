@@ -1,4 +1,4 @@
-use crate::config::Language;
+use crate::languages::common::Language;
 use regex::Regex;
 
 pub fn test_regex(language: &Language) -> Regex {
