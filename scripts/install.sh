@@ -23,7 +23,7 @@ curl -LO https://github.com/nfurfaro/hunter/releases/download/$version/$binary
 chmod +x $binary
 
 # Move the binary to a directory in your PATH
-mv $binary /usr/local/bin/hunter
+# mv $binary /usr/local/bin/hunter
 
 # Confirm installation
 if command -v hunter &> /dev/null
