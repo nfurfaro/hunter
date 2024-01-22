@@ -92,8 +92,7 @@ pub fn scan(args: Args, config: &Config) -> Result<ScanResult> {
     // @todo consider adding a switch here to mutate all tokens in source files, or only those in files with unit tests
     let meta_tokens = collect_tokens(contains_unit_tests.clone(), config).expect("No tokens found");
 
-    // @todo consider moving this to mutator.rs
-    let mutants = mutants(&meta_tokens, args.random);
+    let mutants = mutants(&meta_tokens, false);
 
     Ok(ScanResult::new(
         paths,

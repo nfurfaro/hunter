@@ -30,12 +30,10 @@ pub struct Args {
     // Display information about the program
     #[clap(short, long)]
     info: bool,
+    // @note not fully implemented yet.
     // Randomize mutation of tokens. By default, mutations are deterministic
-    #[clap(short, long, default_value = "false")]
-    pub random: bool,
-    // Skip the file cleanup step for debugging purposes
-    #[clap(short, long, default_value = "false")]
-    pub debug: bool,
+    // #[clap(short, long, default_value = "false")]
+    // pub random: bool,
     // Collect info about number of mutants found without running tests
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,

@@ -74,17 +74,6 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
         format!("tests to run: {}", num_mutants * results.test_count()).magenta()
     );
 
-    for mutant in results.mutants() {
-        println!(
-            "{}",
-            format!(
-                "Mutant: {}",
-                String::from_utf8_lossy(token_as_bytes(&mutant.token()).unwrap())
-            )
-            .red()
-        );
-    }
-
     Ok(())
 }
 
@@ -210,9 +199,9 @@ pub fn mutants_progress_bar(total_mutants: usize) -> ProgressBar {
     bar
 }
 
-pub fn count_tests(path: &PathBuf, pattern: Regex) -> usize {
+pub fn count_tests(path: &Path, pattern: Regex) -> usize {
     let mut test_count = 0;
-    let file = File::open(path.clone()).expect("Unable to open file");
+    let file = File::open(path).expect("Unable to open file");
     let mut buf_reader = BufReader::new(file);
     let mut contents = String::new();
     let _res = buf_reader.read_to_string(&mut contents);

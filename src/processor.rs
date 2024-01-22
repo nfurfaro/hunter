@@ -28,7 +28,8 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
     let (temp_dir, temp_src_dir) = setup_temp_dirs(config.language()).unwrap();
-    // handles cleanup of the temp directories after this function returns.
+
+    // @note handles cleanup of the temp directories after this function returns.
     let _cleanup = Defer(Some(|| {
         let _ = fs::remove_dir_all(&temp_dir);
     }));
@@ -105,7 +106,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
             eprintln!("Failed to change back to the original directory: {}", e);
         }
 
-        // Note: the /temp dir and its contents will be deleted automatically,
+        // @note the /temp dir and its contents will be deleted automatically,
         // so this might seem redundant. However, Hunter deletes the file
         // as soon as possible to help prevent running out of space when testing very large projects.
         if let Err(e) = std::fs::remove_file(&temp_file) {
