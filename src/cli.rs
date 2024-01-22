@@ -18,18 +18,24 @@ pub enum Subcommand {
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
-    /// The target language.
+    /// The target language
     #[clap(short, long, default_value = "Noir")]
     language: Option<Language>,
     /// The path to the source files directory
     #[clap(short, long, default_value = ".")]
     pub source_path: Option<std::path::PathBuf>,
-    /// The path to the output file, defaults to ./hunter_report.txt if not provided
+    /// The path to the output file (.md extension recommended)
     #[clap(short = 'o', long)]
     pub output_path: Option<std::path::PathBuf>,
     // Display information about the program
     #[clap(short, long)]
     info: bool,
+    // Randomize mutation of tokens. By default, mutations are deterministic
+    #[clap(short, long, default_value = "false")]
+    pub random: bool,
+    // Skip the file cleanup step for debugging purposes
+    #[clap(short, long, default_value = "false")]
+    pub debug: bool,
     // Collect info about number of mutants found without running tests
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,

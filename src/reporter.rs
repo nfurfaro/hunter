@@ -74,6 +74,17 @@ pub fn print_scan_results(results: &mut ScanResult, config: &Config) -> Result<(
         format!("tests to run: {}", num_mutants * results.test_count()).magenta()
     );
 
+    for mutant in results.mutants() {
+        println!(
+            "{}",
+            format!(
+                "Mutant: {}",
+                String::from_utf8_lossy(token_as_bytes(&mutant.token()).unwrap())
+            )
+            .red()
+        );
+    }
+
     Ok(())
 }
 
