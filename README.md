@@ -12,6 +12,35 @@ At a high level, Hunter exposes a CLI with 2 primary commands, scan and mutate. 
 
 ## Installation
 
+There are 2 ways to install Hunter: via cURL or by building from source.
+### cURL
+
+1. Download the binary using cURL:
+`curl -LO https://github.com/<username>/<repo>/releases/download/<tag>/hunter`
+
+2. Make the binary executable:
+`chmod +x hunter`
+
+3. Move the binary to a directory in your PATH (i.e: /usr/local/bin):
+`mv hunter /usr/local/bin`
+
+You should now be able to run the program by typing `hunter` in your terminal!
+
+### Build from source
+
+Alternatively, you can build Hunter from source. To do so, you'll need to have Rust installed. If you don't have Rust installed, you can install it by following the instructions [here](https://www.rust-lang.org/tools/install).
+
+1. Clone the repo:
+`git clone git@github.com:nfurfaro/hunter.git`
+
+2. Build the project:
+`cargo build --release`
+
+3. Move the binary to a directory in your PATH (i.e: /usr/local/bin):
+`mv ./target/release/hunter /usr/local/bin`
+
+You should now be able to run the program by typing `hunter` in your terminal!
+
 ## Quickstart
 
 The simplest way to get started with Hunter is to `$ cd` into the root of the project you want to test. From there, it is recommended to run the scan command:

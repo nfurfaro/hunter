@@ -41,7 +41,7 @@ pub async fn run_cli() -> Result<()> {
     if args.info {
         println!(
             "{}",
-            "Welcome to Hunter, a multi-language mutation-testing tool.".cyan()
+            "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
         );
         return Ok(());
     }
