@@ -30,11 +30,7 @@ pub struct Args {
     // Display information about the program
     #[clap(short, long)]
     info: bool,
-    // @note not fully implemented yet.
-    // Randomize mutation of tokens. By default, mutations are deterministic
-    // #[clap(short, long, default_value = "false")]
-    // pub random: bool,
-    // Collect info about number of mutants found without running tests
+    // Choose between running the scan or mutate subcommands
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,
 }
@@ -56,22 +52,20 @@ pub async fn run_cli() -> Result<()> {
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
-            let results = handlers::scanner::scan(args.clone(), &config);
-            if let Ok(results) = results {
-                print_scan_results(&mut results.clone(), &config)
+            let result = handlers::scanner::scan(args.clone(), &config);
+            if let Ok(result) = result {
+                print_scan_results(&mut result.clone(), &config)
             } else {
-                eprintln!("{}", results.unwrap_err());
-                Ok(())
+                Err(result.unwrap_err())
             }
         }
         Some(Subcommand::Mutate) => {
             let result = handlers::scanner::scan(args.clone(), &config);
-            if let Ok(mut results) = result {
-                let _ = print_scan_results(&mut results.clone(), &config);
-                handlers::mutator::mutate(args.clone(), config.clone(), &mut results)
+            if let Ok(mut result) = result {
+                let _ = print_scan_results(&mut result.clone(), &config);
+                handlers::mutator::mutate(args.clone(), config.clone(), &mut result)
             } else {
-                eprintln!("{}", result.unwrap_err());
-                Ok(())
+                Err(result.unwrap_err())
             }
         }
         None => {

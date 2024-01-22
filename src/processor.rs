@@ -6,7 +6,10 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
+    // os::unix::process,
 };
+
+use std::process;
 
 use crate::{
     cli::Args,
@@ -65,31 +68,29 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
             .expect("Failed to execute command");
 
         match build_output.status.code() {
-            Some(0) => {
-                match output.status.code() {
-                    Some(0) => {
-                        println!("Build was successful");
-                        println!("Test suite passed");
-                        m.set_status(MutationStatus::Survived);
-                        survived.fetch_add(1, Ordering::SeqCst);
+            Some(0) => match output.status.code() {
+                Some(0) => {
+                    println!("Build was successful");
+                    println!("Test suite passed");
+                    m.set_status(MutationStatus::Survived);
+                    survived.fetch_add(1, Ordering::SeqCst);
+                    pending.fetch_sub(1, Ordering::SeqCst);
+                }
+                Some(_) => {
+                    println!("Test suite failed");
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    println!("stderr: {}", stderr);
+                    if is_test_failed(&stderr, &config.language()) {
+                        destroyed.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
-                    }
-                    Some(_) => {
-                        println!("Test suite failed");
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        println!("stderr: {}", stderr);
-                        if is_test_failed(&stderr, &config.language()) {
-                            destroyed.fetch_add(1, Ordering::SeqCst);
-                            pending.fetch_sub(1, Ordering::SeqCst);
-                            m.set_status(MutationStatus::Killed);
-                        }
-                    }
-                    None => {
-                        println!("Test suite was killed by a signal or crashed");
-                        // @todo Handle this case
+                        m.set_status(MutationStatus::Killed);
                     }
                 }
-            }
+                None => {
+                    eprintln!("Test suite was killed by a signal or crashed");
+                    process::exit(1);
+                }
+            },
             Some(_) => {
                 destroyed.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
@@ -97,7 +98,7 @@ pub fn process_mutants(mutants: &mut Vec<Mutant>, args: Args, config: Config) {
             }
             None => {
                 println!("Build was killed by a signal or crashed");
-                // @todo Handle this case
+                process::exit(1);
             }
         }
 
