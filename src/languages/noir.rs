@@ -3,7 +3,7 @@ use crate::languages::common::Language;
 use std::{
     fs::{self, File},
     io::{self, Write},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 #[derive(Clone)]
