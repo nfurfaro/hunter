@@ -12,7 +12,7 @@ pub trait LanguageConfig {
     fn manifest_name(&self) -> &'static str;
     fn is_test_failed(&self, stderr: &str) -> bool;
     fn excluded_dirs(&self) -> Vec<&'static str>;
-    fn setup_temp_dirs(&self) -> io::Result<(PathBuf, PathBuf)>;
+    fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)>;
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync>;
 }
 

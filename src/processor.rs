@@ -34,7 +34,7 @@ pub fn process_mutants(
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
-    let (temp_dir, temp_src_dir) = config.setup_temp_dirs().unwrap();
+    let (temp_dir, temp_src_dir) = config.setup_test_infrastructure().unwrap();
 
     // @note handles cleanup of the temp directories after this function returns.
     let _cleanup = Defer(Some(|| {

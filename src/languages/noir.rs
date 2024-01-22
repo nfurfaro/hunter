@@ -50,7 +50,7 @@ impl LanguageConfig for NoirConfig {
         ]
     }
 
-    fn setup_temp_dirs(&self) -> io::Result<(PathBuf, PathBuf)> {
+    fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)> {
         // Create a ./temp directory
         let temp_dir = PathBuf::from("./temp");
         fs::create_dir_all(&temp_dir)?;
@@ -80,31 +80,3 @@ impl LanguageConfig for NoirConfig {
         Box::new(self.clone())
     }
 }
-
-// impl TestSetup for NoirConfig {
-//     fn setup_temp_dirs(&self) -> io::Result<(PathBuf, PathBuf)> {
-//         // Create a ./temp directory
-//         let temp_dir = PathBuf::from("./temp");
-//         fs::create_dir_all(&temp_dir)?;
-
-//         // Inside /temp, create a src/ directory
-//         let src_dir = temp_dir.join("src");
-//         fs::create_dir_all(&src_dir)?;
-
-//         let mut manifest = File::create(temp_dir.join("Nargo.toml"))?;
-
-//         write!(
-//             manifest,
-//             r#"
-//                     [package]
-//                     name = "hunter_temp"
-//                     type = "lib"
-//                     authors = ["Hunter"]
-//                     compiler_version = "0.22.0"
-//                     "#
-//         )?;
-//         let _ = File::create(src_dir.join("lib.nr"))?;
-
-//         Ok((temp_dir, src_dir))
-//     }
-// }
