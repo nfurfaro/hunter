@@ -84,7 +84,7 @@ pub fn setup_temp_dirs(language: Language) -> io::Result<(PathBuf, PathBuf)> {
                 name = "hunter_temp"
                 type = "lib"
                 authors = ["Hunter"]
-                compiler_version = "0.22.2"
+                compiler_version = "0.22.0"
                 "#
             )?;
             let _ = File::create(src_dir.join("lib.nr"))?;
