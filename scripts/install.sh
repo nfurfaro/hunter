@@ -17,18 +17,17 @@ case $selection in
 esac
 
 # Download the binary using cURL
-curl -LO https://github.com/nfurfaro/hunter/releases/download/$version/$binary
+if curl -LO https://github.com/nfurfaro/hunter/releases/download/$version/$binary; then
+    echo "Binary downloaded successfully."
+else
+    echo "Failed to download binary."
+    exit 1
+fi
 
 # Make the binary executable
-chmod +x $binary
-
-# Move the binary to a directory in your PATH
-# mv $binary /usr/local/bin/hunter
-
-# Confirm installation
-if command -v hunter &> /dev/null
-then
-    echo "Hunter was installed successfully."
+if chmod +x $binary; then
+    echo "Binary made executable."
 else
-    echo "Hunter could not be installed."
+    echo "Failed to make binary executable."
+    exit 1
 fi
