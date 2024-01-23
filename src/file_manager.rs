@@ -1,7 +1,10 @@
-use crate::{config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language};
+use crate::{
+    config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language,
+    utils::replace_bytes,
+};
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Result, Write},
+    io::{self, Read, Result, Write},
     path::{Path, PathBuf},
 };
 
@@ -91,7 +94,7 @@ pub fn setup_temp_dirs(language: Language) -> io::Result<(PathBuf, PathBuf)> {
     Ok((temp_dir, src_dir))
 }
 
-pub fn write_mutation_to_temp_file(
+pub fn copy_src_to_temp_file(
     mutant: &Mutant,
     src_dir: PathBuf,
     lang_ext: &'static str,
@@ -105,4 +108,20 @@ pub fn write_mutation_to_temp_file(
     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
     Ok(temp_file)
+}
+
+pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
+    let mut contents = String::new();
+    let mut file = File::open(temp_file).expect("File path doesn't seem to work...");
+    file.read_to_string(&mut contents).unwrap();
+
+    let mut original_bytes = contents.into_bytes();
+    replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
+    contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
+
+    // After modifying the contents, write it back to the temp file
+    let mut file = OpenOptions::new().write(true).open(temp_file).unwrap();
+
+    // modify string of contents, then write back to temp file
+    file.write_all(contents.as_bytes()).unwrap();
 }

@@ -1,12 +1,9 @@
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{Read, Write},
-    process::Command,
+    fs,
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    // os::unix::process,
 };
 
 use std::process;
@@ -14,10 +11,9 @@ use std::process;
 use crate::{
     cli::Args,
     config::LanguageConfig,
-    file_manager::{write_mutation_to_temp_file, Defer},
+    file_manager::{copy_src_to_temp_file, mutate_temp_file, Defer},
     handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
-    utils::*,
 };
 
 use colored::*;
@@ -36,48 +32,27 @@ pub fn process_mutants(
     let pending = Arc::new(AtomicUsize::new(total_mutants));
     let (temp_dir, temp_src_dir) = config.setup_test_infrastructure().unwrap();
 
-    // @note handles cleanup of the temp directories after this function returns.
+    // @note handles cleanup of the temp directories automatically after this function returns.
     let _cleanup = Defer(Some(|| {
         let _ = fs::remove_dir_all(&temp_dir);
     }));
 
     let extension = config.ext();
-    let test_runner = config.test_runner();
-    let build_command = config.build_command();
-    let test_command = config.test_command();
 
     mutants.par_iter_mut().for_each(|m| {
-        let temp_file = write_mutation_to_temp_file(m, temp_src_dir.clone(), extension)
+        let temp_file = copy_src_to_temp_file(m, temp_src_dir.clone(), extension)
             .expect("Failed to setup test infrastructure");
 
-        let mut contents = String::new();
-        let mut file = File::open(&temp_file).expect("File path doesn't seem to work...");
-        file.read_to_string(&mut contents).unwrap();
-
-        let mut original_bytes = contents.into_bytes();
-        replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
-        contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
-
-        // After modifying the contents, write it back to the temp file
-        let mut file = OpenOptions::new().write(true).open(&temp_file).unwrap();
-
-        // modify string of contents, then write back to temp file
-        file.write_all(contents.as_bytes()).unwrap();
+        mutate_temp_file(&temp_file, m);
 
         // Build the project
-        let build_output = Command::new(test_runner)
-            .arg(build_command)
-            .output()
-            .expect("Failed to execute build command");
+        let build_output = config.build_mutant_project();
 
         // run_test_suite
-        let output = Command::new(test_runner)
-            .arg(test_command)
-            .output()
-            .expect("Failed to execute command");
+        let test_output = config.test_mutant_project();
 
         match build_output.status.code() {
-            Some(0) => match output.status.code() {
+            Some(0) => match test_output.status.code() {
                 Some(0) => {
                     println!("Build was successful");
                     println!("Test suite passed");
@@ -87,7 +62,7 @@ pub fn process_mutants(
                 }
                 Some(_) => {
                     println!("Test suite failed");
-                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    let stderr = String::from_utf8_lossy(&test_output.stderr);
                     println!("stderr: {}", stderr);
                     if config.is_test_failed(&stderr) {
                         destroyed.fetch_add(1, Ordering::SeqCst);

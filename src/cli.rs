@@ -15,7 +15,7 @@ pub enum Subcommand {
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
     /// The target language
-    #[clap(short, long, default_value = "Noir")]
+    #[clap(short, long)]
     language: Option<Language>,
     /// The path to the source files directory
     #[clap(short, long, default_value = ".")]
@@ -35,14 +35,18 @@ pub async fn run_cli() -> Result<()> {
     let args = Args::parse();
 
     if args.info {
-        println!(
-            "{}",
-            "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
-        );
+        info_message();
         return Ok(());
     }
 
-    let config = config(args.language.clone().unwrap());
+    let language = if let Some(lang) = args.language.clone() {
+        lang
+    } else {
+        println!("{}", "No language specified. Defaulting to Noir.".yellow());
+        Language::Noir
+    };
+
+    let config = config(language);
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
@@ -63,12 +67,21 @@ pub async fn run_cli() -> Result<()> {
             }
         }
         None => {
-            println!(
-                "{}",
-                "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
-            );
-
+            info_message();
             Ok(())
         }
     }
+}
+
+fn info_message() {
+    println!(
+        "{}",
+        "Welcome to Hunter, a mutation-testing tool built in Rust.".cyan()
+    );
+    println!("{}", "Currently supported languages:".cyan());
+    println!("{}", Language::list().yellow());
+    println!(
+        "{}",
+        "For more help with hunter, try `hunter --help`".cyan()
+    );
 }

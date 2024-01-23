@@ -4,6 +4,7 @@ use std::{
     fs::{self, File},
     io::{self, Write},
     path::PathBuf,
+    process::{self, Command},
 };
 
 #[derive(Clone)]
@@ -74,6 +75,24 @@ impl LanguageConfig for NoirConfig {
         let _ = File::create(src_dir.join("lib.nr"))?;
 
         Ok((temp_dir, src_dir))
+    }
+
+    fn test_mutant_project(&self) -> Box<process::Output> {
+        Box::new(
+            Command::new(self.test_runner())
+                .arg(self.test_command())
+                .output()
+                .expect("Failed to execute command"),
+        )
+    }
+
+    fn build_mutant_project(&self) -> Box<process::Output> {
+        Box::new(
+            Command::new(self.test_runner())
+                .arg(self.build_command())
+                .output()
+                .expect("Failed to execute build command"),
+        )
     }
 
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync> {
