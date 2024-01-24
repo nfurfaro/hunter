@@ -1,4 +1,6 @@
-use crate::{config::LanguageConfig, handlers::mutator::Mutant, utils::replace_bytes};
+use crate::{
+    config::LanguageConfig, handlers::mutator::Mutant, token::token_as_bytes, utils::replace_bytes,
+};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
@@ -81,7 +83,12 @@ pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
     file.read_to_string(&mut contents).unwrap();
 
     let mut original_bytes = contents.into_bytes();
-    replace_bytes(&mut original_bytes, m.span_start() as usize, &m.bytes());
+    replace_bytes(
+        &mut original_bytes,
+        m.span_start() as usize,
+        &m.bytes(),
+        token_as_bytes(&m.token()).unwrap(),
+    );
     contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
     // After modifying the contents, write it back to the temp file

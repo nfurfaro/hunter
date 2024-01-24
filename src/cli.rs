@@ -17,6 +17,9 @@ pub struct Args {
     /// The target language
     #[clap(short, long)]
     language: Option<Language>,
+    /// Enable randomized mutatant generation
+    #[clap(short, long, default_value = "false")]
+    pub random: bool,
     /// The path to the source files directory
     #[clap(short, long, default_value = ".")]
     pub source_path: Option<std::path::PathBuf>,
@@ -33,6 +36,10 @@ pub struct Args {
 
 pub async fn run_cli() -> Result<()> {
     let args = Args::parse();
+
+    if args.random {
+        println!("{}", "Random mutant generation activated...".yellow());
+    }
 
     if args.info {
         info_message();

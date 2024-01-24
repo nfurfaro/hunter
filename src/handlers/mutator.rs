@@ -14,6 +14,7 @@ use std::{
 #[derive(Debug, Clone)]
 pub struct Mutant {
     id: u32,
+    original: Token,
     mutation: Token,
     bytes: Vec<u8>,
     span: (u32, u32),
@@ -33,8 +34,9 @@ impl fmt::Display for Mutant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Id: {:?}, Token: {:?}, Bytes: {:?}, Span: {:?}, Source Path: {:?}, Status: {:?}",
+            "Id: {:?}, Token: {:?}, Mutation: {:?} Bytes: {:?}, Span: {:?}, Source Path: {:?}, Status: {:?}",
             self.id,
+            self.original,
             self.mutation,
             self.bytes,
             self.span,
@@ -50,6 +52,10 @@ impl Mutant {
     }
 
     pub fn token(&self) -> Token {
+        self.original.clone()
+    }
+
+    pub fn mutation(&self) -> Token {
         self.mutation.clone()
     }
 
@@ -104,18 +110,19 @@ pub fn mutants(meta_tokens: &Vec<MetaToken>, random: bool) -> Vec<Mutant> {
 
 pub fn mutant_builder(
     id: u32,
-    token: Token,
+    original: Token,
     span: (u32, u32),
     src_path: PathBuf,
     random: bool,
 ) -> Option<Mutant> {
     let mutation = match random {
         true => random_token(),
-        false => token_transformer(token.clone()).unwrap(),
+        false => token_transformer(original.clone()).unwrap(),
     };
-    match token {
+    match original {
         Token::Equal => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -124,6 +131,7 @@ pub fn mutant_builder(
         }),
         Token::NotEqual => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -132,6 +140,7 @@ pub fn mutant_builder(
         }),
         Token::Greater => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -140,6 +149,7 @@ pub fn mutant_builder(
         }),
         Token::GreaterEqual => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -148,6 +158,7 @@ pub fn mutant_builder(
         }),
         Token::Less => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -156,6 +167,7 @@ pub fn mutant_builder(
         }),
         Token::LessEqual => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -164,6 +176,7 @@ pub fn mutant_builder(
         }),
         Token::Ampersand => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -172,6 +185,7 @@ pub fn mutant_builder(
         }),
         Token::Pipe => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -180,6 +194,7 @@ pub fn mutant_builder(
         }),
         Token::Caret => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -188,6 +203,7 @@ pub fn mutant_builder(
         }),
         Token::ShiftLeft => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -196,6 +212,7 @@ pub fn mutant_builder(
         }),
         Token::ShiftRight => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -204,6 +221,7 @@ pub fn mutant_builder(
         }),
         Token::Plus => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -212,6 +230,7 @@ pub fn mutant_builder(
         }),
         Token::Minus => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -220,6 +239,7 @@ pub fn mutant_builder(
         }),
         Token::Star => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -228,6 +248,7 @@ pub fn mutant_builder(
         }),
         Token::Slash => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -236,6 +257,7 @@ pub fn mutant_builder(
         }),
         Token::Percent => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -244,6 +266,7 @@ pub fn mutant_builder(
         }),
         Token::Increment => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -252,6 +275,7 @@ pub fn mutant_builder(
         }),
         Token::Decrement => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -260,6 +284,7 @@ pub fn mutant_builder(
         }),
         Token::PlusEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -268,6 +293,7 @@ pub fn mutant_builder(
         }),
         Token::MinusEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -276,6 +302,7 @@ pub fn mutant_builder(
         }),
         Token::StarEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -284,6 +311,7 @@ pub fn mutant_builder(
         }),
         Token::SlashEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -292,6 +320,7 @@ pub fn mutant_builder(
         }),
         Token::PercentEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -300,6 +329,7 @@ pub fn mutant_builder(
         }),
         Token::AmpersandEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -308,6 +338,7 @@ pub fn mutant_builder(
         }),
         Token::PipeEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -316,6 +347,7 @@ pub fn mutant_builder(
         }),
         Token::CaretEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -324,6 +356,7 @@ pub fn mutant_builder(
         }),
         Token::ShiftLeftEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -332,6 +365,7 @@ pub fn mutant_builder(
         }),
         Token::ShiftRightEquals => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -340,6 +374,7 @@ pub fn mutant_builder(
         }),
         Token::DoublePipe => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -348,6 +383,7 @@ pub fn mutant_builder(
         }),
         Token::DoubleAmpersand => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -356,6 +392,7 @@ pub fn mutant_builder(
         }),
         Token::Bang => Some(Mutant {
             id,
+            original,
             mutation: mutation.clone(),
             bytes: token_as_bytes(&mutation).unwrap().to_vec(),
             span,
@@ -395,10 +432,12 @@ mod tests {
     fn test_mutant_methods() {
         let path = PathBuf::from("test.noir");
         let token = Token::Equal;
+        let mutation = token_transformer(token.clone()).unwrap();
         let span = (0, 1);
         let mutant = Mutant {
             id: 0,
-            mutation: token.clone(),
+            original: token.clone(),
+            mutation: mutation.clone(),
             bytes: token_as_bytes(&token.clone()).unwrap().to_vec(),
             span,
             src_path: Box::new(path.clone()),
@@ -407,6 +446,9 @@ mod tests {
 
         // Test token method
         assert_eq!(mutant.token(), token);
+
+        // Test mutation method
+        assert_eq!(mutant.mutation(), mutation);
 
         // Test string method
         let bytes_str =
@@ -433,10 +475,12 @@ mod tests {
     fn test_mutant_methods_complex() {
         let path = PathBuf::from("complex/path/to/test.noir");
         let token = Token::Plus;
+        let mutation = token_transformer(token.clone()).unwrap();
         let span = (10, 20);
         let mutant = Mutant {
             id: 42,
-            mutation: token.clone(),
+            original: token.clone(),
+            mutation: mutation.clone(),
             bytes: token_as_bytes(&token.clone()).unwrap().to_vec(),
             span,
             src_path: Box::new(path.clone()),
@@ -445,6 +489,9 @@ mod tests {
 
         // Test token method
         assert_eq!(mutant.token(), token);
+
+        // Test mutation method
+        assert_eq!(mutant.mutation(), mutation);
 
         // Test string method
         let bytes_str =
@@ -473,10 +520,12 @@ mod tests {
             "extremely/long/and/complex/path/to/the/test/file/for/testing/purposes.noir",
         );
         let token = Token::Star;
+        let mutation = token_transformer(token.clone()).unwrap();
         let span = (1000, 2000);
         let mutant = Mutant {
             id: 42,
-            mutation: token.clone(),
+            original: token.clone(),
+            mutation: mutation.clone(),
             bytes: token_as_bytes(&token.clone()).unwrap().to_vec(),
             span,
             src_path: Box::new(path.clone()),
@@ -485,6 +534,9 @@ mod tests {
 
         // Test token method
         assert_eq!(mutant.token(), token);
+
+        // Test mutation method
+        assert_eq!(mutant.mutation(), mutation);
 
         // Test string method
         let bytes_str =
