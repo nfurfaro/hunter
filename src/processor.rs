@@ -26,7 +26,10 @@ pub fn process_mutants(
 ) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
+
+    // @todo fix prog bar, currently prints once per thread!
     let bar = mutants_progress_bar(total_mutants);
+
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
