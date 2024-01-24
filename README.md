@@ -16,7 +16,7 @@ There are 2 ways to install Hunter: via cURL or by building from source.
 ### cURL
 
 1. Download the binary using cURL:
-`curl -LO https://github.com/nfurfaro/hunter/master/scripts/install.sh | bash`
+`curl -LO https://github.com/nfurfaro/hunter/blob/master/scripts/install.sh | bash`
 
 2. Make the binary executable:
 `chmod +x hunter`
