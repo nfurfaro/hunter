@@ -15,8 +15,11 @@ pub enum Subcommand {
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
 pub struct Args {
     /// The target language
-    #[clap(short, long, default_value = "Noir")]
+    #[clap(short, long)]
     language: Option<Language>,
+    /// Enable randomized mutatant generation
+    #[clap(short, long, default_value = "false")]
+    pub random: bool,
     /// The path to the source files directory
     #[clap(short, long, default_value = ".")]
     pub source_path: Option<std::path::PathBuf>,
@@ -34,15 +37,23 @@ pub struct Args {
 pub async fn run_cli() -> Result<()> {
     let args = Args::parse();
 
+    if args.random {
+        println!("{}", "Random mutant generation activated...".yellow());
+    }
+
     if args.info {
-        println!(
-            "{}",
-            "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
-        );
+        info_message();
         return Ok(());
     }
 
-    let config = config(args.language.clone().unwrap());
+    let language = if let Some(lang) = args.language.clone() {
+        lang
+    } else {
+        println!("{}", "No language specified. Defaulting to Noir.".yellow());
+        Language::Noir
+    };
+
+    let config = config(language);
 
     match args.subcommand {
         Some(Subcommand::Scan) => {
@@ -63,12 +74,31 @@ pub async fn run_cli() -> Result<()> {
             }
         }
         None => {
-            println!(
-                "{}",
-                "Welcome to Hunter, a mutation-testing tool for Noir source code.".cyan()
-            );
-
+            info_message();
             Ok(())
         }
     }
+}
+
+fn info_message() {
+    println!(
+        "{}",
+        "Welcome to Hunter, a mutation-testing tool built in Rust.".cyan()
+    );
+    println!("{}", "The languages currently supported are:".cyan());
+    println!("{}", Language::list().yellow());
+    println!("{}", "
+Hunter will mutate temporary copies of your source files (called mutants).
+It will then run your test suite against each mutant.
+If a mutant causes a test to fail, it is considered to be Killed.
+If a mutant does not cause a test to fail, it is considered Survived.
+Other possible states for a mutant include Pending (generally indicates a possible internal bug in Hunter itself)
+or Unbuildable (the mutant introduces invalid syntax, failing constraints or other compiler errors).
+
+Hunter will then calculate a mutation score, where 100% is what you ideally want to see.
+".cyan());
+    println!(
+        "{}",
+        "For more help with hunter, try `hunter --help`".cyan()
+    );
 }

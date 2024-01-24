@@ -88,7 +88,14 @@ pub fn collect_tokens(
     }
 }
 
-pub fn replace_bytes(original_bytes: &mut Vec<u8>, start_index: usize, replacement: &[u8]) {
+// @todo improve insertion of replacement bytes to work correctly with random mode.
+// Current implementation is brittle, mak use of newly added original_token_as_bytes arg.
+pub fn replace_bytes(
+    original_bytes: &mut Vec<u8>,
+    start_index: usize,
+    replacement: &[u8],
+    _original_token_as_bytes: &[u8],
+) {
     let replacement_length = replacement.len();
 
     match replacement_length {
@@ -154,270 +161,450 @@ mod tests {
     #[test]
     fn test_replace_bytes_equal() {
         let mut original_bytes = "==".as_bytes().to_vec();
+        let original_token_as_bytes = "==".as_bytes();
         let replacement = b"!=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"!=");
     }
 
     #[test]
     fn test_replace_bytes_not_equal() {
         let mut original_bytes = "!=".as_bytes().to_vec();
+        let original_token_as_bytes = "!=".as_bytes();
         let replacement = b"==";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"==");
     }
 
     #[test]
     fn test_replace_bytes_greater_than() {
         let mut original_bytes = ">".as_bytes().to_vec();
+        let original_token_as_bytes = ">".as_bytes();
         let replacement = b"<=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"<=");
     }
 
     #[test]
     fn test_replace_bytes_greater_than_2() {
         let mut original_bytes = "assert(c as u64 > x as u64);".as_bytes().to_vec();
+        let original_token_as_bytes = ">".as_bytes();
         let replacement = b"<=";
         let start_index = 16;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"assert(c as u64 <= x as u64);");
     }
 
     #[test]
     fn test_replace_bytes_greater_than_or_equal_to() {
         let mut original_bytes = ">=".as_bytes().to_vec();
+        let original_token_as_bytes = ">=".as_bytes();
         let replacement = b"<";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"<");
     }
 
     #[test]
     fn test_replace_bytes_less_than() {
         let mut original_bytes = "<".as_bytes().to_vec();
+        let original_token_as_bytes = "<".as_bytes();
         let replacement = b">=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b">=");
     }
 
     #[test]
     fn test_replace_bytes_less_than_2() {
         let mut original_bytes = "assert(c as u64 < x as u64);".as_bytes().to_vec();
+        let original_token_as_bytes = "<".as_bytes();
         let replacement = b">=";
         let start_index = 16;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"assert(c as u64 >= x as u64);");
     }
 
     #[test]
     fn test_replace_bytes_less_than_or_equal_to() {
         let mut original_bytes = "<=".as_bytes().to_vec();
+        let original_token_as_bytes = "<=".as_bytes();
         let replacement = b">";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b">");
     }
 
     #[test]
     fn test_replace_bytes_and() {
         let mut original_bytes = "&".as_bytes().to_vec();
+        let original_token_as_bytes = "&".as_bytes();
         let replacement = b"|";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"|");
     }
 
     #[test]
     fn test_replace_bytes_or() {
         let mut original_bytes = "|".as_bytes().to_vec();
+        let original_token_as_bytes = "|".as_bytes();
         let replacement = b"&";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"&");
     }
 
     #[test]
     fn test_replace_bytes_xor() {
         let mut original_bytes = "^".as_bytes().to_vec();
+        let original_token_as_bytes = "^".as_bytes();
         let replacement = b"&";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"&");
     }
 
     #[test]
     fn test_replace_bytes_left_shift() {
         let mut original_bytes = "<<".as_bytes().to_vec();
+        let original_token_as_bytes = "<<".as_bytes();
         let replacement = b">>";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b">>");
     }
 
     #[test]
     fn test_replace_bytes_right_shift() {
         let mut original_bytes = ">>".as_bytes().to_vec();
+        let original_token_as_bytes = ">>".as_bytes();
         let replacement = b"<<";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"<<");
     }
 
     #[test]
     fn test_replace_bytes_plus() {
         let mut original_bytes = "+".as_bytes().to_vec();
+        let original_token_as_bytes = "+".as_bytes();
         let replacement = b"-";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"-");
     }
 
     #[test]
     fn test_replace_bytes_minus() {
         let mut original_bytes = "-".as_bytes().to_vec();
+        let original_token_as_bytes = "-".as_bytes();
         let replacement = b"+";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"+");
     }
 
     #[test]
     fn test_replace_bytes_multiply() {
         let mut original_bytes = "*".as_bytes().to_vec();
+        let original_token_as_bytes = "*".as_bytes();
         let replacement = b"/";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"/");
     }
 
     #[test]
     fn test_replace_bytes_divide() {
         let mut original_bytes = "/".as_bytes().to_vec();
+        let original_token_as_bytes = "/".as_bytes();
         let replacement = b"*";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"*");
     }
 
     #[test]
     fn test_replace_bytes_modulo() {
         let mut original_bytes = "%".as_bytes().to_vec();
+        let original_token_as_bytes = "%".as_bytes();
         let replacement = b"*";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"*");
     }
 
     #[test]
     fn test_replace_bytes_increment() {
         let mut original_bytes = "++".as_bytes().to_vec();
+        let original_token_as_bytes = "++".as_bytes();
         let replacement = b"--";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"--");
     }
 
     #[test]
     fn test_replace_bytes_decrement() {
         let mut original_bytes = "--".as_bytes().to_vec();
+        let original_token_as_bytes = "--".as_bytes();
         let replacement = b"++";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"++");
     }
 
     #[test]
     fn test_replace_bytes_plus_equal() {
         let mut original_bytes = "+=".as_bytes().to_vec();
+        let original_token_as_bytes = "+=".as_bytes();
         let replacement = b"-=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"-=");
     }
 
     #[test]
     fn test_replace_bytes_minus_equal() {
         let mut original_bytes = "-=".as_bytes().to_vec();
+        let original_token_as_bytes = "-=".as_bytes();
         let replacement = b"+=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"+=");
     }
 
     #[test]
     fn test_replace_bytes_multiply_equal() {
         let mut original_bytes = "*=".as_bytes().to_vec();
+        let original_token_as_bytes = "*=".as_bytes();
         let replacement = b"/=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"/=");
     }
 
     #[test]
     fn test_replace_bytes_divide_equal() {
         let mut original_bytes = "/=".as_bytes().to_vec();
+        let original_token_as_bytes = "/=".as_bytes();
         let replacement = b"*=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"*=");
     }
 
     #[test]
     fn test_replace_bytes_modulo_equal() {
         let mut original_bytes = "%=".as_bytes().to_vec();
+        let original_token_as_bytes = "%=".as_bytes();
         let replacement = b"*=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"*=");
     }
 
     #[test]
     fn test_replace_bytes_and_equal() {
         let mut original_bytes = "&=".as_bytes().to_vec();
+        let original_token_as_bytes = "&=".as_bytes();
         let replacement = b"|=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"|=");
     }
 
     #[test]
     fn test_replace_bytes_or_equal() {
         let mut original_bytes = "|=".as_bytes().to_vec();
+        let original_token_as_bytes = "|=".as_bytes();
         let replacement = b"&=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"&=");
     }
 
     #[test]
     fn test_replace_bytes_xor_equal() {
         let mut original_bytes = "^=".as_bytes().to_vec();
+        let original_token_as_bytes = "^=".as_bytes();
         let replacement = b"&=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"&=");
     }
 
     #[test]
     fn test_replace_bytes_shift_left_equal() {
         let mut original_bytes = "<<=".as_bytes().to_vec();
+        let original_token_as_bytes = "<<=".as_bytes();
         let replacement = b">>=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b">>=");
     }
 
     #[test]
     fn test_replace_bytes_shift_right_equal() {
         let mut original_bytes = ">>=".as_bytes().to_vec();
+        let original_token_as_bytes = ">>=".as_bytes();
         let replacement = b"<<=";
         let start_index = 0;
-        replace_bytes(&mut original_bytes, start_index, replacement);
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            replacement,
+            original_token_as_bytes,
+        );
         assert_eq!(original_bytes, b"<<=");
     }
 
