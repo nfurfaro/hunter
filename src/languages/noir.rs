@@ -60,7 +60,7 @@ impl LanguageConfig for NoirConfig {
         let src_dir = temp_dir.join("src");
         fs::create_dir_all(&src_dir)?;
 
-        let mut manifest = File::create(temp_dir.join("Nargo.toml"))?;
+        let mut manifest = File::create(temp_dir.join(self.manifest_name()))?;
 
         write!(
             manifest,

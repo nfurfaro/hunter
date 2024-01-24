@@ -1,7 +1,4 @@
-use crate::{
-    config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language,
-    utils::replace_bytes,
-};
+use crate::{config::LanguageConfig, handlers::mutator::Mutant, utils::replace_bytes};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
@@ -60,38 +57,6 @@ pub fn find_source_file_paths<'a>(
     }
 
     Ok(paths)
-}
-
-pub fn setup_temp_dirs(language: Language) -> io::Result<(PathBuf, PathBuf)> {
-    // Create a ./temp directory
-    let temp_dir = PathBuf::from("./temp");
-    fs::create_dir_all(&temp_dir)?;
-
-    // Inside /temp, create a src/ directory
-    let src_dir = temp_dir.join("src");
-    fs::create_dir_all(&src_dir)?;
-
-    let mut manifest = match language {
-        Language::Noir => File::create(temp_dir.join("Nargo.toml"))?,
-    };
-
-    match language {
-        Language::Noir => {
-            write!(
-                manifest,
-                r#"
-                [package]
-                name = "hunter_temp"
-                type = "lib"
-                authors = ["Hunter"]
-                compiler_version = "0.22.0"
-                "#
-            )?;
-            let _ = File::create(src_dir.join("lib.nr"))?;
-        }
-    }
-
-    Ok((temp_dir, src_dir))
 }
 
 pub fn copy_src_to_temp_file(
