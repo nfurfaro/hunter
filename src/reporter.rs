@@ -78,33 +78,71 @@ pub fn print_scan_results(results: &mut ScanResult, config: Box<dyn LanguageConf
 }
 
 pub fn mutation_test_summary_table(
-    total_mutants: usize,
-    pending: String,
-    destroyed: String,
-    survived: String,
+    total_mutants: f64,
+    pending: f64,
+    unbuildable: f64,
+    killed: f64,
+    survived: f64,
     mutation_score_string: String,
 ) -> Table {
     let mut table = Table::new();
+
+    let percentage_pending = if total_mutants > 0.0 {
+        (pending / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+    let percentage_unbuildable = if total_mutants > 0.0 {
+        (unbuildable / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+    let percentage_killed = if total_mutants > 0.0 {
+        (killed / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+    let percentage_survived = if total_mutants > 0.0 {
+        (survived / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+
     table.add_row(Row::new(vec![
         Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
         Cell::new("Value").style_spec("Fyb"),
+        Cell::new("Percentage").style_spec("Fyb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutants Total:").style_spec("Fbb"),
         Cell::new(&total_mutants.to_string()).style_spec("Fbb"),
+        Cell::new("100%").style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutants Pending...").style_spec("Fyb"),
-        Cell::new(&pending).style_spec("Fyb"),
+        Cell::new(&pending.to_string()).style_spec("Fyb"),
+        Cell::new(&format!("{:.2}%", percentage_pending)).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants Destroyed:").style_spec("Fgb"),
-        Cell::new(&destroyed).style_spec("Fgb"),
+        Cell::new("Mutants Unbuildable:").style_spec("Fyb"),
+        Cell::new(&unbuildable.to_string()).style_spec("Frb"),
+        Cell::new(&format!("{:.2}%", percentage_unbuildable)).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants Survived:").style_spec("Fmb"),
-        Cell::new(&survived).style_spec("Fmb"),
+        Cell::new("Mutants Killed:").style_spec("Fgb"),
+        Cell::new(&killed.to_string()).style_spec("Fgb"),
+        Cell::new(&format!("{:.2}%", percentage_killed)).style_spec("Fcb"),
     ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Survived:").style_spec("Frb"),
+        Cell::new(&survived.to_string()).style_spec("Frb"),
+        Cell::new(&format!("{:.2}%", percentage_survived)).style_spec("Frb"),
+    ]));
+
     table.add_row(Row::new(vec![
         Cell::new("Mutation score:").style_spec("Fcb"),
         Cell::new(&mutation_score_string).style_spec("Fcb"),
