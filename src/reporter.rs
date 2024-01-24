@@ -111,7 +111,6 @@ pub fn mutation_test_summary_table(
         0.0
     };
 
-
     table.add_row(Row::new(vec![
         Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
         Cell::new("Value").style_spec("Fyb"),
@@ -128,8 +127,8 @@ pub fn mutation_test_summary_table(
         Cell::new(&format!("{:.2}%", percentage_pending)).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants Unbuildable:").style_spec("Fyb"),
-        Cell::new(&unbuildable.to_string()).style_spec("Frb"),
+        Cell::new("Mutants Unbuildable:").style_spec("Fcb"),
+        Cell::new(&unbuildable.to_string()).style_spec("Fcb"),
         Cell::new(&format!("{:.2}%", percentage_unbuildable)).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
