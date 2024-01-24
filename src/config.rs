@@ -22,6 +22,5 @@ pub trait LanguageConfig {
 pub fn config(language: Language) -> Box<dyn LanguageConfig> {
     match language {
         Language::Noir => Box::new(languages::noir::NoirConfig),
-        Language::Rust => Box::new(languages::rust::RustConfig),
     }
 }

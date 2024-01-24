@@ -199,9 +199,9 @@ pub fn mutants_progress_bar(total_mutants: usize) -> ProgressBar {
     // bar
     let m = MultiProgress::new();
     let style = ProgressStyle::default_bar()
-    .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")
-    .unwrap() // Unwrap the Result
-    .progress_chars("#>-");
+        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")
+        .unwrap() // Unwrap the Result
+        .progress_chars("#>-");
 
     let bar = m.add(ProgressBar::new(total_mutants as u64));
     bar.set_style(style.clone());
