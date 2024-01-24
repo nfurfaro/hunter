@@ -32,6 +32,7 @@ pub fn process_mutants(
 
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
+    let unbuildable = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
     let (temp_dir, temp_src_dir) = config.setup_test_infrastructure().unwrap();
 
@@ -79,13 +80,12 @@ pub fn process_mutants(
                 }
             },
             Some(_) => {
-                destroyed.fetch_add(1, Ordering::SeqCst);
+                unbuildable.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
             }
             None => {
-                println!("Build was killed by a signal or crashed");
-                process::exit(1);
+                unbuildable.fetch_add(1, Ordering::SeqCst);
             }
         }
 
@@ -107,13 +107,15 @@ pub fn process_mutants(
     bar.finish_with_message("All mutants processed!");
     let score = calculate_mutation_score(
         destroyed.load(Ordering::SeqCst) as f64,
+        unbuildable.load(Ordering::SeqCst) as f64,
         total_mutants as f64,
     );
     let summary_table = mutation_test_summary_table(
-        total_mutants,
-        pending.load(Ordering::SeqCst).to_string(),
-        destroyed.load(Ordering::SeqCst).to_string(),
-        survived.load(Ordering::SeqCst).to_string(),
+        total_mutants as f64,
+        pending.load(Ordering::SeqCst) as f64,
+        unbuildable.load(Ordering::SeqCst) as f64,
+        destroyed.load(Ordering::SeqCst) as f64,
+        survived.load(Ordering::SeqCst) as f64,
         score,
     );
 

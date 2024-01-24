@@ -78,8 +78,18 @@ fn info_message() {
         "{}",
         "Welcome to Hunter, a mutation-testing tool built in Rust.".cyan()
     );
-    println!("{}", "Currently supported languages:".cyan());
+    println!("{}", "The languages currently supported are:".cyan());
     println!("{}", Language::list().yellow());
+    println!("{}", "
+Hunter will mutate temporary copies of your source files (called mutants).
+It will then run your test suite against each mutant.
+If a mutant causes a test to fail, it is considered to be Killed.
+If a mutant does not cause a test to fail, it is considered Survived.
+Other possible states for a mutant include Pending (generally indicates a possible internal bug in Hunter itself)
+or Unbuildable (the mutant introduces invalid syntax, failing constraints or other compiler errors).
+
+Hunter will then calculate a mutation score, where 100% is what you ideally want to see.
+".cyan());
     println!(
         "{}",
         "For more help with hunter, try `hunter --help`".cyan()

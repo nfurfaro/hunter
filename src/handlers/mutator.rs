@@ -26,6 +26,7 @@ pub enum MutationStatus {
     Pending,
     Survived,
     Killed,
+    Unbuildable,
 }
 
 impl fmt::Display for Mutant {
@@ -381,8 +382,8 @@ pub fn mutate(args: Args, config: Box<dyn LanguageConfig>, results: &mut ScanRes
     Ok(())
 }
 
-pub fn calculate_mutation_score(destroyed: f64, total_mutants: f64) -> String {
-    let mutation_score = (destroyed / total_mutants) * 100.0;
+pub fn calculate_mutation_score(destroyed: f64, unbuildable: f64, total_mutants: f64) -> String {
+    let mutation_score = ((destroyed + unbuildable) / total_mutants) * 100.0;
     format!("{:.2}%", mutation_score)
 }
 
