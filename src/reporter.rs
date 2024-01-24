@@ -7,7 +7,7 @@ use crate::{
     token::{token_as_bytes, Token},
 };
 use colored::*;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use prettytable::{Cell, Row, Table};
 use regex::Regex;
 use std::{
@@ -78,33 +78,70 @@ pub fn print_scan_results(results: &mut ScanResult, config: Box<dyn LanguageConf
 }
 
 pub fn mutation_test_summary_table(
-    total_mutants: usize,
-    pending: String,
-    destroyed: String,
-    survived: String,
+    total_mutants: f64,
+    pending: f64,
+    unbuildable: f64,
+    killed: f64,
+    survived: f64,
     mutation_score_string: String,
 ) -> Table {
     let mut table = Table::new();
+
+    let percentage_pending = if total_mutants > 0.0 {
+        (pending / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+    let percentage_unbuildable = if total_mutants > 0.0 {
+        (unbuildable / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+    let percentage_killed = if total_mutants > 0.0 {
+        (killed / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
+    let percentage_survived = if total_mutants > 0.0 {
+        (survived / total_mutants) * 100.0
+    } else {
+        0.0
+    };
+
     table.add_row(Row::new(vec![
         Cell::new("Mutation Test Breakdown").style_spec("Fyb"),
         Cell::new("Value").style_spec("Fyb"),
+        Cell::new("Percentage").style_spec("Fyb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutants Total:").style_spec("Fbb"),
         Cell::new(&total_mutants.to_string()).style_spec("Fbb"),
+        Cell::new("100%").style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
         Cell::new("Mutants Pending...").style_spec("Fyb"),
-        Cell::new(&pending).style_spec("Fyb"),
+        Cell::new(&pending.to_string()).style_spec("Fyb"),
+        Cell::new(&format!("{:.2}%", percentage_pending)).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants Destroyed:").style_spec("Fgb"),
-        Cell::new(&destroyed).style_spec("Fgb"),
+        Cell::new("Mutants Unbuildable:").style_spec("Fcb"),
+        Cell::new(&unbuildable.to_string()).style_spec("Fcb"),
+        Cell::new(&format!("{:.2}%", percentage_unbuildable)).style_spec("Fcb"),
     ]));
     table.add_row(Row::new(vec![
-        Cell::new("Mutants Survived:").style_spec("Fmb"),
-        Cell::new(&survived).style_spec("Fmb"),
+        Cell::new("Mutants Killed:").style_spec("Fgb"),
+        Cell::new(&killed.to_string()).style_spec("Fgb"),
+        Cell::new(&format!("{:.2}%", percentage_killed)).style_spec("Fcb"),
     ]));
+    table.add_row(Row::new(vec![
+        Cell::new("Mutants Survived:").style_spec("Frb"),
+        Cell::new(&survived.to_string()).style_spec("Frb"),
+        Cell::new(&format!("{:.2}%", percentage_survived)).style_spec("Frb"),
+    ]));
+
     table.add_row(Row::new(vec![
         Cell::new("Mutation score:").style_spec("Fcb"),
         Cell::new(&mutation_score_string).style_spec("Fcb"),
@@ -187,15 +224,24 @@ pub fn print_table(output_path: Option<PathBuf>, surviving_table: Table) -> Resu
 }
 
 pub fn mutants_progress_bar(total_mutants: usize) -> ProgressBar {
-    let bar = ProgressBar::new(total_mutants as u64);
-    bar.set_style(
-        ProgressStyle::default_bar()
-            .template(
-                "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-            )
-            .unwrap()
-            .progress_chars("#>-"),
-    );
+    // let bar = ProgressBar::new(total_mutants as u64);
+    // bar.set_style(
+    //     ProgressStyle::default_bar()
+    //         .template(
+    //             "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
+    //         )
+    //         .unwrap()
+    //         .progress_chars("#>-"),
+    // );
+    // bar
+    let m = MultiProgress::new();
+    let style = ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})")
+        .unwrap() // Unwrap the Result
+        .progress_chars("#>-");
+
+    let bar = m.add(ProgressBar::new(total_mutants as u64));
+    bar.set_style(style.clone());
     bar
 }
 

@@ -6,14 +6,22 @@ pub enum Language {
     Noir,
 }
 
-impl FromStr for Language {
-    type Err = &'static str;
+impl Language {
+    pub fn list() -> String {
+        ["Noir"].join(", ")
+    }
+}
 
-    // @extendable: add a new match arm here to support a new language
+impl FromStr for Language {
+    type Err = String;
+
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "noir" => Ok(Language::Noir),
-            _ => Err("no matching languages supported (yet)."),
+            _ => Err(format!(
+                "No matching languages supported. Current supported languages are: {}",
+                Language::list()
+            )),
         }
     }
 }

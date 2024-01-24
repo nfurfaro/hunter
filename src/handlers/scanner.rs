@@ -92,7 +92,7 @@ pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
     // @todo consider adding a switch here to mutate all tokens in source files, or only those in files with unit tests
     let meta_tokens = collect_tokens(contains_unit_tests.clone(), config).expect("No tokens found");
 
-    let mutants = mutants(&meta_tokens, false);
+    let mutants = mutants(&meta_tokens, args.random);
 
     Ok(ScanResult::new(
         paths,
