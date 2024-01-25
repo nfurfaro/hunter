@@ -11,7 +11,7 @@ use crate::{
 use colored::*;
 use std::{
     io::{Error, ErrorKind, Result},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 #[derive(Debug, Clone)]

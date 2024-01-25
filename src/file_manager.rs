@@ -1,12 +1,12 @@
 use crate::{
     config::LanguageConfig, handlers::mutator::Mutant, token::token_as_bytes, utils::replace_bytes,
 };
+use colored::*;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
     path::{Path, PathBuf},
 };
-use colored::*;
 
 pub struct Defer<T: FnOnce()>(pub Option<T>);
 // a wrapper around a closure that is called when the Defer object is dropped.
@@ -45,7 +45,8 @@ pub fn find_source_file_paths<'a>(
             eprintln!(
                 "{}",
                 format!(
-                    "Excluded directories are set in the languages/{}.rs file", config.name().to_lowercase()
+                    "Excluded directories are set in the languages/{}.rs file",
+                    config.name().to_lowercase()
                 )
                 .yellow()
             );
