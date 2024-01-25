@@ -37,9 +37,9 @@ pub fn process_mutants(
     let (temp_dir, temp_src_dir) = config.setup_test_infrastructure().unwrap();
 
     // @note handles cleanup of the temp directories automatically after this function returns.
-    let _cleanup = Defer(Some(|| {
-        let _ = fs::remove_dir_all(&temp_dir);
-    }));
+    // let _cleanup = Defer(Some(|| {
+    //     let _ = fs::remove_dir_all(&temp_dir);
+    // }));
 
     let extension = config.ext();
 
@@ -56,36 +56,35 @@ pub fn process_mutants(
         let test_output = config.test_mutant_project();
 
         match build_output.status.code() {
-            Some(0) => match test_output.status.code() {
-                Some(0) => {
-                    println!("Build was successful");
-                    println!("Test suite passed");
-                    m.set_status(MutationStatus::Survived);
-                    survived.fetch_add(1, Ordering::SeqCst);
-                    pending.fetch_sub(1, Ordering::SeqCst);
-                }
-                Some(_) => {
-                    println!("Test suite failed");
-                    let stderr = String::from_utf8_lossy(&test_output.stderr);
-                    println!("stderr: {}", stderr);
-                    if config.is_test_failed(&stderr) {
-                        destroyed.fetch_add(1, Ordering::SeqCst);
+            Some(0) => {
+                println!("Build was successful");
+                match test_output.status.code() {
+                    Some(0) => {
+                        println!("Test suite passed");
+                        m.set_status(MutationStatus::Survived);
+                        survived.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
-                        m.set_status(MutationStatus::Killed);
+                    }
+                    Some(_) => {
+                        println!("Test suite failed");
+                        let stderr = String::from_utf8_lossy(&test_output.stderr);
+                        println!("stderr: {}", stderr);
+                        if config.is_test_failed(&stderr) {
+                            destroyed.fetch_add(1, Ordering::SeqCst);
+                            pending.fetch_sub(1, Ordering::SeqCst);
+                            m.set_status(MutationStatus::Killed);
+                        }
+                    }
+                    None => {
+                        eprintln!("Test suite was killed by a signal or crashed");
+                        process::exit(1);
                     }
                 }
-                None => {
-                    eprintln!("Test suite was killed by a signal or crashed");
-                    process::exit(1);
-                }
-            },
-            Some(_) => {
+            }
+            Some(_) | None => {
                 unbuildable.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
-            }
-            None => {
-                unbuildable.fetch_add(1, Ordering::SeqCst);
             }
         }
 
@@ -97,9 +96,9 @@ pub fn process_mutants(
         // @note the /temp dir and its contents will be deleted automatically,
         // so this might seem redundant. However, Hunter deletes the file
         // as soon as possible to help prevent running out of space when testing very large projects.
-        if let Err(e) = std::fs::remove_file(&temp_file) {
-            eprintln!("Failed to delete temporary file: {}", e);
-        }
+        // if let Err(e) = std::fs::remove_file(&temp_file) {
+        //     eprintln!("Failed to delete temporary file: {}", e);
+        // }
 
         bar.inc(1);
     });
