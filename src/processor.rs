@@ -56,36 +56,35 @@ pub fn process_mutants(
         let test_output = config.test_mutant_project();
 
         match build_output.status.code() {
-            Some(0) => match test_output.status.code() {
-                Some(0) => {
-                    println!("Build was successful");
-                    println!("Test suite passed");
-                    m.set_status(MutationStatus::Survived);
-                    survived.fetch_add(1, Ordering::SeqCst);
-                    pending.fetch_sub(1, Ordering::SeqCst);
-                }
-                Some(_) => {
-                    println!("Test suite failed");
-                    let stderr = String::from_utf8_lossy(&test_output.stderr);
-                    println!("stderr: {}", stderr);
-                    if config.is_test_failed(&stderr) {
-                        destroyed.fetch_add(1, Ordering::SeqCst);
+            Some(0) => {
+                println!("Build was successful");
+                match test_output.status.code() {
+                    Some(0) => {
+                        println!("Test suite passed");
+                        m.set_status(MutationStatus::Survived);
+                        survived.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
-                        m.set_status(MutationStatus::Killed);
+                    }
+                    Some(_) => {
+                        println!("Test suite failed");
+                        let stderr = String::from_utf8_lossy(&test_output.stderr);
+                        println!("stderr: {}", stderr);
+                        if config.is_test_failed(&stderr) {
+                            destroyed.fetch_add(1, Ordering::SeqCst);
+                            pending.fetch_sub(1, Ordering::SeqCst);
+                            m.set_status(MutationStatus::Killed);
+                        }
+                    }
+                    None => {
+                        eprintln!("Test suite was killed by a signal or crashed");
+                        process::exit(1);
                     }
                 }
-                None => {
-                    eprintln!("Test suite was killed by a signal or crashed");
-                    process::exit(1);
-                }
-            },
-            Some(_) => {
+            }
+            Some(_) | None => {
                 unbuildable.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
-            }
-            None => {
-                unbuildable.fetch_add(1, Ordering::SeqCst);
             }
         }
 

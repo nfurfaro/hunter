@@ -1,6 +1,7 @@
 use crate::{
     config::LanguageConfig, handlers::mutator::Mutant, token::token_as_bytes, utils::replace_bytes,
 };
+use colored::*;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
@@ -22,6 +23,36 @@ pub fn find_source_file_paths<'a>(
     config: &'a dyn LanguageConfig,
 ) -> Result<Vec<PathBuf>> {
     let mut paths: Vec<PathBuf> = vec![];
+
+    // Check if the current directory is in the list of excluded directories
+    let current_dir = std::env::current_dir()?;
+
+    if let Some(current_dir_name) = current_dir.file_name() {
+        let current_dir_name = current_dir_name.to_string_lossy();
+        if config
+            .excluded_dirs()
+            .iter()
+            .any(|dir| dir.trim_end_matches('/') == &*current_dir_name)
+        {
+            eprintln!(
+                "{}",
+                format!(
+                    "Warning: You are attempting to use Hunter in an excluded directory: {}",
+                    current_dir.display()
+                )
+                .red()
+            );
+            eprintln!(
+                "{}",
+                format!(
+                    "Excluded directories are set in the languages/{}.rs file",
+                    config.name().to_lowercase()
+                )
+                .yellow()
+            );
+            std::process::exit(1);
+        }
+    }
 
     if dir_path.is_dir() {
         for entry in std::fs::read_dir(dir_path)? {

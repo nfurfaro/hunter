@@ -11,7 +11,7 @@ use crate::{
 use colored::*;
 use std::{
     io::{Error, ErrorKind, Result},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 #[derive(Debug, Clone)]
@@ -62,10 +62,8 @@ impl ScanResult {
 }
 
 pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
-    let source_path = args
-        .source_path
-        .clone()
-        .unwrap_or(Path::new(".").to_path_buf());
+    let source_path = args.source_path;
+
     let paths = if source_path.is_file() {
         vec![source_path]
     } else {

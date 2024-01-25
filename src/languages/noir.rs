@@ -46,9 +46,7 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
-        vec![
-            "./temp", "./target", "./test", "./tests", "./lib", "./script",
-        ]
+        vec!["temp", "target", "test", "tests", "lib", "script"]
     }
 
     fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)> {
