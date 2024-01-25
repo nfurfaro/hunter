@@ -22,7 +22,7 @@ pub struct Args {
     pub random: bool,
     /// The path to the source files directory
     #[clap(short, long, default_value = ".")]
-    pub source_path: Option<std::path::PathBuf>,
+    pub source_path: std::path::PathBuf,
     /// The path to the output file (.md extension recommended)
     #[clap(short = 'o', long)]
     pub output_path: Option<std::path::PathBuf>,

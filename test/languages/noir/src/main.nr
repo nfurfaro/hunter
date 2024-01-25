@@ -22,7 +22,6 @@ fn main(x: Field, y: pub Field) {
         c = 5;
         assert(c == 5);
     }
-    assert(c == 2);
 }
 
 /**
