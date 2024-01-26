@@ -2,6 +2,7 @@ use crate::{
     config::LanguageConfig, handlers::mutator::Mutant, token::token_as_bytes, utils::replace_bytes,
 };
 use colored::*;
+use dialoguer::Confirm;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
@@ -18,12 +19,10 @@ impl<T: FnOnce()> Drop for Defer<T> {
     }
 }
 
-pub fn find_source_file_paths<'a>(
+pub fn scan_for_excluded_dirs<'a>(
     dir_path: &'a Path,
     config: &'a dyn LanguageConfig,
 ) -> Result<Vec<PathBuf>> {
-    let mut paths: Vec<PathBuf> = vec![];
-
     // Check if the current directory is in the list of excluded directories
     let current_dir = std::env::current_dir()?;
 
@@ -50,16 +49,37 @@ pub fn find_source_file_paths<'a>(
                 )
                 .yellow()
             );
-            std::process::exit(1);
+
+            if !Confirm::new()
+                .with_prompt("Do you want to proceed?")
+                .interact()
+                .unwrap()
+            {
+                // User does not want to proceed, exit the program
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    "User chose not to proceed",
+                ));
+            }
         }
     }
+
+    // Call the recursive function to find the source file paths
+    find_source_file_paths(dir_path, config)
+}
+
+pub fn find_source_file_paths<'a>(
+    dir_path: &'a Path,
+    config: &'a dyn LanguageConfig,
+) -> Result<Vec<PathBuf>> {
+    let mut paths: Vec<PathBuf> = vec![];
 
     if dir_path.is_dir() {
         for entry in std::fs::read_dir(dir_path)? {
             let entry = entry?;
             let path_buf = entry.path();
             if path_buf.is_dir() {
-                // Skipped directories are not included in the results
+                // Skip directories that are in the list of excluded directories
                 if config
                     .excluded_dirs()
                     .iter()
@@ -81,15 +101,21 @@ pub fn find_source_file_paths<'a>(
                 paths.push(path_buf);
             }
         }
-    }
-    if paths.is_empty() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "No files found",
-        ));
-    }
 
-    Ok(paths)
+        if paths.is_empty() {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "No files found",
+            ))
+        } else {
+            Ok(paths)
+        }
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Input path is not a directory",
+        ))
+    }
 }
 
 pub fn copy_src_to_temp_file(

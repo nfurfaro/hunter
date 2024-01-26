@@ -46,7 +46,7 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
-        vec!["temp", "target", "test", "tests", "lib", "script"]
+        vec!["temp", "target", "test", "tests"]
     }
 
     fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)> {
@@ -54,8 +54,11 @@ impl LanguageConfig for NoirConfig {
         let temp_dir = PathBuf::from("./temp");
         fs::create_dir_all(&temp_dir)?;
 
+        // Change into the temp_dir so that the build and test commands are run in the correct directory
+        // std::env::set_current_dir(&temp_dir).unwrap();
+
         // Inside /temp, create a src/ directory
-        let src_dir = temp_dir.join("src");
+        let src_dir = temp_dir.join("./src");
         fs::create_dir_all(&src_dir)?;
 
         let mut manifest = File::create(temp_dir.join(self.manifest_name()))?;

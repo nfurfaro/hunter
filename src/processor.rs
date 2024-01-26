@@ -43,7 +43,18 @@ pub fn process_mutants(
 
     let extension = config.ext();
 
+    // Check if the temporary directory exists
+    if !temp_src_dir.exists() {
+        eprint!("Failed to create temporary directory. Shutting down...");
+        std::process::exit(1);
+    }
+
     mutants.par_iter_mut().for_each(|m| {
+        // Check if the source file exists
+        if !m.path().exists() {
+            eprint!("Source File does not exist. Shutting down...");
+            std::process::exit(1);
+        }
         let temp_file = copy_src_to_temp_file(m, temp_src_dir.clone(), extension)
             .expect("Failed to setup test infrastructure");
 
