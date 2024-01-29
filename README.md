@@ -22,15 +22,16 @@ At a high level, Hunter exposes a CLI with 2 primary commands, scan and mutate. 
 There are 2 ways to install Hunter: via cURL or by building from source.
 ### cURL
 
-1. Download the binary using cURL:
+1. Download the installation script using cURL:
 `curl -LO https://github.com/nfurfaro/hunter/blob/master/scripts/install.sh | bash`
 
-2. Make the binary executable:
-`chmod +x hunter`
+2. Make the script executable:
+`chmod +x install.sh`
 
-3. Move the binary to a directory in your PATH (i.e: /usr/local/bin):
-`mv hunter /usr/local/bin`
+3. run the script:
+`./install.sh`
 
+This will install the binary to `/usr/local/bin`.
 You should now be able to run the program by typing `hunter` in your terminal!
 
 ### Build from source
