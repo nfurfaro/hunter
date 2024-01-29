@@ -64,7 +64,6 @@ pub fn scan_for_excluded_dirs<'a>(
         }
     }
 
-    // Call the recursive function to find the source file paths
     find_source_file_paths(dir_path, config)
 }
 

@@ -92,6 +92,9 @@ pub fn process_mutants(
                     }
                 }
             }
+            Some(444) => {
+                // @todo Handle the case where the manifest was not found.
+            }
             Some(_) | None => {
                 unbuildable.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);

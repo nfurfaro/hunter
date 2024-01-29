@@ -88,12 +88,17 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn build_mutant_project(&self) -> Box<process::Output> {
-        Box::new(
-            Command::new(self.test_runner())
-                .arg(self.build_command())
-                .output()
-                .expect("Failed to execute build command"),
-        )
+        let output = Command::new(self.test_runner())
+            .arg(self.build_command())
+            .output()
+            .expect("Failed to execute build command");
+
+        let output_str = String::from_utf8_lossy(&output.stderr);
+        if output_str.contains("cannot find a Cargo.toml") {
+            // Handle the error here
+        }
+
+        Box::new(output)
     }
 
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync> {
