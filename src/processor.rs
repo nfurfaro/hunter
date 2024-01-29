@@ -1,7 +1,7 @@
 use std::{
     fs,
     sync::{
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc,
     },
 };
@@ -26,6 +26,7 @@ pub fn process_mutants(
 ) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
+    let error_printed_flag = Arc::new(AtomicBool::new(false));
 
     // @todo fix prog bar, currently prints once per thread!
     let bar = mutants_progress_bar(total_mutants);
@@ -37,9 +38,9 @@ pub fn process_mutants(
     let (temp_dir, temp_src_dir) = config.setup_test_infrastructure().unwrap();
 
     // @note handles cleanup of the temp directories automatically after this function returns.
-    let _cleanup = Defer(Some(|| {
-        let _ = fs::remove_dir_all(&temp_dir);
-    }));
+    // let _cleanup = Defer(Some(|| {
+    //     let _ = fs::remove_dir_all(&temp_dir);
+    // }));
 
     let extension = config.ext();
 
@@ -50,6 +51,7 @@ pub fn process_mutants(
     }
 
     mutants.par_iter_mut().for_each(|m| {
+        let error_flag_for_thread = Arc::clone(&error_printed_flag);
         // Check if the source file exists
         if !m.path().exists() {
             eprint!("Source File does not exist. Shutting down...");
@@ -88,19 +90,26 @@ pub fn process_mutants(
                     }
                     None => {
                         eprintln!("Test suite was killed by a signal or crashed");
+
                         process::exit(1);
                     }
                 }
             }
-            Some(444) => {
-                // @todo Handle the case where the manifest was not found.
-            }
-            Some(_) | None => {
+            Some(_) => {
                 unbuildable.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
             }
+            None => {
+                if !error_flag_for_thread.load(Ordering::Relaxed) {
+                    eprintln!("Build was killed by a signal or crashed");
+                    eprint!("To see what the problem might be, try running the build command manually.i.e: `nargo build`");
+                    error_flag_for_thread.store(true, Ordering::Relaxed);
+                }
+                process::exit(1);
+            }
         }
+
 
         // Change back to the original directory at the end
         if let Err(e) = std::env::set_current_dir(&original_dir) {
@@ -110,9 +119,9 @@ pub fn process_mutants(
         // @note the /temp dir and its contents will be deleted automatically,
         // so this might seem redundant. However, Hunter deletes the file
         // as soon as possible to help prevent running out of space when testing very large projects.
-        if let Err(e) = std::fs::remove_file(&temp_file) {
-            eprintln!("Failed to delete temporary file: {}", e);
-        }
+        // if let Err(e) = std::fs::remove_file(&temp_file) {
+        //     eprintln!("Failed to delete temporary file: {}", e);
+        // }
 
         bar.inc(1);
     });

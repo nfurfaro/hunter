@@ -3,6 +3,7 @@ use crate::languages::common::Language;
 use std::{
     fs::{self, File},
     io::{self, Write},
+    os::unix::process::ExitStatusExt,
     path::PathBuf,
     process::{self, Command},
 };
@@ -94,8 +95,15 @@ impl LanguageConfig for NoirConfig {
             .expect("Failed to execute build command");
 
         let output_str = String::from_utf8_lossy(&output.stderr);
-        if output_str.contains("cannot find a Cargo.toml") {
-            // Handle the error here
+        if output_str
+            .to_lowercase()
+            .contains("cannot find a nargo.toml")
+        {
+            return Box::new(process::Output {
+                status: process::ExitStatus::from_raw(444),
+                stdout: vec![],
+                stderr: vec![],
+            });
         }
 
         Box::new(output)
