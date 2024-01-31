@@ -24,6 +24,7 @@ pub fn collect_tokens(
     let language = config.language();
 
     if paths.is_empty() {
+        eprintln!("No source files with unit tests found. Exiting...");
         None
     } else {
         let i = Cell::new(0);
@@ -89,7 +90,7 @@ pub fn collect_tokens(
 }
 
 // @todo improve insertion of replacement bytes to work correctly with random mode.
-// Current implementation is brittle, mak use of newly added original_token_as_bytes arg.
+// Current implementation is brittle, make use of newly added original_token_as_bytes arg.
 pub fn replace_bytes(
     original_bytes: &mut Vec<u8>,
     start_index: usize,
@@ -100,6 +101,7 @@ pub fn replace_bytes(
 
     match replacement_length {
         0 => {
+            println!("Replacement: {:?}", replacement);
             if start_index < original_bytes.len() {
                 original_bytes.remove(start_index);
             }

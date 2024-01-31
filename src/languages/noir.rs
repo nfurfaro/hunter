@@ -71,7 +71,7 @@ impl LanguageConfig for NoirConfig {
                     name = "hunter_temp"
                     type = "lib"
                     authors = ["Hunter"]
-                    compiler_version = "0.22.0"
+                    compiler_version = ">=0.22.0"
                     "#
         )?;
         let _ = File::create(src_dir.join("lib.nr"))?;
