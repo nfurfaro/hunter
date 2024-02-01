@@ -64,10 +64,12 @@ pub fn scan_for_excluded_dirs<'a>(
         }
     }
 
-    find_source_file_paths(dir_path, config)
+    let base_dir = std::env::current_dir()?;
+    find_source_file_paths(&base_dir, dir_path, config)
 }
 
 pub fn find_source_file_paths<'a>(
+    base_dir: &'a Path,
     dir_path: &'a Path,
     config: &'a dyn LanguageConfig,
 ) -> Result<Vec<PathBuf>> {
@@ -86,7 +88,7 @@ pub fn find_source_file_paths<'a>(
                 {
                     continue;
                 }
-                let path_result = find_source_file_paths(&path_buf, config);
+                let path_result = find_source_file_paths(base_dir, &path_buf, config);
                 match path_result {
                     Ok(sub_results_paths) => {
                         paths.extend(sub_results_paths.clone());
@@ -97,7 +99,8 @@ pub fn find_source_file_paths<'a>(
                 .extension()
                 .map_or(false, |extension| extension == config.ext())
             {
-                paths.push(path_buf);
+                let relative_path = path_buf.strip_prefix(base_dir).unwrap_or(&path_buf);
+                paths.push(relative_path.to_path_buf());
             }
         }
 

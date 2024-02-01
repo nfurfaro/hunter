@@ -38,9 +38,9 @@ pub fn process_mutants(
     let (temp_dir, temp_src_dir) = config.setup_test_infrastructure().unwrap();
 
     // @note handles cleanup of the temp directories automatically after this function returns.
-    // let _cleanup = Defer(Some(|| {
-    //     let _ = fs::remove_dir_all(&temp_dir);
-    // }));
+    let _cleanup = Defer(Some(|| {
+        let _ = fs::remove_dir_all(&temp_dir);
+    }));
 
     let extension = config.ext();
 
@@ -52,15 +52,22 @@ pub fn process_mutants(
 
     mutants.par_iter_mut().for_each(|m| {
         let error_flag_for_thread = Arc::clone(&error_printed_flag);
+
         // Check if the source file exists
         if !m.path().exists() {
             eprint!("Source File does not exist. Shutting down...");
             std::process::exit(1);
         }
+
         let temp_file = copy_src_to_temp_file(m, temp_src_dir.clone(), extension)
             .expect("Failed to setup test infrastructure");
 
         mutate_temp_file(&temp_file, m);
+
+        // set current dir to "./temp"
+        if let Err(e) = std::env::set_current_dir(&temp_dir) {
+            eprintln!("Failed to change to the temporary directory: {}", e);
+        }
 
         // Build the project
         let build_output = config.build_mutant_project();
@@ -110,20 +117,17 @@ pub fn process_mutants(
             }
         }
 
-
-        // Change back to the original directory at the end
-        if let Err(e) = std::env::set_current_dir(&original_dir) {
-            eprintln!("Failed to change back to the original directory: {}", e);
-        }
-
         // @note the /temp dir and its contents will be deleted automatically,
         // so this might seem redundant. However, Hunter deletes the file
         // as soon as possible to help prevent running out of space when testing very large projects.
-        // if let Err(e) = std::fs::remove_file(&temp_file) {
-        //     eprintln!("Failed to delete temporary file: {}", e);
-        // }
+        if let Err(e) = std::fs::remove_file(&temp_file) {
+            eprintln!("Failed to delete temporary file: {}", e);
+        }
 
         bar.inc(1);
+        if let Err(e) = std::env::set_current_dir(&original_dir) {
+            eprintln!("Failed to change back to the original directory: {}", e);
+        }
     });
 
     bar.finish_with_message("All mutants processed!");

@@ -51,28 +51,29 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)> {
-        // Create a ./temp directory
-        let temp_dir = PathBuf::from("./temp");
+        // Get the current directory
+        let current_dir = std::env::current_dir()?;
+
+        // Create a temp directory as a sibling to the current directory
+        let temp_dir = current_dir.join("temp");
         fs::create_dir_all(&temp_dir)?;
 
-        // Change into the temp_dir so that the build and test commands are run in the correct directory
-        // std::env::set_current_dir(&temp_dir).unwrap();
-
         // Inside /temp, create a src/ directory
-        let src_dir = temp_dir.join("./src");
+        let src_dir = temp_dir.join("src");
         fs::create_dir_all(&src_dir)?;
 
         let mut manifest = File::create(temp_dir.join(self.manifest_name()))?;
 
         write!(
             manifest,
-            r#"
-                    [package]
-                    name = "hunter_temp"
-                    type = "lib"
-                    authors = ["Hunter"]
-                    compiler_version = ">=0.22.0"
-                    "#
+            r#"[package]
+name = "hunter_temp"
+type = "lib"
+authors = ["Hunter"]
+compiler_version = ">=0.22.0"
+
+[dependencies]
+            "#
         )?;
         let _ = File::create(src_dir.join("lib.nr"))?;
 
