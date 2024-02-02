@@ -71,13 +71,13 @@ pub fn collect_tokens(
                         continue;
                     }
 
-                    let token_str = if token_str.starts_with("!") && token_str != "!=" {
+                    let token_str = if token_str.starts_with('!') && token_str != "!=" {
                         "!"
                     } else {
                         token_str
                     };
 
-                    if token_str.starts_with("!") && token_str != "!=" {
+                    if token_str.starts_with('!') && token_str != "!=" {
                         tokens.push(MetaToken::new(
                             Token::Bang,
                             (
