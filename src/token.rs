@@ -121,13 +121,13 @@ pub fn token_regexes() -> Vec<Regex> {
     vec![
         r" (==) ",
         r" (!=) ",
+        r"(![^=\s])",
         r" (<) ",
         r" (<=) ",
         r" (>) ",
         r" (>=) ",
         r" (&) ",
         r" (\|) ",
-        r" (^) ",
         r" (<<) ",
         r" (>>) ",
         r" (\+) ",
@@ -149,7 +149,6 @@ pub fn token_regexes() -> Vec<Regex> {
         r" (>>=) ",
         r" (\|\|) ",
         r" (&&) ",
-        r" (!)",
     ]
     .into_iter()
     .map(|pattern| Regex::new(pattern).unwrap())
@@ -159,7 +158,13 @@ pub fn token_regexes() -> Vec<Regex> {
 pub fn raw_string_as_token(raw: &str) -> Option<Token> {
     match raw {
         r"==" => Some(Token::Equal),
-        r"!=" => Some(Token::NotEqual),
+        r"!=" | r"!" => {
+            if raw == "!=" {
+                Some(Token::NotEqual)
+            } else {
+                Some(Token::Bang)
+            }
+        }
         r"<" => Some(Token::Less),
         r"<=" => Some(Token::LessEqual),
         r">" => Some(Token::Greater),
@@ -188,7 +193,7 @@ pub fn raw_string_as_token(raw: &str) -> Option<Token> {
         r">>=" => Some(Token::ShiftRightEquals),
         r"||" => Some(Token::DoublePipe),
         r"&&" => Some(Token::DoubleAmpersand),
-        r"!" => Some(Token::Bang),
+        // r"!" => Some(Token::Bang),
         _ => None,
     }
 }
@@ -306,7 +311,7 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
         Token::DoublePipe => Some(b"||"),
         Token::DoubleAmpersand => Some(b"&&"),
         Token::Bang => Some(b"!"),
-        Token::Void => Some(b""),
+        Token::Void => Some(b"remove '!'"),
     }
 }
 

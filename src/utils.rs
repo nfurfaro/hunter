@@ -1,7 +1,7 @@
 use crate::{
     config::LanguageConfig,
     filters::{comment_regex, literal_regex, test_regex},
-    token::{raw_string_as_token, token_regexes, MetaToken},
+    token::{raw_string_as_token, token_regexes, MetaToken, Token},
 };
 
 use std::{
@@ -24,6 +24,7 @@ pub fn collect_tokens(
     let language = config.language();
 
     if paths.is_empty() {
+        eprintln!("No source files with unit tests found. Exiting...");
         None
     } else {
         let i = Cell::new(0);
@@ -61,7 +62,7 @@ pub fn collect_tokens(
 
                     let token_str = mat.get(1).unwrap().as_str();
                     let token_range =
-                        mat.get(0).unwrap().start() as u32 + 1..mat.get(0).unwrap().end() as u32;
+                        mat.get(0).unwrap().start() as u32..mat.get(0).unwrap().end() as u32;
 
                     if comment_ranges.iter().any(|r| overlaps(r, &token_range))
                         || test_ranges.iter().any(|r| overlaps(r, &token_range))
@@ -70,26 +71,53 @@ pub fn collect_tokens(
                         continue;
                     }
 
-                    tokens.push(MetaToken::new(
-                        raw_string_as_token(token_str).unwrap(),
-                        (
-                            mat.get(0).unwrap().start() as u32 + 1,
-                            mat.get(0).unwrap().end() as u32,
-                        ),
-                        Box::new(path.clone()),
-                        i.get(),
-                    ));
+                    let token_str = if token_str.starts_with('!') && token_str != "!=" {
+                        "!"
+                    } else {
+                        token_str
+                    };
+
+                    if token_str.starts_with('!') && token_str != "!=" {
+                        tokens.push(MetaToken::new(
+                            Token::Bang,
+                            (
+                                mat.get(0).unwrap().start() as u32 + 1,
+                                mat.get(0).unwrap().end() as u32,
+                            ),
+                            Box::new(path.clone()),
+                            i.get(),
+                        ));
+                    } else if token_str == "!=" {
+                        tokens.push(MetaToken::new(
+                            Token::NotEqual,
+                            (
+                                mat.get(0).unwrap().start() as u32 + 1,
+                                mat.get(0).unwrap().end() as u32,
+                            ),
+                            Box::new(path.clone()),
+                            i.get(),
+                        ));
+                    } else {
+                        tokens.push(MetaToken::new(
+                            raw_string_as_token(token_str).unwrap(),
+                            (
+                                mat.get(0).unwrap().start() as u32 + 1,
+                                mat.get(0).unwrap().end() as u32,
+                            ),
+                            Box::new(path.clone()),
+                            i.get(),
+                        ));
+                    }
                     i.set(i.get() + 1);
                 }
             }
         }
-
         Some(tokens)
     }
 }
 
 // @todo improve insertion of replacement bytes to work correctly with random mode.
-// Current implementation is brittle, mak use of newly added original_token_as_bytes arg.
+// Current implementation is brittle, make use of newly added original_token_as_bytes arg.
 pub fn replace_bytes(
     original_bytes: &mut Vec<u8>,
     start_index: usize,

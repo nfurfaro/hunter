@@ -1,7 +1,7 @@
 use std::{
     fs,
     sync::{
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc,
     },
 };
@@ -26,6 +26,7 @@ pub fn process_mutants(
 ) {
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
+    let error_printed_flag = Arc::new(AtomicBool::new(false));
 
     // @todo fix prog bar, currently prints once per thread!
     let bar = mutants_progress_bar(total_mutants);
@@ -50,15 +51,23 @@ pub fn process_mutants(
     }
 
     mutants.par_iter_mut().for_each(|m| {
+        let error_flag_for_thread = Arc::clone(&error_printed_flag);
+
         // Check if the source file exists
         if !m.path().exists() {
             eprint!("Source File does not exist. Shutting down...");
             std::process::exit(1);
         }
+
         let temp_file = copy_src_to_temp_file(m, temp_src_dir.clone(), extension)
             .expect("Failed to setup test infrastructure");
 
         mutate_temp_file(&temp_file, m);
+
+        // set current dir to "./temp"
+        if let Err(e) = std::env::set_current_dir(&temp_dir) {
+            eprintln!("Failed to change to the temporary directory: {}", e);
+        }
 
         // Build the project
         let build_output = config.build_mutant_project();
@@ -88,23 +97,24 @@ pub fn process_mutants(
                     }
                     None => {
                         eprintln!("Test suite was killed by a signal or crashed");
+
                         process::exit(1);
                     }
                 }
             }
-            Some(444) => {
-                // @todo Handle the case where the manifest was not found.
-            }
-            Some(_) | None => {
+            Some(_) => {
                 unbuildable.fetch_add(1, Ordering::SeqCst);
                 pending.fetch_sub(1, Ordering::SeqCst);
                 m.set_status(MutationStatus::Killed);
             }
-        }
-
-        // Change back to the original directory at the end
-        if let Err(e) = std::env::set_current_dir(&original_dir) {
-            eprintln!("Failed to change back to the original directory: {}", e);
+            None => {
+                if !error_flag_for_thread.load(Ordering::Relaxed) {
+                    eprintln!("Build was killed by a signal or crashed");
+                    eprint!("To see what the problem might be, try running the build command manually.i.e: `nargo build`");
+                    error_flag_for_thread.store(true, Ordering::Relaxed);
+                }
+                process::exit(1);
+            }
         }
 
         // @note the /temp dir and its contents will be deleted automatically,
@@ -115,6 +125,9 @@ pub fn process_mutants(
         }
 
         bar.inc(1);
+        if let Err(e) = std::env::set_current_dir(&original_dir) {
+            eprintln!("Failed to change back to the original directory: {}", e);
+        }
     });
 
     bar.finish_with_message("All mutants processed!");
