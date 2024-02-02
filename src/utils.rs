@@ -1,7 +1,7 @@
 use crate::{
     config::LanguageConfig,
     filters::{comment_regex, literal_regex, test_regex},
-    token::{raw_string_as_token, token_regexes, MetaToken},
+    token::{raw_string_as_token, token_regexes, MetaToken, Token},
 };
 
 use std::{
@@ -62,7 +62,7 @@ pub fn collect_tokens(
 
                     let token_str = mat.get(1).unwrap().as_str();
                     let token_range =
-                        mat.get(0).unwrap().start() as u32 + 1..mat.get(0).unwrap().end() as u32;
+                        mat.get(0).unwrap().start() as u32..mat.get(0).unwrap().end() as u32;
 
                     if comment_ranges.iter().any(|r| overlaps(r, &token_range))
                         || test_ranges.iter().any(|r| overlaps(r, &token_range))
@@ -71,20 +71,47 @@ pub fn collect_tokens(
                         continue;
                     }
 
-                    tokens.push(MetaToken::new(
-                        raw_string_as_token(token_str).unwrap(),
-                        (
-                            mat.get(0).unwrap().start() as u32 + 1,
-                            mat.get(0).unwrap().end() as u32,
-                        ),
-                        Box::new(path.clone()),
-                        i.get(),
-                    ));
+                    let token_str = if token_str.starts_with("!") && token_str != "!=" {
+                        "!"
+                    } else {
+                        token_str
+                    };
+
+                    if token_str.starts_with("!") && token_str != "!=" {
+                        tokens.push(MetaToken::new(
+                            Token::Bang,
+                            (
+                                mat.get(0).unwrap().start() as u32 + 1,
+                                mat.get(0).unwrap().end() as u32,
+                            ),
+                            Box::new(path.clone()),
+                            i.get(),
+                        ));
+                    } else if token_str == "!=" {
+                        tokens.push(MetaToken::new(
+                            Token::NotEqual,
+                            (
+                                mat.get(0).unwrap().start() as u32 + 1,
+                                mat.get(0).unwrap().end() as u32,
+                            ),
+                            Box::new(path.clone()),
+                            i.get(),
+                        ));
+                    } else {
+                        tokens.push(MetaToken::new(
+                            raw_string_as_token(token_str).unwrap(),
+                            (
+                                mat.get(0).unwrap().start() as u32 + 1,
+                                mat.get(0).unwrap().end() as u32,
+                            ),
+                            Box::new(path.clone()),
+                            i.get(),
+                        ));
+                    }
                     i.set(i.get() + 1);
                 }
             }
         }
-
         Some(tokens)
     }
 }
@@ -101,7 +128,6 @@ pub fn replace_bytes(
 
     match replacement_length {
         0 => {
-            println!("Replacement: {:?}", replacement);
             if start_index < original_bytes.len() {
                 original_bytes.remove(start_index);
             }
