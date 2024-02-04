@@ -100,6 +100,7 @@ compiler_version = ">=0.22.0"
             .to_lowercase()
             .contains("cannot find a nargo.toml")
         {
+            dbg!("No nargo.toml found !!!");
             return Box::new(process::Output {
                 status: process::ExitStatus::from_raw(444),
                 stdout: vec![],
