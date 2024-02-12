@@ -41,9 +41,11 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn is_test_failed(&self, stderr: &str) -> bool {
+        let stderr = stderr.to_lowercase();
         stderr.contains("test failed")
-            || stderr.contains("FAILED")
-            || stderr.contains("Failed constraint")
+            || stderr.contains("failed")
+            || stderr.contains("fail")
+            || stderr.contains("failed constraint")
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
