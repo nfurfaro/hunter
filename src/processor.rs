@@ -1,4 +1,5 @@
 use std::{
+    env::current_dir,
     fs,
     sync::{
         atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -69,18 +70,30 @@ pub fn process_mutants(
             eprintln!("Failed to change to the temporary directory: {}", e);
         }
 
+        dbg!(current_dir());
+
         // Build the project
         let build_output = config.build_mutant_project();
 
         // run_test_suite
         let test_output = config.test_mutant_project();
 
+        dbg!(build_output.status.code());
+        dbg!(test_output.status.code());
         match build_output.status.code() {
             Some(0) => {
                 println!("Build was successful");
                 match test_output.status.code() {
                     Some(0) => {
                         println!("Test suite passed");
+
+                        let stdout = String::from_utf8_lossy(&test_output.stdout);
+
+                        dbg!(stdout.to_string());
+                        dbg!(temp_file.file_name().unwrap().to_str().unwrap());
+
+
+
                         m.set_status(MutationStatus::Survived);
                         survived.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
@@ -88,8 +101,9 @@ pub fn process_mutants(
                     Some(_) => {
                         println!("Test suite failed");
                         let stderr = String::from_utf8_lossy(&test_output.stderr);
-                        println!("stderr: {}", stderr);
-                        if config.is_test_failed(&stderr) {
+                        let stdout = String::from_utf8_lossy(&test_output.stdout);
+                        if config.is_test_failed(&stderr) || config.is_test_failed(&stdout) {
+                            println!("Test suite failed and we need to do stuff!!!");
                             destroyed.fetch_add(1, Ordering::SeqCst);
                             pending.fetch_sub(1, Ordering::SeqCst);
                             m.set_status(MutationStatus::Killed);
