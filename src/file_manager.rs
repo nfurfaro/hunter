@@ -143,7 +143,6 @@ pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
 
     let mut original_bytes = contents.into_bytes();
 
-    // @review am I using correct values for replacement and _original_token_as_bytes?
     replace_bytes(
         &mut original_bytes,
         m.span_start() as usize,
