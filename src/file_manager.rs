@@ -3,6 +3,8 @@ use crate::{
 };
 use colored::*;
 use dialoguer::Confirm;
+use lazy_static::lazy_static;
+use std::sync::{Arc, Mutex};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
@@ -120,6 +122,10 @@ pub fn find_source_file_paths<'a>(
     }
 }
 
+lazy_static! {
+    static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
+}
+
 pub fn copy_src_to_temp_file(
     mutant: &Mutant,
     src_dir: PathBuf,
@@ -128,6 +134,9 @@ pub fn copy_src_to_temp_file(
     let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
     fs::copy(mutant.path(), &temp_file)?;
 
+    // Lock the mutex before writing to the file
+    let _guard = LIB_FILE_MUTEX.lock().unwrap();
+
     let mut lib_file = OpenOptions::new()
         .append(true)
         .open(src_dir.join(format!("lib.{}", lang_ext)))?;
@@ -135,6 +144,22 @@ pub fn copy_src_to_temp_file(
 
     Ok(temp_file)
 }
+
+// pub fn copy_src_to_temp_file(
+//     mutant: &Mutant,
+//     src_dir: PathBuf,
+//     lang_ext: &'static str,
+// ) -> io::Result<PathBuf> {
+//     let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
+//     fs::copy(mutant.path(), &temp_file)?;
+
+//     let mut lib_file = OpenOptions::new()
+//         .append(true)
+//         .open(src_dir.join(format!("lib.{}", lang_ext)))?;
+//     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
+
+//     Ok(temp_file)
+// }
 
 pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
     let mut contents = String::new();
