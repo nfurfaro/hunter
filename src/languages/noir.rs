@@ -2,11 +2,15 @@ use crate::config::LanguageConfig;
 use crate::languages::common::Language;
 use std::{
     fs::{self, File},
-    io::{self, Write},
+    io::{self, Read, Write},
     os::unix::process::ExitStatusExt,
     path::PathBuf,
-    process::{self, Command},
+    process::{self, Command, Stdio},
 };
+
+use std::sync::Arc;
+use tempfile::Builder;
+use tempfile::TempDir;
 
 #[derive(Clone)]
 pub struct NoirConfig;
@@ -52,19 +56,19 @@ impl LanguageConfig for NoirConfig {
         vec!["temp", "target", "test", "tests"]
     }
 
-    fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)> {
-        // Get the current directory
-        let current_dir = std::env::current_dir()?;
-
-        // Create a temp directory as a sibling to the current directory
-        let temp_dir = current_dir.join("temp");
-        fs::create_dir_all(&temp_dir)?;
+    fn setup_test_infrastructure(&self) -> io::Result<(Arc<TempDir>, Arc<PathBuf>)> {
+        // Create a temp directory with a specific prefix
+        let temp_dir = Arc::new(
+            Builder::new()
+                .prefix("Hunter_temp_mutations_")
+                .tempdir_in(std::env::temp_dir())?,
+        );
 
         // Inside /temp, create a src/ directory
-        let src_dir = temp_dir.join("src");
-        fs::create_dir_all(&src_dir)?;
+        let src_dir = Arc::new(temp_dir.path().join("src"));
+        fs::create_dir_all(src_dir.as_ref())?;
 
-        let mut manifest = File::create(temp_dir.join(self.manifest_name()))?;
+        let mut manifest = File::create(temp_dir.path().join(self.manifest_name()))?;
 
         write!(
             manifest,
@@ -75,20 +79,29 @@ authors = ["Hunter"]
 compiler_version = ">=0.22.0"
 
 [dependencies]
-            "#
+        "#
         )?;
         let _ = File::create(src_dir.join("lib.nr"))?;
 
         Ok((temp_dir, src_dir))
     }
 
-    fn test_mutant_project(&self) -> Box<process::Output> {
-        Box::new(
-            Command::new(self.test_runner())
-                .arg(self.test_command())
-                .output()
-                .expect("Failed to execute command"),
-        )
+    // fn test_mutant_project(&self) -> Box<process::Output> {
+    //     Box::new(
+    //         Command::new(self.test_runner())
+    //             .arg(self.test_command())
+    //             .output()
+    //             .expect("Failed to execute command"),
+    //     )
+    // }
+    fn test_mutant_project(&self) -> Box<process::Child> {
+        let output = Command::new(self.test_runner())
+            .arg(self.test_command())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("Failed to execute command");
+
+        Box::new(output)
     }
 
     fn build_mutant_project(&self) -> Box<process::Output> {

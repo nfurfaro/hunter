@@ -116,59 +116,57 @@ pub fn collect_tokens(
     }
 }
 
-// @todo improve insertion of replacement bytes to work correctly with random mode.
-// Current implementation is brittle, make use of newly added original_token_as_bytes arg.
 pub fn replace_bytes(
     original_bytes: &mut Vec<u8>,
     start_index: usize,
+    original_token_as_bytes: &[u8],
     replacement: &[u8],
-    _original_token_as_bytes: &[u8],
 ) {
     let replacement_length = replacement.len();
 
-    match replacement_length {
-        0 => {
-            if start_index < original_bytes.len() {
-                original_bytes.remove(start_index);
+    if replacement_length == 0 && original_token_as_bytes[0] == 33 {
+        let bang_index = original_bytes.iter().position(|&r| r == 33).unwrap();
+        original_bytes.remove(bang_index);
+    } else {
+        match replacement_length {
+            1 => match replacement {
+                b">" | b"<" => {
+                    original_bytes.splice(
+                        start_index..start_index + replacement_length,
+                        replacement.iter().cloned(),
+                    );
+                    original_bytes.remove(start_index + 1);
+                }
+                _ => {
+                    original_bytes.splice(
+                        start_index..start_index + replacement_length,
+                        replacement.iter().cloned(),
+                    );
+                }
+            },
+            2 => match replacement {
+                b">=" | b"<=" => {
+                    original_bytes.insert(start_index, b' ');
+                    original_bytes.splice(
+                        start_index..start_index + replacement_length,
+                        replacement.iter().cloned(),
+                    );
+                }
+                _ => {
+                    original_bytes.splice(
+                        start_index..start_index + replacement_length,
+                        replacement.iter().cloned(),
+                    );
+                }
+            },
+            3 => {
+                original_bytes.splice(
+                    start_index..start_index + replacement_length,
+                    replacement.iter().cloned(),
+                );
             }
+            _ => panic!("Invalid replacement length"),
         }
-        1 => match replacement {
-            b">" | b"<" => {
-                original_bytes.splice(
-                    start_index..start_index + replacement_length,
-                    replacement.iter().cloned(),
-                );
-                original_bytes.remove(start_index + 1);
-            }
-            _ => {
-                original_bytes.splice(
-                    start_index..start_index + replacement_length,
-                    replacement.iter().cloned(),
-                );
-            }
-        },
-        2 => match replacement {
-            b">=" | b"<=" => {
-                original_bytes.insert(start_index, b' ');
-                original_bytes.splice(
-                    start_index..start_index + replacement_length,
-                    replacement.iter().cloned(),
-                );
-            }
-            _ => {
-                original_bytes.splice(
-                    start_index..start_index + replacement_length,
-                    replacement.iter().cloned(),
-                );
-            }
-        },
-        3 => {
-            original_bytes.splice(
-                start_index..start_index + replacement_length,
-                replacement.iter().cloned(),
-            );
-        }
-        _ => {}
     }
 }
 
@@ -195,8 +193,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"!=");
     }
@@ -210,8 +208,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"==");
     }
@@ -225,8 +223,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"<=");
     }
@@ -240,8 +238,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"assert(c as u64 <= x as u64);");
     }
@@ -255,8 +253,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"<");
     }
@@ -270,8 +268,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b">=");
     }
@@ -285,8 +283,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"assert(c as u64 >= x as u64);");
     }
@@ -300,8 +298,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b">");
     }
@@ -315,8 +313,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"|");
     }
@@ -330,8 +328,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"&");
     }
@@ -345,8 +343,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"&");
     }
@@ -360,8 +358,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b">>");
     }
@@ -375,8 +373,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"<<");
     }
@@ -390,8 +388,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"-");
     }
@@ -405,8 +403,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"+");
     }
@@ -420,8 +418,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"/");
     }
@@ -435,8 +433,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"*");
     }
@@ -450,8 +448,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"*");
     }
@@ -465,8 +463,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"--");
     }
@@ -480,8 +478,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"++");
     }
@@ -495,8 +493,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"-=");
     }
@@ -510,8 +508,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"+=");
     }
@@ -525,8 +523,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"/=");
     }
@@ -540,8 +538,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"*=");
     }
@@ -555,8 +553,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"*=");
     }
@@ -570,8 +568,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"|=");
     }
@@ -585,8 +583,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"&=");
     }
@@ -600,8 +598,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"&=");
     }
@@ -615,8 +613,8 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b">>=");
     }
@@ -630,10 +628,41 @@ mod tests {
         replace_bytes(
             &mut original_bytes,
             start_index,
-            replacement,
             original_token_as_bytes,
+            replacement,
         );
         assert_eq!(original_bytes, b"<<=");
+    }
+
+    #[test]
+    fn test_replace_bytes_bang() {
+        let mut original_bytes = "!".as_bytes().to_vec();
+        let original_token_as_bytes = "!".as_bytes();
+        let replacement = b"";
+        let start_index = 0;
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            original_token_as_bytes,
+            replacement,
+        );
+        assert_eq!(original_bytes, b"");
+    }
+
+    #[test]
+    fn test_replace_bytes_bang_combined() {
+        let mut original_bytes = "!true".as_bytes().to_vec();
+        let original_token_as_bytes = "!".as_bytes();
+        let replacement = b"";
+        let start_index = 0;
+        replace_bytes(
+            &mut original_bytes,
+            start_index,
+            original_token_as_bytes,
+            replacement,
+        );
+        dbg!(std::str::from_utf8(&original_bytes).unwrap());
+        assert_eq!(original_bytes, b"true");
     }
 
     #[test]

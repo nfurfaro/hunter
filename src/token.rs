@@ -311,7 +311,7 @@ pub fn token_as_bytes<'a>(token: &Token) -> Option<&'a [u8]> {
         Token::DoublePipe => Some(b"||"),
         Token::DoubleAmpersand => Some(b"&&"),
         Token::Bang => Some(b"!"),
-        Token::Void => Some(b"remove '!'"),
+        Token::Void => Some(b""),
     }
 }
 

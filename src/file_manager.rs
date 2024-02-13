@@ -145,22 +145,6 @@ pub fn copy_src_to_temp_file(
     Ok(temp_file)
 }
 
-// pub fn copy_src_to_temp_file(
-//     mutant: &Mutant,
-//     src_dir: PathBuf,
-//     lang_ext: &'static str,
-// ) -> io::Result<PathBuf> {
-//     let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
-//     fs::copy(mutant.path(), &temp_file)?;
-
-//     let mut lib_file = OpenOptions::new()
-//         .append(true)
-//         .open(src_dir.join(format!("lib.{}", lang_ext)))?;
-//     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
-
-//     Ok(temp_file)
-// }
-
 pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
     let mut contents = String::new();
     let mut file = File::open(temp_file).expect("File path doesn't seem to work...");
@@ -171,8 +155,9 @@ pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
     replace_bytes(
         &mut original_bytes,
         m.span_start() as usize,
-        &m.bytes(),
         token_as_bytes(&m.token()).unwrap(),
+        token_as_bytes(&m.mutation()).unwrap(),
+        // &m.bytes(),
     );
     contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
