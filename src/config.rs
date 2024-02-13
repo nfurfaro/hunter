@@ -15,7 +15,7 @@ pub trait LanguageConfig {
     fn is_test_failed(&self, stderr: &str) -> bool;
     fn excluded_dirs(&self) -> Vec<&'static str>;
     fn setup_test_infrastructure(&self) -> io::Result<(Arc<TempDir>, Arc<PathBuf>)>;
-    fn test_mutant_project(&self) -> Box<process::Child>;
+    fn test_mutant_project(&self) -> Box<process::Output>;
     fn build_mutant_project(&self) -> Box<process::Output>;
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync>;
 }

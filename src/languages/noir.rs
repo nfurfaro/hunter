@@ -94,37 +94,64 @@ compiler_version = ">=0.22.0"
     //             .expect("Failed to execute command"),
     //     )
     // }
-    fn test_mutant_project(&self) -> Box<process::Child> {
-        let output = Command::new(self.test_runner())
+    fn test_mutant_project(&self) -> Box<process::Output> {
+        let child = Command::new(self.test_runner())
             .arg(self.test_command())
+            .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
             .expect("Failed to execute command");
 
-        Box::new(output)
+        Box::new(child.wait_with_output().expect("Failed to wait on child"))
     }
 
     fn build_mutant_project(&self) -> Box<process::Output> {
-        let output = Command::new(self.test_runner())
+        let child = Command::new(self.test_runner())
             .arg(self.build_command())
-            .output()
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
             .expect("Failed to execute build command");
 
-        let output_str = String::from_utf8_lossy(&output.stderr);
-        if output_str
-            .to_lowercase()
-            .contains("cannot find a nargo.toml")
-        {
-            dbg!("No nargo.toml found !!!");
-            return Box::new(process::Output {
-                status: process::ExitStatus::from_raw(444),
-                stdout: vec![],
-                stderr: vec![],
-            });
-        }
+        // let output_str = String::from_utf8_lossy(&output.stderr);
+        // if output_str
+        //     .to_lowercase()
+        //     .contains("cannot find a nargo.toml")
+        // {
+        //     dbg!("No nargo.toml found !!!");
+        //     return Box::new(process::Output {
+        //         status: process::ExitStatus::from_raw(444),
+        //         stdout: vec![],
+        //         stderr: vec![],
+        //     });
+        // }
 
-        Box::new(output)
+        Box::new(child.wait_with_output().expect("Failed to wait on child"))
     }
+
+    // fn build_mutant_project(&self) -> Box<process::Child> {
+    //     let output = Command::new(self.test_runner())
+    //         .arg(self.build_command())
+    //         .stdout(Stdio::piped())
+    //         .stderr(Stdio::piped())
+    //         .spawn()
+    //         .expect("Failed to execute build command");
+
+    //     // let output_str = String::from_utf8_lossy(&output.stderr);
+    //     // if output_str
+    //     //     .to_lowercase()
+    //     //     .contains("cannot find a nargo.toml")
+    //     // {
+    //     //     dbg!("No nargo.toml found !!!");
+    //     //     return Box::new(process::Output {
+    //     //         status: process::ExitStatus::from_raw(444),
+    //     //         stdout: vec![],
+    //     //         stderr: vec![],
+    //     //     });
+    //     // }
+
+    //     Box::new(output)
+    // }
 
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync> {
         Box::new(self.clone())
