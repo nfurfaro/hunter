@@ -1,7 +1,7 @@
 use crate::{
     cli::Args,
     config::LanguageConfig,
-    file_manager::find_source_file_paths,
+    file_manager::scan_for_excluded_dirs,
     filters::test_regex,
     handlers::mutator::{mutants, Mutant},
     reporter::count_tests,
@@ -11,7 +11,7 @@ use crate::{
 use colored::*;
 use std::{
     io::{Error, ErrorKind, Result},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 #[derive(Debug, Clone)]
@@ -62,14 +62,12 @@ impl ScanResult {
 }
 
 pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
-    let source_path = args
-        .source_path
-        .clone()
-        .unwrap_or(Path::new(".").to_path_buf());
+    let source_path = args.source_path;
+
     let paths = if source_path.is_file() {
         vec![source_path]
     } else {
-        find_source_file_paths(source_path.as_path(), &*config).map_err(|_| {
+        scan_for_excluded_dirs(source_path.as_path(), &*config).map_err(|_| {
             let err_msg = format!(
                 "No {} files found... Are you in the right directory?",
                 config.name().red()
@@ -90,6 +88,7 @@ pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
     }
 
     // @todo consider adding a switch here to mutate all tokens in source files, or only those in files with unit tests
+    // @todo improve error message to comunicate that no tokens were found, no target source files were found, or that no unit tests were found in the source files.
     let meta_tokens = collect_tokens(contains_unit_tests.clone(), config).expect("No tokens found");
 
     let mutants = mutants(&meta_tokens, args.random);
