@@ -6,11 +6,35 @@ use crate::{
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
 use rayon::prelude::*;
-use std::process;
+use std::process::{self, Command};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
 };
+
+fn test_mutant_project(
+    test_runner: &'static str,
+    test_command: &'static str,
+) -> Box<process::Output> {
+    let child = Command::new(test_runner)
+        .arg(test_command)
+        .spawn()
+        .expect("Failed to execute command");
+
+    Box::new(child.wait_with_output().expect("Failed to wait on child"))
+}
+
+fn build_mutant_project(
+    test_runner: &'static str,
+    build_command: &'static str,
+) -> Box<process::Output> {
+    let child = Command::new(test_runner)
+        .arg(build_command)
+        .spawn()
+        .expect("Failed to execute build command");
+
+    Box::new(child.wait_with_output().expect("Failed to wait on child"))
+}
 
 pub fn process_mutants(
     mutants: &mut Vec<Mutant>,
@@ -42,7 +66,7 @@ pub fn process_mutants(
 
     mutants.par_iter_mut().for_each(|m| {
         let config = Arc::clone(&config);
-        let config = config.lock().unwrap();
+        let config_guard = config.lock().unwrap();
 
         // Check if the source file exists
         if !m.path().exists() {
@@ -60,10 +84,13 @@ pub fn process_mutants(
             eprintln!("Failed to change to the temporary directory: {}", e);
         }
 
-        let build_output = config.build_mutant_project();
-        let test_output = config.test_mutant_project();
+        // let build_output = config_guard.build_mutant_project();
+        // let test_output = config_guard.test_mutant_project();
+        let build_output = build_mutant_project(config_guard.test_runner(), config_guard.build_command());
+        let test_output = test_mutant_project(config_guard.test_runner(), config_guard.test_command());
         let build_status = build_output.status.code();
         let test_status = test_output.status.code();
+
 
         match build_status {
             Some(0) => {
