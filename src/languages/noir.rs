@@ -2,10 +2,15 @@ use crate::config::LanguageConfig;
 use crate::languages::common::Language;
 use std::{
     fs::{self, File},
-    io::{self, Write},
+    io::{self, Read, Write},
+    os::unix::process::ExitStatusExt,
     path::PathBuf,
-    process::{self, Command},
+    process::{self, Command, Stdio},
 };
+
+use std::sync::Arc;
+use tempfile::Builder;
+use tempfile::TempDir;
 
 #[derive(Clone)]
 pub struct NoirConfig;
@@ -40,38 +45,39 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn is_test_failed(&self, stderr: &str) -> bool {
+        let stderr = stderr.to_lowercase();
         stderr.contains("test failed")
-            || stderr.contains("FAILED")
-            || stderr.contains("Failed constraint")
+            || stderr.contains("failed")
+            || stderr.contains("fail")
+            || stderr.contains("failed constraint")
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
         vec!["temp", "target", "test", "tests"]
     }
 
-    fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)> {
-        // Create a ./temp directory
-        let temp_dir = PathBuf::from("./temp");
-        fs::create_dir_all(&temp_dir)?;
-
-        // Change into the temp_dir so that the build and test commands are run in the correct directory
-        // std::env::set_current_dir(&temp_dir).unwrap();
+    fn setup_test_infrastructure(&self) -> io::Result<(TempDir, PathBuf)> {
+        // Create a temp directory with a specific prefix
+        let temp_dir = Builder::new()
+            .prefix("Hunter_temp_mutations_")
+            .tempdir_in(std::env::temp_dir())?;
 
         // Inside /temp, create a src/ directory
-        let src_dir = temp_dir.join("./src");
-        fs::create_dir_all(&src_dir)?;
+        let src_dir = temp_dir.path().join("src");
+        fs::create_dir_all(src_dir.clone())?;
 
-        let mut manifest = File::create(temp_dir.join(self.manifest_name()))?;
+        let mut manifest = File::create(temp_dir.path().join(self.manifest_name()))?;
 
         write!(
             manifest,
-            r#"
-                    [package]
-                    name = "hunter_temp"
-                    type = "lib"
-                    authors = ["Hunter"]
-                    compiler_version = "0.22.0"
-                    "#
+            r#"[package]
+name = "hunter_temp"
+type = "lib"
+authors = ["Hunter"]
+compiler_version = ">=0.22.0"
+
+[dependencies]
+        "#
         )?;
         let _ = File::create(src_dir.join("lib.nr"))?;
 
@@ -79,26 +85,21 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn test_mutant_project(&self) -> Box<process::Output> {
-        Box::new(
-            Command::new(self.test_runner())
-                .arg(self.test_command())
-                .output()
-                .expect("Failed to execute command"),
-        )
+        let child = Command::new(self.test_runner())
+            .arg(self.test_command())
+            .spawn()
+            .expect("Failed to execute command");
+
+        Box::new(child.wait_with_output().expect("Failed to wait on child"))
     }
 
     fn build_mutant_project(&self) -> Box<process::Output> {
-        let output = Command::new(self.test_runner())
+        let child = Command::new(self.test_runner())
             .arg(self.build_command())
-            .output()
+            .spawn()
             .expect("Failed to execute build command");
 
-        let output_str = String::from_utf8_lossy(&output.stderr);
-        if output_str.contains("cannot find a Cargo.toml") {
-            // Handle the error here
-        }
-
-        Box::new(output)
+        Box::new(child.wait_with_output().expect("Failed to wait on child"))
     }
 
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync> {

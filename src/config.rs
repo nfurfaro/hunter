@@ -1,6 +1,8 @@
 use crate::languages;
 use crate::languages::common::Language;
+use std::sync::Arc;
 use std::{io, path::PathBuf, process};
+use tempfile::TempDir;
 
 pub trait LanguageConfig {
     fn language(&self) -> languages::common::Language;
@@ -12,7 +14,7 @@ pub trait LanguageConfig {
     fn manifest_name(&self) -> &'static str;
     fn is_test_failed(&self, stderr: &str) -> bool;
     fn excluded_dirs(&self) -> Vec<&'static str>;
-    fn setup_test_infrastructure(&self) -> io::Result<(PathBuf, PathBuf)>;
+    fn setup_test_infrastructure(&self) -> io::Result<(TempDir, PathBuf)>;
     fn test_mutant_project(&self) -> Box<process::Output>;
     fn build_mutant_project(&self) -> Box<process::Output>;
     fn clone_box(&self) -> Box<dyn LanguageConfig + Send + Sync>;

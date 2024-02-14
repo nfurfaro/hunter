@@ -3,6 +3,8 @@ use crate::{
 };
 use colored::*;
 use dialoguer::Confirm;
+use lazy_static::lazy_static;
+use std::sync::{Arc, Mutex};
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
@@ -64,10 +66,12 @@ pub fn scan_for_excluded_dirs<'a>(
         }
     }
 
-    find_source_file_paths(dir_path, config)
+    let base_dir = std::env::current_dir()?;
+    find_source_file_paths(&base_dir, dir_path, config)
 }
 
 pub fn find_source_file_paths<'a>(
+    base_dir: &'a Path,
     dir_path: &'a Path,
     config: &'a dyn LanguageConfig,
 ) -> Result<Vec<PathBuf>> {
@@ -86,7 +90,7 @@ pub fn find_source_file_paths<'a>(
                 {
                     continue;
                 }
-                let path_result = find_source_file_paths(&path_buf, config);
+                let path_result = find_source_file_paths(base_dir, &path_buf, config);
                 match path_result {
                     Ok(sub_results_paths) => {
                         paths.extend(sub_results_paths.clone());
@@ -97,7 +101,8 @@ pub fn find_source_file_paths<'a>(
                 .extension()
                 .map_or(false, |extension| extension == config.ext())
             {
-                paths.push(path_buf);
+                let relative_path = path_buf.strip_prefix(base_dir).unwrap_or(&path_buf);
+                paths.push(relative_path.to_path_buf());
             }
         }
 
@@ -117,6 +122,10 @@ pub fn find_source_file_paths<'a>(
     }
 }
 
+lazy_static! {
+    static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
+}
+
 pub fn copy_src_to_temp_file(
     mutant: &Mutant,
     src_dir: PathBuf,
@@ -125,8 +134,11 @@ pub fn copy_src_to_temp_file(
     let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
     fs::copy(mutant.path(), &temp_file)?;
 
+    // Lock the mutex before writing to the file
+    let _guard = LIB_FILE_MUTEX.lock().unwrap();
+
     let mut lib_file = OpenOptions::new()
-        .append(true)
+        .write(true)
         .open(src_dir.join(format!("lib.{}", lang_ext)))?;
     writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
@@ -139,11 +151,13 @@ pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
     file.read_to_string(&mut contents).unwrap();
 
     let mut original_bytes = contents.into_bytes();
+
     replace_bytes(
         &mut original_bytes,
         m.span_start() as usize,
-        &m.bytes(),
         token_as_bytes(&m.token()).unwrap(),
+        token_as_bytes(&m.mutation()).unwrap(),
+        // &m.bytes(),
     );
     contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 

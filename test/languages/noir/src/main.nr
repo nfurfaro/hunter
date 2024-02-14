@@ -9,7 +9,7 @@ fn main(x: Field, y: pub Field) {
     assert(x as u64 < c as u64);
     assert(x as u64 <= c as u64);
     let not = !true;
-    let string1 = "hello world + - * / % ^ & | < > = ! : , . ;";
+    let string1 = "hello world + - * / % ^ & | < > = : , . ;";
     let string2 = " z / 3 == 4 ^ 1";
 
     if x == 0 {

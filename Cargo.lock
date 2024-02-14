@@ -443,6 +443,7 @@ dependencies = [
  "colored",
  "dialoguer",
  "indicatif",
+ "lazy_static",
  "prettytable-rs",
  "rand 0.8.5",
  "rayon",
