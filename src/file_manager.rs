@@ -157,7 +157,6 @@ pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
         m.span_start() as usize,
         token_as_bytes(&m.token()).unwrap(),
         token_as_bytes(&m.mutation()).unwrap(),
-        // &m.bytes(),
     );
     contents = String::from_utf8_lossy(original_bytes.as_slice()).into_owned();
 
