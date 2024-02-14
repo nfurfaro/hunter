@@ -6,35 +6,11 @@ use crate::{
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
 use rayon::prelude::*;
-use std::process::{self, Command};
+use std::process;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
 };
-
-fn test_mutant_project(
-    test_runner: &'static str,
-    test_command: &'static str,
-) -> Box<process::Output> {
-    let child = Command::new(test_runner)
-        .arg(test_command)
-        .spawn()
-        .expect("Failed to execute command");
-
-    Box::new(child.wait_with_output().expect("Failed to wait on child"))
-}
-
-fn build_mutant_project(
-    test_runner: &'static str,
-    build_command: &'static str,
-) -> Box<process::Output> {
-    let child = Command::new(test_runner)
-        .arg(build_command)
-        .spawn()
-        .expect("Failed to execute build command");
-
-    Box::new(child.wait_with_output().expect("Failed to wait on child"))
-}
 
 pub fn process_mutants(
     mutants: &mut Vec<Mutant>,
@@ -45,6 +21,7 @@ pub fn process_mutants(
     let total_mutants = mutants.len();
     let bar = mutants_progress_bar(total_mutants);
 
+    // mutatant status counters
     let destroyed = Arc::new(AtomicUsize::new(0));
     let survived = Arc::new(AtomicUsize::new(0));
     let unbuildable = Arc::new(AtomicUsize::new(0));
@@ -84,10 +61,8 @@ pub fn process_mutants(
             eprintln!("Failed to change to the temporary directory: {}", e);
         }
 
-        // let build_output = config_guard.build_mutant_project();
-        // let test_output = config_guard.test_mutant_project();
-        let build_output = build_mutant_project(config_guard.test_runner(), config_guard.build_command());
-        let test_output = test_mutant_project(config_guard.test_runner(), config_guard.test_command());
+        let build_output = config_guard.build_mutant_project();
+        let test_output = config_guard.test_mutant_project();
         let build_status = build_output.status.code();
         let test_status = test_output.status.code();
 
@@ -133,6 +108,7 @@ pub fn process_mutants(
     });
 
     bar.finish_with_message("All mutants processed!");
+
     let score = calculate_mutation_score(
         destroyed.load(Ordering::SeqCst) as f64,
         unbuildable.load(Ordering::SeqCst) as f64,

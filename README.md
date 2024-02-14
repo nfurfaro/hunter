@@ -20,6 +20,7 @@ At a high level, Hunter exposes a CLI with 2 primary commands, scan and mutate. 
 ## Installation
 
 There are 2 ways to install Hunter: via cURL or by building from source.
+
 ### cURL
 
 1. Download the installation script using cURL:
@@ -86,7 +87,7 @@ Hunter assumes the following:
 
 The larger the project and test suites are, the longer the mutation testing run will take. By default, Hunter will run your entire test suite for each mutant generated (in parallel). See the [filtering options](#filtering-options) section for ways to limit the number of tests run per mutant.
 
-> Note: Hunter currently only targets in-language unit tests written in the same file as the source they test. It does not currently support tests written in separate files or in a separate directory, but this is definitely a feature that is planned for a future release!
+> Note: Hunter currently only targets in-language unit tests written in the same file as the source they test. It does not currently support tests written in separate files or in a separate directory, but this is definitely a feature that is planned for the next release!
 
 ## Mutations
 
@@ -104,10 +105,6 @@ Hunter currently supports the following mutations:
 
 `==`, `!=`, `>`, `>=`, `<`, and `<=`.
 
-### Logical operators
-
-`&` and `|`.
-
 ### Shorthand operators
 
 `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, and `>>=`.
@@ -117,8 +114,6 @@ Hunter currently supports the following mutations:
 Hunter currently takes the approach of using deterministic rules to determine which mutations to apply. This means that the same source code will always produce the same mutations. This is in contrast to probabilistic approaches, which randomly select mutations to apply. The advantage of deterministic rules is that it's easier to reason about the mutations that will be applied and limit the number of false positives(i.e: equivalent mutations) that are generated.
 
 To see how Hunter currently determines which mutations to apply, check out the `./src/token.rs::token_transformer()` function.
-
-> Note: there is now a optional --random flag that can be passed to the mutate command. This will apply mutations randomly instead of using the deterministic rules. This is a WIP feature, and is likely to increase the number of mutants with an Unbuildable status.
 
 ## Output & Reporting Options
 
