@@ -56,17 +56,15 @@ impl LanguageConfig for NoirConfig {
         vec!["temp", "target", "test", "tests"]
     }
 
-    fn setup_test_infrastructure(&self) -> io::Result<(Arc<TempDir>, Arc<PathBuf>)> {
+    fn setup_test_infrastructure(&self) -> io::Result<(TempDir, PathBuf)> {
         // Create a temp directory with a specific prefix
-        let temp_dir = Arc::new(
-            Builder::new()
-                .prefix("Hunter_temp_mutations_")
-                .tempdir_in(std::env::temp_dir())?,
-        );
+        let temp_dir = Builder::new()
+            .prefix("Hunter_temp_mutations_")
+            .tempdir_in(std::env::temp_dir())?;
 
         // Inside /temp, create a src/ directory
-        let src_dir = Arc::new(temp_dir.path().join("src"));
-        fs::create_dir_all(src_dir.as_ref())?;
+        let src_dir = temp_dir.path().join("src");
+        fs::create_dir_all(src_dir.clone())?;
 
         let mut manifest = File::create(temp_dir.path().join(self.manifest_name()))?;
 
