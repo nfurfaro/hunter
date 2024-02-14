@@ -8,13 +8,15 @@ use crate::{
 use ctrlc;
 use lazy_static::lazy_static;
 use rayon::prelude::*;
-use std::process;
-use std::fs;
-use std::path::PathBuf;
-use std::collections::HashSet;
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
+use std::{
+    collections::HashSet,
+    fs,
+    path::PathBuf,
+    process,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex,
+    },
 };
 
 pub fn process_mutants(
@@ -32,7 +34,8 @@ pub fn process_mutants(
         }
 
         std::process::exit(0);
-    }).expect("Error setting Ctrl-C handler");
+    })
+    .expect("Error setting Ctrl-C handler");
 
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
@@ -52,9 +55,12 @@ pub fn process_mutants(
         .setup_test_infrastructure()
         .expect("Failed to setup test infrastructure");
 
-     // Add the paths of the temporary directories to the global variable
-     TEMP_DIRS.lock().unwrap().insert(temp_dir.path().to_path_buf());
-     TEMP_DIRS.lock().unwrap().insert(temp_src_dir.clone());
+    // Add the paths of the temporary directories to the global variable
+    TEMP_DIRS
+        .lock()
+        .unwrap()
+        .insert(temp_dir.path().to_path_buf());
+    TEMP_DIRS.lock().unwrap().insert(temp_src_dir.clone());
 
     dbg!(temp_src_dir.clone());
 
