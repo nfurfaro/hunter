@@ -26,6 +26,7 @@ use crate::{
 use colored::*;
 use rayon::prelude::*;
 
+
 pub fn process_mutants(
     mutants: &mut Vec<Mutant>,
     args: Args,
@@ -59,10 +60,14 @@ pub fn process_mutants(
         std::process::exit(1);
     }
 
+    // let build_output = Arc::new(Mutex::new(None));
+    // let test_output = Arc::new(Mutex::new(None));
+
+
     mutants.par_iter_mut().for_each(|m| {
-        let build_status = Mutex::new(None);
-        let test_status = Mutex::new(None);
-        let error_flag_for_thread = Arc::clone(&error_printed_flag);
+        // let build_output = Arc::clone(&build_output);
+        // let test_output = Arc::clone(&test_output);
+        // let error_flag_for_thread = Arc::clone(&error_printed_flag);
         let temp_src_dir = Arc::new(Mutex::new(temp_src_dir.clone()));
 
         // Check if the source file exists
@@ -85,37 +90,35 @@ pub fn process_mutants(
             eprintln!("Failed to change to the temporary directory: {}", e);
         }
 
-        // Build the project
         let build_output = config.build_mutant_project();
-        // run_test_suite
         let test_output = config.test_mutant_project();
+        let build_status = build_output.status.code();
+        let test_status = test_output.status.code();
+        // dbg!(build_status.unwrap());
+        // dbg!(test_status.unwrap());
+        println!("test_output: {:#?}", test_output);
 
-
-
-        *build_status.lock().unwrap() = build_output.status.code();
-        // *build_status.lock().unwrap() = Some(1);
-        *test_status.lock().unwrap() = test_output.status.code();
-        // *test_status.lock().unwrap() = Some(1);
-
-        // dbg!(*build_status.lock().unwrap());
-        // dbg!(*test_status.lock().unwrap());
+        // *build_output.lock().unwrap() = Some(config.build_mutant_project());
+        // *test_output.lock().unwrap() = Some(config.test_mutant_project());
+        // let build_status = build_output.lock().unwrap().as_ref().unwrap().status.code();
+        // let test_status = test_output.lock().unwrap().as_ref().unwrap().status.code();
 
         if m.token() == Token::Bang {
-            print!("mutant: {:#?}", m);
-            dbg!(*build_status.lock().unwrap());
-            dbg!(*test_status.lock().unwrap());
+            print!("Bang mutant: {:#?}", m);
+            dbg!(build_status.unwrap());
+            dbg!(test_status.unwrap());
         }
 
         if m.token() == Token::NotEqual {
-            print!("mutant: {:#?}", m);
-            dbg!(*build_status.lock().unwrap());
-            dbg!(*test_status.lock().unwrap());
+            print!("NE mutant: {:#?}", m);
+            dbg!(build_status.unwrap());
+            dbg!(test_status.unwrap());
         }
 
-        match *build_status.lock().unwrap() {
+        match build_status {
             Some(0) => {
                 println!("Build was successful");
-                match *test_status.lock().unwrap() {
+                match test_status {
                     Some(0) => {
                         println!("Test suite passed");
                         m.set_status(MutationStatus::Survived);
@@ -144,11 +147,11 @@ pub fn process_mutants(
                 m.set_status(MutationStatus::Killed);
             }
             None => {
-                if !error_flag_for_thread.load(Ordering::Relaxed) {
+                // if !error_flag_for_thread.load(Ordering::Relaxed) {
                     eprintln!("Build was killed by a signal or crashed");
                     eprint!("To see what the problem might be, try running the build command manually.i.e: `nargo build`");
-                    error_flag_for_thread.store(true, Ordering::Relaxed);
-                }
+                    // error_flag_for_thread.store(true, Ordering::Relaxed);
+                // }
                 process::exit(1);
             }
         }
@@ -163,8 +166,11 @@ pub fn process_mutants(
         bar.inc(1);
         if let Err(e) = std::env::set_current_dir(&original_dir) {
             eprintln!("Failed to change back to the original directory: {}", e);
-            // write!(stderr, "Failed to change back to the original directory: {}\n", e).unwrap();
         }
+        // print!("final mutant: {:#?}", m);
+        // let mut stderr = io::stderr();
+        // println!("Flushing stderr");
+        // stderr.flush().unwrap();
     });
 
     bar.finish_with_message("All mutants processed!");
@@ -181,6 +187,7 @@ pub fn process_mutants(
         survived.load(Ordering::SeqCst) as f64,
         score,
     );
+
 
     // Note: cleanup is handled automatically when this function
     // returns & the Defer object from the top of the function is dropped.
