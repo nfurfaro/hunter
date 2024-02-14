@@ -5,8 +5,13 @@ use crate::{
     handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
+use ctrlc;
+use lazy_static::lazy_static;
 use rayon::prelude::*;
 use std::process;
+use std::fs;
+use std::path::PathBuf;
+use std::collections::HashSet;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
@@ -17,6 +22,18 @@ pub fn process_mutants(
     args: Args,
     config: Box<dyn LanguageConfig + Send + Sync>,
 ) {
+    // Handle the Ctrl+C interrupt signal
+    ctrlc::set_handler(move || {
+        let temp_dirs = TEMP_DIRS.lock().unwrap();
+
+        // Delete all temporary directories
+        for path in temp_dirs.iter() {
+            let _ = fs::remove_dir_all(path);
+        }
+
+        std::process::exit(0);
+    }).expect("Error setting Ctrl-C handler");
+
     let original_dir = std::env::current_dir().unwrap();
     let total_mutants = mutants.len();
     let bar = mutants_progress_bar(total_mutants);
@@ -27,9 +44,19 @@ pub fn process_mutants(
     let unbuildable = Arc::new(AtomicUsize::new(0));
     let pending = Arc::new(AtomicUsize::new(total_mutants));
 
+    lazy_static! {
+        static ref TEMP_DIRS: Mutex<HashSet<PathBuf>> = Mutex::new(HashSet::new());
+    }
+
     let (temp_dir, temp_src_dir) = config
         .setup_test_infrastructure()
         .expect("Failed to setup test infrastructure");
+
+     // Add the paths of the temporary directories to the global variable
+     TEMP_DIRS.lock().unwrap().insert(temp_dir.path().to_path_buf());
+     TEMP_DIRS.lock().unwrap().insert(temp_src_dir.clone());
+
+    dbg!(temp_src_dir.clone());
 
     let extension = config.ext();
 
