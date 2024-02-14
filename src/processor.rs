@@ -170,7 +170,7 @@ pub fn process_mutants(
         // print!("final mutant: {:#?}", m);
         // let mut stderr = io::stderr();
         // println!("Flushing stderr");
-        // stderr.flush().unwrap();
+        // stderr.flush().unwrap();,
     });
 
     bar.finish_with_message("All mutants processed!");
