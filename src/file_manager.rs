@@ -4,22 +4,22 @@ use crate::{
 use colored::*;
 use dialoguer::Confirm;
 use lazy_static::lazy_static;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Read, Result, Write},
     path::{Path, PathBuf},
 };
 
-pub struct Defer<T: FnOnce()>(pub Option<T>);
-// a wrapper around a closure that is called when the Defer object is dropped.
-impl<T: FnOnce()> Drop for Defer<T> {
-    fn drop(&mut self) {
-        if let Some(f) = self.0.take() {
-            f();
-        }
-    }
-}
+// pub struct Defer<T: FnOnce()>(pub Option<T>);
+// // a wrapper around a closure that is called when the Defer object is dropped.
+// impl<T: FnOnce()> Drop for Defer<T> {
+//     fn drop(&mut self) {
+//         if let Some(f) = self.0.take() {
+//             f();
+//         }
+//     }
+// }
 
 pub fn scan_for_excluded_dirs<'a>(
     dir_path: &'a Path,

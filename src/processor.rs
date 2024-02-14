@@ -1,16 +1,15 @@
 use crate::{
     cli::Args,
     config::LanguageConfig,
-    file_manager::{copy_src_to_temp_file, mutate_temp_file, Defer},
+    file_manager::{copy_src_to_temp_file, mutate_temp_file},
     handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
-use colored::*;
 use rayon::prelude::*;
 use std::process;
 use std::sync::{
-    atomic::{AtomicBool, AtomicUsize, Ordering},
-    Arc, Mutex, RwLock,
+    atomic::{AtomicUsize, Ordering},
+    Arc, Mutex,
 };
 
 pub fn process_mutants(
@@ -32,11 +31,6 @@ pub fn process_mutants(
         .expect("Failed to setup test infrastructure");
 
     let extension = config.ext();
-
-    // @note handles cleanup of the temp directories automatically after this function returns.
-    // let _cleanup = Defer(Some(|| {
-    //     let _ = fs::remove_dir_all(&temp_dir.path());
-    // }));
 
     // Check if the temporary directory exists
     if !temp_src_dir.exists() {
@@ -62,7 +56,7 @@ pub fn process_mutants(
         mutate_temp_file(&temp_file, m);
 
         // set current dir to "./temp"
-        if let Err(e) = std::env::set_current_dir(&temp_dir.as_ref()) {
+        if let Err(e) = std::env::set_current_dir(temp_dir.as_ref()) {
             eprintln!("Failed to change to the temporary directory: {}", e);
         }
 
@@ -86,7 +80,6 @@ pub fn process_mutants(
                         destroyed.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
                         m.set_status(MutationStatus::Killed);
-                    // }
                     }
                     None => {
                         eprintln!("Test suite was killed by a signal or crashed");
@@ -105,13 +98,6 @@ pub fn process_mutants(
                 process::exit(1);
             }
         }
-
-        // @note the /temp dir and its contents will be deleted automatically,
-        // so this might seem redundant. However, Hunter deletes the file
-        // as soon as possible to help prevent running out of space when testing very large projects.
-        // if let Err(e) = std::fs::remove_file(&temp_file) {
-        //     eprintln!("Failed to delete temporary file: {}", e);
-        // }
 
         bar.inc(1);
         if let Err(e) = std::env::set_current_dir(&original_dir) {
@@ -134,8 +120,5 @@ pub fn process_mutants(
         score,
     );
 
-    // Note: cleanup is handled automatically when this function
-    // returns & the Defer object from the top of the function is dropped.
-    println!("{}", "Cleaning up temp files".cyan());
     print_table(args.output_path, summary_table).unwrap();
 }

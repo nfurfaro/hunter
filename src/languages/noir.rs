@@ -2,13 +2,11 @@ use crate::config::LanguageConfig;
 use crate::languages::common::Language;
 use std::{
     fs::{self, File},
-    io::{self, Read, Write},
-    os::unix::process::ExitStatusExt,
+    io::{self, Write},
     path::PathBuf,
-    process::{self, Command, Stdio},
+    process::{self, Command},
 };
 
-use std::sync::Arc;
 use tempfile::Builder;
 use tempfile::TempDir;
 
@@ -44,13 +42,13 @@ impl LanguageConfig for NoirConfig {
         "Nargo.toml"
     }
 
-    fn is_test_failed(&self, stderr: &str) -> bool {
-        let stderr = stderr.to_lowercase();
-        stderr.contains("test failed")
-            || stderr.contains("failed")
-            || stderr.contains("fail")
-            || stderr.contains("failed constraint")
-    }
+    // fn is_test_failed(&self, stderr: &str) -> bool {
+    //     let stderr = stderr.to_lowercase();
+    //     stderr.contains("test failed")
+    //         || stderr.contains("failed")
+    //         || stderr.contains("fail")
+    //         || stderr.contains("failed constraint")
+    // }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
         vec!["temp", "target", "test", "tests"]
