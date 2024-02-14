@@ -138,7 +138,6 @@ pub fn copy_src_to_temp_file(
     let _guard = LIB_FILE_MUTEX.lock().unwrap();
 
     let mut lib_file = OpenOptions::new()
-        // .append(true)
         .write(true)
         .open(src_dir.join(format!("lib.{}", lang_ext)))?;
     writeln!(lib_file, "mod mutation_{};", mutant.id())?;

@@ -87,8 +87,6 @@ compiler_version = ">=0.22.0"
     fn test_mutant_project(&self) -> Box<process::Output> {
         let child = Command::new(self.test_runner())
             .arg(self.test_command())
-            // .stdout(Stdio::piped())
-            // .stderr(Stdio::piped())
             .spawn()
             .expect("Failed to execute command");
 
@@ -98,8 +96,6 @@ compiler_version = ">=0.22.0"
     fn build_mutant_project(&self) -> Box<process::Output> {
         let child = Command::new(self.test_runner())
             .arg(self.build_command())
-            // .stdout(Stdio::piped())
-            // .stderr(Stdio::piped())
             .spawn()
             .expect("Failed to execute build command");
 
