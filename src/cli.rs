@@ -67,9 +67,9 @@ pub async fn run_cli() -> Result<()> {
         Some(Subcommand::Mutate) => {
             let result = handlers::scanner::scan(args.clone(), config.clone_box());
             if let Ok(mut result) = result {
+                let _ = print_scan_results(&mut result.clone(), config.clone_box());
                 let final_result =
                     handlers::mutator::mutate(args.clone(), config.clone_box(), &mut result);
-                let _ = print_scan_results(&mut result.clone(), config.clone_box());
                 final_result
             } else {
                 Err(result.unwrap_err())
