@@ -3,7 +3,7 @@ use regex::Regex;
 
 pub fn test_regex(language: &Language) -> Regex {
     match language {
-        Language::Noir => Regex::new(r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
+        Language::Noir => Regex::new(r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap(),
     }
 }
 
