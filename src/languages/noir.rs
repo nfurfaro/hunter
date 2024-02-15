@@ -42,14 +42,6 @@ impl LanguageConfig for NoirConfig {
         "Nargo.toml"
     }
 
-    // fn is_test_failed(&self, stderr: &str) -> bool {
-    //     let stderr = stderr.to_lowercase();
-    //     stderr.contains("test failed")
-    //         || stderr.contains("failed")
-    //         || stderr.contains("fail")
-    //         || stderr.contains("failed constraint")
-    // }
-
     fn excluded_dirs(&self) -> Vec<&'static str> {
         vec!["temp", "target", "test", "tests"]
     }

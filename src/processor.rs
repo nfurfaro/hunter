@@ -62,8 +62,6 @@ pub fn process_mutants(
         .insert(temp_dir.path().to_path_buf());
     TEMP_DIRS.lock().unwrap().insert(temp_src_dir.clone());
 
-    dbg!(temp_src_dir.clone());
-
     let extension = config.ext();
 
     // Check if the temporary directory exists
@@ -102,16 +100,13 @@ pub fn process_mutants(
 
         match build_status {
             Some(0) => {
-                println!("Build was successful");
                 match test_status {
                     Some(0) => {
-                        println!("Test suite passed");
                         m.set_status(MutationStatus::Survived);
                         survived.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
                     }
                     Some(_) => {
-                        println!("Test suite failed");
                         destroyed.fetch_add(1, Ordering::SeqCst);
                         pending.fetch_sub(1, Ordering::SeqCst);
                         m.set_status(MutationStatus::Killed);
