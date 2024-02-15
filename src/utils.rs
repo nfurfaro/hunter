@@ -180,7 +180,7 @@ mod tests {
         let pattern = test_regex(&Language::Noir);
         assert_eq!(
             pattern.as_str(),
-            r"#\[test(\(\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
+            r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
         );
     }
 
