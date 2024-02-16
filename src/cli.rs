@@ -13,6 +13,7 @@ pub enum Subcommand {
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
+#[clap(version = env!("CARGO_PKG_VERSION"))]
 pub struct Args {
     /// The target language
     #[clap(short, long)]
