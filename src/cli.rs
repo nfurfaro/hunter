@@ -1,5 +1,5 @@
 use crate::{config::config, handlers, languages::common::Language, reporter::print_scan_results};
-use clap::Parser ;
+use clap::Parser;
 use colored::*;
 use std::io::Result;
 
