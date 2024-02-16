@@ -1,5 +1,5 @@
 use crate::{config::config, handlers, languages::common::Language, reporter::print_scan_results};
-use clap::Parser;
+use clap::Parser ;
 use colored::*;
 use std::io::Result;
 
@@ -13,6 +13,7 @@ pub enum Subcommand {
 
 /// Mutate Noir code and run tests against each mutation.
 #[derive(Parser, PartialEq, Default, Clone, Debug)]
+#[clap(version = env!("CARGO_PKG_VERSION"))]
 pub struct Args {
     /// The target language
     #[clap(short, long)]
