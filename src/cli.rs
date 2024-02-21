@@ -52,6 +52,7 @@ pub async fn run_cli() -> Result<()> {
 
     let language = if let Some(lang) = args.language.clone() {
         lang
+
     } else {
         println!("{}", "No language specified. Defaulting to Noir.".yellow());
         Language::Noir

@@ -12,6 +12,8 @@ use std::{
     path::PathBuf,
 };
 
+use regex::Regex;
+
 fn overlaps(filter: &Range<usize>, token: &Range<u32>) -> bool {
     (token.start as usize) > filter.start && (token.end as usize) < filter.end
 }
@@ -35,7 +37,7 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let test_regex = test_regex(&language);
+            let test_regex: Option<Regex> = test_regex(&language);
             let comment_regex = comment_regex(&language);
             let literal_regex = literal_regex(&language);
 
@@ -44,10 +46,14 @@ pub fn collect_tokens(
                 .map(|m| m.start()..m.end())
                 .collect();
 
-            let test_ranges: Vec<_> = test_regex
-                .find_iter(&contents)
-                .map(|m| m.start()..m.end())
-                .collect();
+                let test_ranges: Vec<_> = test_regex
+                .as_ref()
+                .map_or(Vec::new(), |regex| {
+                    regex
+                        .find_iter(&contents)
+                        .map(|m| m.start()..m.end())
+                        .collect()
+                });
 
             let literal_ranges: Vec<_> = literal_regex
                 .find_iter(&contents)
@@ -179,7 +185,7 @@ mod tests {
     fn test_test_regex_noir() {
         let pattern = test_regex(&Language::Noir);
         assert_eq!(
-            pattern.as_str(),
+            pattern.unwrap().as_str(),
             r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
         );
     }

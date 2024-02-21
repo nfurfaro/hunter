@@ -14,6 +14,14 @@ use std::{
 use tempfile::Builder;
 use tempfile::TempDir;
 
+const NAME: &str = "Noir";
+const EXT: &str = "nr";
+const TEST_RUNNER: &str = "nargo";
+const TEST_COMMAND: &str = "test";
+const BUILD_COMMAND: &str = "build";
+const MANIFEST_NAME: &str = "Nargo.toml";
+const FILTER_TESTS: bool = true;
+
 #[derive(Clone)]
 pub struct NoirConfig;
 
@@ -23,31 +31,35 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn name(&self) -> &'static str {
-        "Noir"
+        NAME
     }
 
     fn ext(&self) -> &'static str {
-        "nr"
+        EXT
     }
 
     fn test_runner(&self) -> &'static str {
-        "nargo"
+        TEST_RUNNER
     }
 
     fn test_command(&self) -> &'static str {
-        "test"
+        TEST_COMMAND
     }
 
     fn build_command(&self) -> &'static str {
-        "build"
+        BUILD_COMMAND
     }
 
     fn manifest_name(&self) -> &'static str {
-        "Nargo.toml"
+        MANIFEST_NAME
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
         vec!["temp", "target", "test", "tests"]
+    }
+
+    fn filter_tests(&self) -> bool {
+        FILTER_TESTS
     }
 
     fn setup_test_infrastructure(&self) -> io::Result<TempDir> {

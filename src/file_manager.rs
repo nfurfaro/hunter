@@ -1,5 +1,6 @@
 use crate::{
     config::LanguageConfig, handlers::mutator::Mutant, token::token_as_bytes, utils::replace_bytes,
+    languages::common::Language,
 };
 use colored::*;
 use dialoguer::Confirm;
@@ -110,6 +111,37 @@ pub fn find_source_file_paths<'a>(
     }
 }
 
+<<<<<<< master
+=======
+lazy_static! {
+    static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
+}
+
+pub fn copy_src_to_temp_file(
+    mutant: &Mutant,
+    src_dir: PathBuf,
+    lang_ext: &'static str,
+    language: &Language
+) -> io::Result<PathBuf> {
+    let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
+    fs::copy(mutant.path(), &temp_file)?;
+
+    match language {
+        Language::Noir => {
+            // Lock the mutex before writing to the file
+            let _guard = LIB_FILE_MUTEX.lock().unwrap();
+            let mut lib_file = OpenOptions::new()
+                .write(true)
+                .open(src_dir.join(format!("lib.{}", lang_ext)))?;
+            writeln!(lib_file, "mod mutation_{};", mutant.id())?;
+        }
+        Language::Solidity => {}
+    }
+
+    Ok(temp_file)
+}
+
+>>>>>>> wip: sol support
 pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {
     let mut contents = String::new();
     let mut file = File::open(temp_file).expect("File path doesn't seem to work...");
