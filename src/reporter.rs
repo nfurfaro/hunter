@@ -57,34 +57,21 @@ pub fn print_scan_results(results: &mut ScanResult, config: Box<dyn LanguageConf
         for path in results.contains_unit_tests() {
             println!("{}", format!("{}", path.display()).red());
         }
-
     } else {
         println!(
             "{}",
-            format!(
-                "Hunter will mutate all {} files found.",
-                config.name()
-            )
-            .magenta()
+            format!("Hunter will mutate all {} files found.", config.name()).magenta()
         );
 
         println!(
             "{}",
-            format!(
-                "{} files found: {}",
-                config.name(),
-                results.paths().len()
-            )
-            .cyan()
+            format!("{} files found: {}", config.name(), results.paths().len()).cyan()
         );
 
         for path in results.paths() {
             println!("{}", format!("{}", path.display()).red());
-
         }
     }
-
-
 
     println!("{}", "Collecting tokens from files".green());
     println!("{}", "Analysing tokens".green());
