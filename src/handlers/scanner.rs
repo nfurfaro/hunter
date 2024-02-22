@@ -97,7 +97,6 @@ pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
         paths.clone()
     };
 
-
     let meta_tokens = collect_tokens(paths_to_scan, config).expect("No tokens found");
 
     let mutants = mutants(&meta_tokens, args.random);
