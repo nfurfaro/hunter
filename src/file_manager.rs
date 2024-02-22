@@ -1,6 +1,6 @@
 use crate::{
-    config::LanguageConfig, handlers::mutator::Mutant, token::token_as_bytes, utils::replace_bytes,
-    languages::common::Language,
+    config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language,
+    token::token_as_bytes, utils::replace_bytes,
 };
 use colored::*;
 use dialoguer::Confirm;
@@ -121,7 +121,7 @@ pub fn copy_src_to_temp_file(
     mutant: &Mutant,
     src_dir: PathBuf,
     lang_ext: &'static str,
-    language: &Language
+    language: &Language,
 ) -> io::Result<PathBuf> {
     let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
     fs::copy(mutant.path(), &temp_file)?;
