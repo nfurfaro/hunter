@@ -3,7 +3,9 @@ use regex::Regex;
 
 pub fn test_regex(language: &Language) -> Option<Regex> {
     match language {
-        Language::Noir => Some(Regex::new(r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap()),
+        Language::Noir => {
+            Some(Regex::new(r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap())
+        }
         _ => None,
     }
 }
