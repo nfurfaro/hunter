@@ -46,14 +46,12 @@ pub fn collect_tokens(
                 .map(|m| m.start()..m.end())
                 .collect();
 
-                let test_ranges: Vec<_> = test_regex
-                .as_ref()
-                .map_or(Vec::new(), |regex| {
-                    regex
-                        .find_iter(&contents)
-                        .map(|m| m.start()..m.end())
-                        .collect()
-                });
+            let test_ranges: Vec<_> = test_regex.as_ref().map_or(Vec::new(), |regex| {
+                regex
+                    .find_iter(&contents)
+                    .map(|m| m.start()..m.end())
+                    .collect()
+            });
 
             let literal_ranges: Vec<_> = literal_regex
                 .find_iter(&contents)
