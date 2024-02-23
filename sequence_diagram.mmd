@@ -1,0 +1,73 @@
+sequenceDiagram
+
+
+    participant LanguageConfig
+    participant Config
+    participant Args
+    participant CLI
+    participant Scanner
+
+    participant Utils
+    participant Mutator
+    participant Reporter
+    participant FileManager
+    participant Processor
+
+
+    rect rgb(200, 255, 255)
+    note left of CLI: 1. Scan Workflow:
+    activate CLI
+    CLI ->> Args: Args::parse();
+    Args -->> CLI: args{...}
+    CLI ->> Config: config(language)
+    Config ->> LanguageConfig: language
+    LanguageConfig -->> Config: config{...}
+    Config -->> CLI: config{...}
+    activate Scanner
+    CLI ->> Scanner: scan(args, config)
+    Scanner ->> FileManager: scan_for_excluded_dirs(source_path, config)
+    FileManager --x FileManager: check excluded_dirs(config)
+    FileManager -->> Scanner: source paths{...}
+    Scanner ->> Utils: collect_tokens()
+    Utils -->> Scanner: meta_tokens{...}
+    Scanner ->> Mutator: mutants(meta_tokens, args)
+    Mutator -->> Scanner: mutants{...}
+    Scanner -->> CLI: ScanResult{...}
+    deactivate Scanner
+    CLI ->> Reporter: print_scan_results(ScanResult)
+    deactivate CLI
+    Reporter ->> Config: filter_tests() ?
+    Config -->> Reporter: bool
+    alt filter_tests() == true
+        Note left of Reporter: Print results, skip files with no tests
+    else filter_tests() == false
+        Note left of Reporter: Print results for all matcing src files
+    end
+    end
+
+    rect rgb(204, 255, 204)
+    note left of CLI: 1. Mutate Workflow:
+    CLI ->> Scanner: scan(args, config)
+    Scanner -->> CLI: ScanResult{...}
+    CLI ->> Reporter: print_scan_results(ScanResult, config)
+    CLI ->> Mutator: mutate(args, config, scan_result)
+    activate Processor
+    Mutator ->> Processor: process_mutants(mutants, args, config)
+    Processor -->> Processor: config.setup_test_infrastucture()
+
+    loop for m in mutants
+        Note over Processor: Processing mutants in parallel
+        Processor --x FileManager: copy_src_to_temp_file(m, temp_src_dir, extension, language)
+        Processor --x FileManager: mutate_temp_file(temp_file, m);
+        Note over Processor: Set current dir to temp_dir
+        Processor --x Processor: config.build_mutatnt_project()
+        Processor --x Processor: config.test_mutatnt_project()
+        Note over Processor: update mutant status based on process exit codes
+        Processor --> Mutator: calculate_mutation_score()
+        Processor --> Reporter: mutation_test_summary_table()
+        Processor --> Reporter: print_table(table)
+
+    end
+    deactivate Processor
+
+    end
