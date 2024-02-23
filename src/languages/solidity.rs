@@ -1,11 +1,16 @@
 use crate::config::LanguageConfig;
+use crate::handlers::mutator::Mutant;
 use crate::languages::common::Language;
+use fs_extra::dir::CopyOptions as DirCopyOptions;
+use fs_extra::error::Error;
+use fs_extra::file::{self, CopyOptions as FileCopyOptions};
+use std::sync::Mutex;
 use std::{
-    fs::{self, File},
-    io::{self, Write},
-    path::{Path, PathBuf},
+    fs, io,
+    path::PathBuf,
     process::{self, Command},
 };
+use walkdir::WalkDir;
 
 use tempfile::Builder;
 use tempfile::TempDir;
@@ -58,39 +63,86 @@ impl LanguageConfig for SolidityConfig {
         FILTER_TESTS
     }
 
-    fn setup_test_infrastructure(&self, debug_mode: bool) -> io::Result<(TempDir, PathBuf)> {
+    fn setup_test_infrastructure(&self) -> Result<TempDir, Error> {
         // Create a temp directory with a specific prefix
         let temp_dir = Builder::new()
             .prefix("Hunter_temp_mutations_")
             .tempdir_in(std::env::temp_dir())?;
 
-            // let temp_dir = Builder::new()
-            // .prefix("Hunter_temp_mutations_")
-            // .tempdir_in(std::env::current_dir()?)?;
+        // Get the current directory
+        let current_dir = std::env::current_dir()?;
 
-        // Inside /temp, create a src/ directory
-        let src_dir = temp_dir.path().join("src");
-        fs::create_dir_all(src_dir.clone())?;
-        Ok((temp_dir, src_dir))
+        // Define copy options for directories
+        let mut dir_options = DirCopyOptions::new();
+        dir_options.overwrite = true;
+
+        // Define copy options for files
+        let mut file_options = FileCopyOptions::new();
+        file_options.overwrite = true;
+
+        // Walk through the current directory and copy files/directories to the temp directory
+        for entry in WalkDir::new(&current_dir) {
+            let entry = entry.expect("Failed to get entry");
+            let path = entry.path();
+
+            // Skip certain files and directories
+            if path.to_string_lossy().contains("cache")
+                || path.to_string_lossy().contains("cache")
+                || path.to_string_lossy().contains("broadcast")
+                || path.to_string_lossy().contains("README.md")
+            {
+                continue;
+            }
+
+            // Copy the file or directory to the temp directory
+            if path.is_file() {
+                file::copy(
+                    path,
+                    temp_dir.path().join(path.strip_prefix(&current_dir)?),
+                    &file_options,
+                )?;
+            } else if path.is_dir() {
+                fs_extra::dir::create_all(
+                    temp_dir.path().join(path.strip_prefix(&current_dir)?),
+                    true,
+                )?;
+            }
+        }
+
+        Ok(temp_dir)
     }
 
-    // fn setup_test_infrastructure(&self, project_path: &PathBuf) -> io::Result<PathBuf> {
-    //     // Create a new directory named _hunter_temp_ inside project_path
-    //     let temp_dir_path = project_path.join("_hunter_temp_");
-    //     fs::create_dir_all(&temp_dir_path)?;
+    fn copy_src_file(
+        &self,
+        temp_dir: &TempDir,
+        mutant: &Mutant,
+        mutex: Option<&Mutex<()>>,
+    ) -> io::Result<PathBuf> {
+        // For Solidity, mutex should always be Some
+        if mutex.is_some() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Mutex is not needed for Solidity",
+            ));
+        }
 
-    //     // Copy the contents of the project path into _hunter_temp_
-    //     for entry in fs::read_dir(project_path)? {
-    //         let entry = entry?;
-    //         let path = entry.path();
-    //         if path.is_file() {
-    //             fs::copy(&path, &temp_dir_path.join(path.file_name().unwrap()))?;
-    //         }
-    //     }
+        // Join temp_dir with mutant.path()
+        let temp_file = temp_dir
+            .path()
+            .join(mutant.path().strip_prefix("./").unwrap());
 
-    //     Ok(temp_dir_path)
-    // }
+        dbg!(mutant.path());
+        dbg!(&temp_file);
 
+        // Create directories in temp_file path if they do not exist
+        if let Some(parent) = temp_file.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        fs::copy(mutant.path(), &temp_file)?;
+
+        Ok(temp_file)
+    }
 
     fn test_mutant_project(&self) -> Box<process::Output> {
         let child = Command::new(self.test_runner())

@@ -1,5 +1,6 @@
 use crate::languages::common::Language;
 use crate::{handlers::mutator::Mutant, languages};
+use fs_extra::error::Error;
 use std::sync::Mutex;
 use std::{io, path::PathBuf, process};
 use tempfile::TempDir;
@@ -13,8 +14,8 @@ pub trait LanguageConfig {
     fn build_command(&self) -> &'static str;
     fn manifest_name(&self) -> &'static str;
     fn excluded_dirs(&self) -> Vec<&'static str>;
-    fn filter_tests(&self) -> bool;c
-    fn setup_test_infrastructure(&self) -> io::Result<TempDir>;
+    fn filter_tests(&self) -> bool;
+    fn setup_test_infrastructure(&self) -> Result<TempDir, Error>;
     fn copy_src_file(
         &self,
         temp_dir: &TempDir,

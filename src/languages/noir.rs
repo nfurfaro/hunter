@@ -9,7 +9,7 @@ use std::{
     process::{self, Command},
 };
 
-// use lazy_static::lazy_static;
+use fs_extra::error::Error;
 
 use tempfile::Builder;
 use tempfile::TempDir;
@@ -62,7 +62,7 @@ impl LanguageConfig for NoirConfig {
         FILTER_TESTS
     }
 
-    fn setup_test_infrastructure(&self) -> io::Result<TempDir> {
+    fn setup_test_infrastructure(&self) -> Result<TempDir, Error> {
         // Create a temp directory with a specific prefix
         let temp_dir = Builder::new()
             .prefix("Hunter_temp_mutations_")
@@ -106,7 +106,7 @@ compiler_version = ">=0.22.0"
 
         let src_dir = temp_dir.path().join("src");
 
-        let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), self.ext()));
+        let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), EXT));
         fs::copy(mutant.path(), &temp_file)?;
 
         // Lock the mutex before writing to the file
@@ -114,7 +114,7 @@ compiler_version = ">=0.22.0"
 
         let mut lib_file = OpenOptions::new()
             .write(true)
-            .open(src_dir.join(format!("lib.{}", self.ext())))?;
+            .open(src_dir.join(format!("lib.{}", EXT)))?;
         writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
         Ok(temp_file)
