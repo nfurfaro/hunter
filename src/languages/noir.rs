@@ -1,18 +1,15 @@
-use crate::config::LanguageConfig;
-use crate::handlers::mutator::Mutant;
-use crate::languages::common::Language;
-use std::sync::Mutex;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Write},
     path::PathBuf,
     process::{self, Command},
+    sync::Mutex,
 };
 
 use fs_extra::error::Error;
+use tempfile::{Builder, TempDir};
 
-use tempfile::Builder;
-use tempfile::TempDir;
+use crate::{config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language};
 
 const NAME: &str = "Noir";
 const EXT: &str = "nr";

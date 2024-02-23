@@ -1,14 +1,3 @@
-use crate::{
-    cli::Args,
-    config::LanguageConfig,
-    file_manager::mutate_temp_file,
-    handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
-    languages::common::Language,
-    reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
-};
-use ctrlc;
-use lazy_static::lazy_static;
-use rayon::prelude::*;
 use std::{
     collections::HashSet,
     fs,
@@ -18,6 +7,19 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex,
     },
+};
+
+use ctrlc;
+use lazy_static::lazy_static;
+use rayon::prelude::*;
+
+use crate::{
+    cli::Args,
+    config::LanguageConfig,
+    file_manager::mutate_temp_file,
+    handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
+    languages::common::Language,
+    reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
 
 pub fn process_mutants(

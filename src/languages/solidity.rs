@@ -1,19 +1,19 @@
-use crate::config::LanguageConfig;
-use crate::handlers::mutator::Mutant;
-use crate::languages::common::Language;
-use fs_extra::dir::CopyOptions as DirCopyOptions;
-use fs_extra::error::Error;
-use fs_extra::file::{self, CopyOptions as FileCopyOptions};
-use std::sync::Mutex;
 use std::{
     fs, io,
     path::PathBuf,
     process::{self, Command},
+    sync::Mutex,
 };
+
+use fs_extra::{
+    dir::CopyOptions as DirCopyOptions,
+    error::Error,
+    file::{self, CopyOptions as FileCopyOptions},
+};
+use tempfile::{Builder, TempDir};
 use walkdir::WalkDir;
 
-use tempfile::Builder;
-use tempfile::TempDir;
+use crate::{config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language};
 
 const NAME: &str = "Solidity";
 const EXT: &str = "sol";
@@ -131,9 +131,6 @@ impl LanguageConfig for SolidityConfig {
             .path()
             .join(mutant.path().strip_prefix("./").unwrap());
 
-        dbg!(mutant.path());
-        dbg!(&temp_file);
-
         // Create directories in temp_file path if they do not exist
         if let Some(parent) = temp_file.parent() {
             fs::create_dir_all(parent)?;
@@ -147,6 +144,7 @@ impl LanguageConfig for SolidityConfig {
     fn test_mutant_project(&self) -> Box<process::Output> {
         let child = Command::new(self.test_runner())
             .arg(self.test_command())
+            .arg("--no-auto-detect")
             .stderr(process::Stdio::piped())
             .stdout(process::Stdio::piped())
             .spawn()
@@ -158,6 +156,7 @@ impl LanguageConfig for SolidityConfig {
     fn build_mutant_project(&self) -> Box<process::Output> {
         let child = Command::new(self.test_runner())
             .arg(self.build_command())
+            .arg("--no-auto-detect")
             .stderr(process::Stdio::piped())
             .stdout(process::Stdio::piped())
             .spawn()
