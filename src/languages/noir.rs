@@ -50,7 +50,7 @@ impl LanguageConfig for NoirConfig {
         vec!["temp", "target", "test", "tests"]
     }
 
-    fn setup_test_infrastructure(&self) -> io::Result<(TempDir, PathBuf)> {
+    fn setup_test_infrastructure(&self) -> io::Result<TempDir> {
         // Create a temp directory with a specific prefix
         let temp_dir = Builder::new()
             .prefix("Hunter_temp_mutations_")
@@ -75,7 +75,7 @@ compiler_version = ">=0.22.0"
         )?;
         let _ = File::create(src_dir.join("lib.nr"))?;
 
-        Ok((temp_dir, src_dir))
+        Ok(temp_dir)
     }
 
     fn copy_src_file(

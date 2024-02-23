@@ -13,7 +13,7 @@ pub trait LanguageConfig {
     fn build_command(&self) -> &'static str;
     fn manifest_name(&self) -> &'static str;
     fn excluded_dirs(&self) -> Vec<&'static str>;
-    fn setup_test_infrastructure(&self) -> io::Result<(TempDir, PathBuf)>;
+    fn setup_test_infrastructure(&self) -> io::Result<TempDir>;
     fn copy_src_file(
         &self,
         temp_dir: &TempDir,

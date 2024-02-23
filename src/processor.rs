@@ -55,7 +55,7 @@ pub fn process_mutants(
         static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
     }
 
-    let (temp_dir, _) = config
+    let temp_dir = config
         .setup_test_infrastructure()
         .expect("Failed to setup test infrastructure");
 
@@ -64,15 +64,6 @@ pub fn process_mutants(
         .lock()
         .unwrap()
         .insert(temp_dir.path().to_path_buf());
-    // TEMP_DIRS.lock().unwrap().insert(temp_src_dir.clone());
-
-    // let extension = config.ext();
-
-    // Check if the temporary directory exists
-    // if !temp_src_dir.exists() {
-    //     eprint!("Failed to create temporary directory. Shutting down...");
-    //     std::process::exit(1);
-    // }
 
     let config = Arc::new(Mutex::new(config));
 
