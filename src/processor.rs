@@ -1,7 +1,7 @@
 use crate::{
     cli::Args,
     config::LanguageConfig,
-    file_manager::{copy_src_to_temp_file, mutate_temp_file},
+    file_manager::mutate_temp_file,
     handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
     reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
@@ -51,7 +51,11 @@ pub fn process_mutants(
         static ref TEMP_DIRS: Mutex<HashSet<PathBuf>> = Mutex::new(HashSet::new());
     }
 
-    let (temp_dir, temp_src_dir) = config
+    lazy_static! {
+        static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
+    }
+
+    let temp_dir = config
         .setup_test_infrastructure()
         .expect("Failed to setup test infrastructure");
 
@@ -60,15 +64,6 @@ pub fn process_mutants(
         .lock()
         .unwrap()
         .insert(temp_dir.path().to_path_buf());
-    TEMP_DIRS.lock().unwrap().insert(temp_src_dir.clone());
-
-    let extension = config.ext();
-
-    // Check if the temporary directory exists
-    if !temp_src_dir.exists() {
-        eprint!("Failed to create temporary directory. Shutting down...");
-        std::process::exit(1);
-    }
 
     let config = Arc::new(Mutex::new(config));
 
@@ -82,7 +77,7 @@ pub fn process_mutants(
             std::process::exit(1);
         }
 
-        let temp_file = copy_src_to_temp_file(m, temp_src_dir.clone(), extension)
+        let temp_file = config_guard.copy_src_file(&temp_dir, m, Some(&LIB_FILE_MUTEX))
             .expect("Failed to copy src to temp file");
 
         mutate_temp_file(&temp_file, m);
