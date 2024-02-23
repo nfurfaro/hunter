@@ -27,10 +27,13 @@ pub struct Args {
     /// The path to the output file (.md extension recommended)
     #[clap(short = 'o', long)]
     pub output_path: Option<std::path::PathBuf>,
-    // Display information about the program
+    /// Display information about the program
     #[clap(short, long)]
     info: bool,
-    // Choose between running the scan or mutate subcommands
+    /// Run in debug mode. Requires manually deleting the temp directory!
+    #[clap(short, long)]
+    pub debug: bool,
+    /// Choose between running the scan or mutate subcommands
     #[clap(subcommand)]
     subcommand: Option<Subcommand>,
 }
