@@ -3,23 +3,11 @@ use crate::{
 };
 use colored::*;
 use dialoguer::Confirm;
-use lazy_static::lazy_static;
-use std::sync::Mutex;
 use std::{
-    fs::{self, File, OpenOptions},
-    io::{self, Read, Result, Write},
+    fs::{File, OpenOptions},
+    io::{Read, Result, Write},
     path::{Path, PathBuf},
 };
-
-// pub struct Defer<T: FnOnce()>(pub Option<T>);
-// // a wrapper around a closure that is called when the Defer object is dropped.
-// impl<T: FnOnce()> Drop for Defer<T> {
-//     fn drop(&mut self) {
-//         if let Some(f) = self.0.take() {
-//             f();
-//         }
-//     }
-// }
 
 pub fn scan_for_excluded_dirs<'a>(
     dir_path: &'a Path,
@@ -120,29 +108,6 @@ pub fn find_source_file_paths<'a>(
             "Input path is not a directory",
         ))
     }
-}
-
-lazy_static! {
-    static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
-}
-
-pub fn copy_src_to_temp_file(
-    mutant: &Mutant,
-    src_dir: PathBuf,
-    lang_ext: &'static str,
-) -> io::Result<PathBuf> {
-    let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), lang_ext));
-    fs::copy(mutant.path(), &temp_file)?;
-
-    // Lock the mutex before writing to the file
-    let _guard = LIB_FILE_MUTEX.lock().unwrap();
-
-    let mut lib_file = OpenOptions::new()
-        .write(true)
-        .open(src_dir.join(format!("lib.{}", lang_ext)))?;
-    writeln!(lib_file, "mod mutation_{};", mutant.id())?;
-
-    Ok(temp_file)
 }
 
 pub fn mutate_temp_file(temp_file: &std::path::PathBuf, m: &mut Mutant) {

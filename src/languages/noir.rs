@@ -1,11 +1,15 @@
 use crate::config::LanguageConfig;
+use crate::handlers::mutator::Mutant;
 use crate::languages::common::Language;
+use std::sync::Mutex;
 use std::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{self, Write},
     path::PathBuf,
     process::{self, Command},
 };
+
+// use lazy_static::lazy_static;
 
 use tempfile::Builder;
 use tempfile::TempDir;
@@ -72,6 +76,36 @@ compiler_version = ">=0.22.0"
         let _ = File::create(src_dir.join("lib.nr"))?;
 
         Ok((temp_dir, src_dir))
+    }
+
+    fn copy_src_file(
+        &self,
+        temp_dir: &TempDir,
+        mutant: &Mutant,
+        mutex: Option<&Mutex<()>>,
+    ) -> io::Result<PathBuf> {
+        // For Noir, mutex should always be Some
+        if mutex.is_none() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Mutex is not initialized",
+            ));
+        }
+
+        let src_dir = temp_dir.path().join("src");
+
+        let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), self.ext()));
+        fs::copy(mutant.path(), &temp_file)?;
+
+        // Lock the mutex before writing to the file
+        let _guard = mutex.unwrap().lock().unwrap();
+
+        let mut lib_file = OpenOptions::new()
+            .write(true)
+            .open(src_dir.join(format!("lib.{}", self.ext())))?;
+        writeln!(lib_file, "mod mutation_{};", mutant.id())?;
+
+        Ok(temp_file)
     }
 
     fn test_mutant_project(&self) -> Box<process::Output> {
