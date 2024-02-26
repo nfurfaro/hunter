@@ -10,6 +10,7 @@ use fs_extra::{
     error::Error,
     file::{self, CopyOptions as FileCopyOptions},
 };
+use regex::Regex;
 use tempfile::{Builder, TempDir};
 use walkdir::WalkDir;
 
@@ -61,6 +62,18 @@ impl LanguageConfig for SolidityConfig {
 
     fn filter_tests(&self) -> bool {
         FILTER_TESTS
+    }
+
+    fn test_regex(&self) -> Option<Regex> {
+        None
+    }
+
+    fn comment_regex(&self) -> Regex {
+        Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
+    }
+
+    fn literal_regex(&self) -> Regex {
+        Regex::new(r#""([^"\\]|\\.)*""#).unwrap()
     }
 
     fn setup_test_infrastructure(&self) -> Result<TempDir, Error> {

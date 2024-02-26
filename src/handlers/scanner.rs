@@ -2,7 +2,6 @@ use crate::{
     cli::Args,
     config::LanguageConfig,
     file_manager::scan_for_excluded_dirs,
-    filters::test_regex,
     handlers::mutator::{mutants, Mutant},
     reporter::count_tests,
     token::MetaToken,
@@ -80,7 +79,7 @@ pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
     let mut contains_unit_tests: Vec<PathBuf> = vec![];
 
     for path in &paths {
-        let regex = test_regex(&config.language());
+        let regex = config.test_regex();
 
         if let Some(regex) = regex {
             let num_unit_tests = count_tests(path, regex);

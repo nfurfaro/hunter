@@ -1,6 +1,7 @@
 use crate::languages::common::Language;
 use crate::{handlers::mutator::Mutant, languages};
 use fs_extra::error::Error;
+use regex::Regex;
 use std::sync::Mutex;
 use std::{io, path::PathBuf, process};
 use tempfile::TempDir;
@@ -15,6 +16,9 @@ pub trait LanguageConfig {
     fn manifest_name(&self) -> &'static str;
     fn excluded_dirs(&self) -> Vec<&'static str>;
     fn filter_tests(&self) -> bool;
+    fn test_regex(&self) -> Option<Regex>;
+    fn comment_regex(&self) -> Regex;
+    fn literal_regex(&self) -> Regex;
     fn setup_test_infrastructure(&self) -> Result<TempDir, Error>;
     fn copy_src_file(
         &self,

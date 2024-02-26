@@ -7,6 +7,7 @@ use std::{
 };
 
 use fs_extra::error::Error;
+use regex::Regex;
 use tempfile::{Builder, TempDir};
 
 use crate::{config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language};
@@ -57,6 +58,18 @@ impl LanguageConfig for NoirConfig {
 
     fn filter_tests(&self) -> bool {
         FILTER_TESTS
+    }
+
+    fn test_regex(&self) -> Option<Regex> {
+        Some(Regex::new(r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap())
+    }
+
+    fn comment_regex(&self) -> Regex {
+        Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
+    }
+
+    fn literal_regex(&self) -> Regex {
+        Regex::new(r#""([^"\\]|\\.)*""#).unwrap()
     }
 
     fn setup_test_infrastructure(&self) -> Result<TempDir, Error> {

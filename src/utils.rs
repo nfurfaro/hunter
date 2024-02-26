@@ -1,6 +1,5 @@
 use crate::{
     config::LanguageConfig,
-    filters::{comment_regex, literal_regex, test_regex},
     token::{raw_string_as_token, token_regexes, MetaToken, Token},
 };
 
@@ -23,7 +22,7 @@ pub fn collect_tokens(
     config: Box<dyn LanguageConfig>,
 ) -> Option<Vec<MetaToken>> {
     let mut tokens: Vec<MetaToken> = Vec::new();
-    let language = config.language();
+    // let language = config.language();
 
     if paths.is_empty() {
         eprintln!("No source files with unit tests found. Exiting...");
@@ -37,9 +36,9 @@ pub fn collect_tokens(
             let mut contents = String::new();
             let _res = buf_reader.read_to_string(&mut contents);
 
-            let test_regex: Option<Regex> = test_regex(&language);
-            let comment_regex = comment_regex(&language);
-            let literal_regex = literal_regex(&language);
+            let test_regex: Option<Regex> = config.test_regex();
+            let comment_regex = config.comment_regex();
+            let literal_regex = config.literal_regex();
 
             let comment_ranges: Vec<_> = comment_regex
                 .find_iter(&contents)
@@ -177,11 +176,12 @@ pub fn replace_bytes(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::config;
     use crate::languages::common::Language;
 
     #[test]
     fn test_test_regex_noir() {
-        let pattern = test_regex(&Language::Noir);
+        let pattern = config(Language::Noir).test_regex();
         assert_eq!(
             pattern.unwrap().as_str(),
             r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}"
