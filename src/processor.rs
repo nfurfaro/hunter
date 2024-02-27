@@ -62,6 +62,7 @@ pub fn process_mutants(
         .setup_test_infrastructure()
         .expect("Failed to setup test infrastructure");
 
+
     // Add the paths of the temporary directories to the global variable
     TEMP_DIRS
         .lock()
@@ -81,8 +82,9 @@ pub fn process_mutants(
         }
 
         let lib_mutex = match config_guard.language() {
-            Language::Noir => Some(&LIB_FILE_MUTEX as &Mutex<()>),
             Language::Solidity => None,
+            _ => Some(&LIB_FILE_MUTEX as &Mutex<()>),
+
         };
 
         let temp_file = config_guard.copy_src_file(&temp_dir, m, lib_mutex)
@@ -94,6 +96,11 @@ pub fn process_mutants(
         if let Err(e) = std::env::set_current_dir(temp_dir.as_ref()) {
             eprintln!("Failed to change to the temporary directory: {}", e);
         }
+
+        // dbg! current dir
+        dbg!(std::env::current_dir().unwrap());
+        dbg!(temp_file.as_path());
+
 
         let build_output = config_guard.build_mutant_project();
         let test_output = config_guard.test_mutant_project();

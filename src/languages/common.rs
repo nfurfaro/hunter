@@ -5,11 +5,12 @@ use std::str::FromStr;
 pub enum Language {
     Noir,
     Solidity,
+    Sway,
 }
 
 impl Language {
     pub fn list() -> String {
-        ["Noir", "Solidity"].join(", ")
+        ["Noir", "Solidity", "Sway"].join(", ")
     }
 }
 
@@ -20,6 +21,7 @@ impl FromStr for Language {
         match s.to_lowercase().as_str() {
             "noir" => Ok(Language::Noir),
             "solidity" => Ok(Language::Solidity),
+            "sway" => Ok(Language::Sway),
             _ => Err(format!(
                 "No matching languages supported. Current supported languages are: {}",
                 Language::list()

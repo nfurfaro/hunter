@@ -36,5 +36,6 @@ pub fn config(language: Language) -> Box<dyn LanguageConfig> {
     match language {
         Language::Noir => Box::new(languages::noir::NoirConfig),
         Language::Solidity => Box::new(languages::solidity::SolidityConfig),
+        Language::Sway => Box::new(languages::sway::SwayConfig),
     }
 }
