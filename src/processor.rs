@@ -82,7 +82,6 @@ pub fn process_mutants(
 
         let lib_mutex = match config_guard.language() {
             Language::Noir => Some(&LIB_FILE_MUTEX as &Mutex<()>),
-            Language::Solidity => None,
         };
 
         let temp_file = config_guard.copy_src_file(&temp_dir, m, lib_mutex)
@@ -156,15 +155,3 @@ pub fn process_mutants(
 
     print_table(args.output_path, summary_table).unwrap();
 }
-
-// fn lib_file_mutex(config_guard: &std::sync::MutexGuard<'_, Box<dyn LanguageConfig + Send + Sync>>) -> Option<&Mutex<()>> {
-//     lazy_static! {
-//         static ref LIB_FILE_MUTEX: Mutex<()> = Mutex::new(());
-//     }
-
-//     let lib_mutex = match config_guard.language() {
-//         Language::Noir => Some(&LIB_FILE_MUTEX as &Mutex<()>),
-//         Language::Solidity => None,
-//     };
-//     lib_mutex
-// }
