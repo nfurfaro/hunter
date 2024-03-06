@@ -136,6 +136,13 @@ pub fn process_mutants(
         if let Err(e) = std::env::set_current_dir(&original_dir) {
             eprintln!("Failed to change back to the original directory: {}", e);
         }
+
+        // After mutating the temp file and running tests, delete the temp file
+        if let Err(e) = fs::remove_file(&temp_file) {
+            eprintln!("Failed to delete the temporary file: {}", e);
+        }
+
+
     });
 
     bar.finish_with_message("All mutants processed!");

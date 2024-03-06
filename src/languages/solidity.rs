@@ -57,7 +57,7 @@ impl LanguageConfig for SolidityConfig {
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
-        vec!["temp", "target", "test", "tests", "lib"]
+        vec!["temp", "target", "test", "tests", "lib", "node_modules"]
     }
 
     fn filter_tests(&self) -> bool {
