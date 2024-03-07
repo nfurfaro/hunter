@@ -1,13 +1,3 @@
-use crate::{
-    cli::Args,
-    config::LanguageConfig,
-    file_manager::mutate_temp_file,
-    handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
-    reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
-};
-use ctrlc;
-use lazy_static::lazy_static;
-use rayon::prelude::*;
 use std::{
     collections::HashSet,
     fs,
@@ -17,6 +7,19 @@ use std::{
         atomic::{AtomicUsize, Ordering},
         Arc, Mutex,
     },
+};
+
+use ctrlc;
+use lazy_static::lazy_static;
+use rayon::prelude::*;
+
+use crate::{
+    cli::Args,
+    config::LanguageConfig,
+    file_manager::mutate_temp_file,
+    handlers::mutator::{calculate_mutation_score, Mutant, MutationStatus},
+    languages::common::Language,
+    reporter::{mutants_progress_bar, mutation_test_summary_table, print_table},
 };
 
 pub fn process_mutants(
@@ -77,7 +80,11 @@ pub fn process_mutants(
             std::process::exit(1);
         }
 
-        let temp_file = config_guard.copy_src_file(&temp_dir, m, Some(&LIB_FILE_MUTEX))
+        let lib_mutex = match config_guard.language() {
+            Language::Noir => Some(&LIB_FILE_MUTEX as &Mutex<()>),
+        };
+
+        let temp_file = config_guard.copy_src_file(&temp_dir, m, lib_mutex)
             .expect("Failed to copy src to temp file");
 
         mutate_temp_file(&temp_file, m);

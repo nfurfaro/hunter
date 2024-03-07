@@ -31,30 +31,46 @@ pub fn print_scan_results(results: &mut ScanResult, config: Box<dyn LanguageConf
 
     let noir_files_without_unit_tests = results.paths().len() - results.contains_unit_tests().len();
 
-    println!("Hunter currently only mutates files containing unit tests.");
+    if config.filter_tests() {
+        println!("Hunter currently only mutates files containing unit tests.");
 
-    println!(
-        "{}",
-        format!(
-            "Skipping {} {} files.",
-            noir_files_without_unit_tests,
-            config.name(),
-        )
-        .magenta()
-    );
+        println!(
+            "{}",
+            format!(
+                "Skipping {} {} files.",
+                noir_files_without_unit_tests,
+                config.name(),
+            )
+            .magenta()
+        );
 
-    println!(
-        "{}",
-        format!(
-            "{} files containing unit tests: {}",
-            config.name(),
-            results.contains_unit_tests().len()
-        )
-        .cyan()
-    );
+        println!(
+            "{}",
+            format!(
+                "{} files containing unit tests: {}",
+                config.name(),
+                results.contains_unit_tests().len()
+            )
+            .cyan()
+        );
 
-    for path in results.contains_unit_tests() {
-        println!("{}", format!("{}", path.display()).red());
+        for path in results.contains_unit_tests() {
+            println!("{}", format!("{}", path.display()).red());
+        }
+    } else {
+        println!(
+            "{}",
+            format!("Hunter will mutate all {} files found.", config.name()).magenta()
+        );
+
+        println!(
+            "{}",
+            format!("{} files found: {}", config.name(), results.paths().len()).cyan()
+        );
+
+        for path in results.paths() {
+            println!("{}", format!("{}", path.display()).red());
+        }
     }
 
     println!("{}", "Collecting tokens from files".green());

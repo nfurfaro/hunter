@@ -2,7 +2,7 @@ use std::io::Result;
 use std::process;
 pub mod config;
 pub mod file_manager;
-pub mod filters;
+// pub mod filters;
 pub mod handlers;
 pub mod languages;
 pub mod processor;

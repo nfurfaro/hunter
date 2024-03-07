@@ -1,18 +1,24 @@
-use crate::config::LanguageConfig;
-use crate::handlers::mutator::Mutant;
-use crate::languages::common::Language;
-use std::sync::Mutex;
 use std::{
     fs::{self, File, OpenOptions},
     io::{self, Write},
     path::PathBuf,
     process::{self, Command},
+    sync::Mutex,
 };
 
-// use lazy_static::lazy_static;
+use fs_extra::error::Error;
+use regex::Regex;
+use tempfile::{Builder, TempDir};
 
-use tempfile::Builder;
-use tempfile::TempDir;
+use crate::{config::LanguageConfig, handlers::mutator::Mutant, languages::common::Language};
+
+const NAME: &str = "Noir";
+const EXT: &str = "nr";
+const TEST_RUNNER: &str = "nargo";
+const TEST_COMMAND: &str = "test";
+const BUILD_COMMAND: &str = "build";
+const MANIFEST_NAME: &str = "Nargo.toml";
+const FILTER_TESTS: bool = true;
 
 #[derive(Clone)]
 pub struct NoirConfig;
@@ -23,34 +29,50 @@ impl LanguageConfig for NoirConfig {
     }
 
     fn name(&self) -> &'static str {
-        "Noir"
+        NAME
     }
 
     fn ext(&self) -> &'static str {
-        "nr"
+        EXT
     }
 
     fn test_runner(&self) -> &'static str {
-        "nargo"
+        TEST_RUNNER
     }
 
     fn test_command(&self) -> &'static str {
-        "test"
+        TEST_COMMAND
     }
 
     fn build_command(&self) -> &'static str {
-        "build"
+        BUILD_COMMAND
     }
 
     fn manifest_name(&self) -> &'static str {
-        "Nargo.toml"
+        MANIFEST_NAME
     }
 
     fn excluded_dirs(&self) -> Vec<&'static str> {
         vec!["temp", "target", "test", "tests"]
     }
 
-    fn setup_test_infrastructure(&self) -> io::Result<TempDir> {
+    fn filter_tests(&self) -> bool {
+        FILTER_TESTS
+    }
+
+    fn test_regex(&self) -> Option<Regex> {
+        Some(Regex::new(r"#\[test(\(.*\))?\]\s+fn\s+\w+\(\)\s*\{[^}]*\}").unwrap())
+    }
+
+    fn comment_regex(&self) -> Regex {
+        Regex::new(r"//.*|/\*(?s:.*?)\*/").unwrap()
+    }
+
+    fn literal_regex(&self) -> Regex {
+        Regex::new(r#""([^"\\]|\\.)*""#).unwrap()
+    }
+
+    fn setup_test_infrastructure(&self) -> Result<TempDir, Error> {
         // Create a temp directory with a specific prefix
         let temp_dir = Builder::new()
             .prefix("Hunter_temp_mutations_")
@@ -94,7 +116,7 @@ compiler_version = ">=0.22.0"
 
         let src_dir = temp_dir.path().join("src");
 
-        let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), self.ext()));
+        let temp_file = src_dir.join(format!("mutation_{}.{}", mutant.id(), EXT));
         fs::copy(mutant.path(), &temp_file)?;
 
         // Lock the mutex before writing to the file
@@ -102,7 +124,7 @@ compiler_version = ">=0.22.0"
 
         let mut lib_file = OpenOptions::new()
             .write(true)
-            .open(src_dir.join(format!("lib.{}", self.ext())))?;
+            .open(src_dir.join(format!("lib.{}", EXT)))?;
         writeln!(lib_file, "mod mutation_{};", mutant.id())?;
 
         Ok(temp_file)

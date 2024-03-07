@@ -2,7 +2,6 @@ use crate::{
     cli::Args,
     config::LanguageConfig,
     file_manager::scan_for_excluded_dirs,
-    filters::test_regex,
     handlers::mutator::{mutants, Mutant},
     reporter::count_tests,
     token::MetaToken,
@@ -80,16 +79,24 @@ pub fn scan(args: Args, config: Box<dyn LanguageConfig>) -> Result<ScanResult> {
     let mut contains_unit_tests: Vec<PathBuf> = vec![];
 
     for path in &paths {
-        let num_tests = count_tests(path, test_regex(&config.language()));
-        if num_tests > 0 {
-            contains_unit_tests.push(path.clone());
-            test_count += num_tests;
+        let regex = config.test_regex();
+
+        if let Some(regex) = regex {
+            let num_unit_tests = count_tests(path, regex);
+            if num_unit_tests > 0 {
+                contains_unit_tests.push(path.clone());
+                test_count += num_unit_tests;
+            }
         }
     }
 
-    // @todo consider adding a switch here to mutate all tokens in source files, or only those in files with unit tests
-    // @todo improve error message to comunicate that no tokens were found, no target source files were found, or that no unit tests were found in the source files.
-    let meta_tokens = collect_tokens(contains_unit_tests.clone(), config).expect("No tokens found");
+    let paths_to_scan = if config.filter_tests() {
+        contains_unit_tests.clone()
+    } else {
+        paths.clone()
+    };
+
+    let meta_tokens = collect_tokens(paths_to_scan, config).expect("No tokens found");
 
     let mutants = mutants(&meta_tokens, args.random);
 
