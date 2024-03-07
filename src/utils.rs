@@ -665,7 +665,6 @@ mod tests {
             original_token_as_bytes,
             replacement,
         );
-        dbg!(std::str::from_utf8(&original_bytes).unwrap());
         assert_eq!(original_bytes, b"true");
     }
 
